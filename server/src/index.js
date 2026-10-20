@@ -37,6 +37,7 @@ import { searchChannel3Catalog, generateProcurementQuote } from './channel3Servi
 import { queryElasticSearch, getElasticClusterStats } from './elasticService.js';
 import { triggerZapierWebhook, getZapierDispatchedHistory, setZapierWebhookUrl } from './zapierService.js';
 import { CORRIDORS, FX_RATES, getCalculatedFx } from './corridorRules.js';
+import { getFabricBlocks, auditFabricLedger } from './aiChaincodeAuditor.js';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -329,6 +330,45 @@ app.get('/api/kernel/receipt/:tradeId', (req, res) => {
     settledAt: trade.trade.settledAt,
     merkleRoot: '0x7f83b1657ff1fc53b92dc18148a1d65dfc2d4b1fa3d677284addd200126d9069',
   });
+});
+
+// --- HYPERLEDGER FABRIC 2.5 & AI AUDITOR ROUTES ---
+
+app.get('/api/fabric/status', (req, res) => {
+  const isAws = !!process.env.FABRIC_HOST;
+  res.json({
+    connected: true,
+    mode: isAws ? 'AWS_CLOUD_FABRIC_LIVE' : 'EMBEDDED_FABRIC_ENGINE',
+    endpoint: process.env.FABRIC_HOST ? `${process.env.FABRIC_HOST}:${process.env.FABRIC_PEER_PORT || 9051}` : 'localhost:9051 (Embedded Engine)',
+    channelId: 'settlement',
+    chaincodeId: 'settlement-cc',
+    organizations: ['RegAMSP (RBI)', 'RegBMSP (MAS)', 'BankA1MSP', 'BankB1MSP', 'AuditorMSP'],
+    activeEndorsementPolicy: "AND('RegAMSP.peer', 'RegBMSP.peer')",
+    consensus: '3-Node Raft Consensus',
+    dualEngineReady: true,
+  });
+});
+
+app.get('/api/fabric/blocks', (req, res) => {
+  res.json(getFabricBlocks());
+});
+
+app.get('/api/fabric/audit/latest', async (req, res) => {
+  try {
+    const report = await auditFabricLedger();
+    res.json(report);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/fabric/audit/run', async (req, res) => {
+  try {
+    const report = await auditFabricLedger();
+    res.json(report);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 app.listen(PORT, () => {

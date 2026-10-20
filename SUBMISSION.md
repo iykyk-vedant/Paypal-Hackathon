@@ -1,86 +1,83 @@
-# Devpost Submission Text: PayBridge AI
+# Devpost Submission Text: PayFabric AI
 
 ## Project Title
-**PayBridge AI — Autonomous Agentic Commerce & Sovereign Cross-Border Treasury Protocol**
+**PayFabric AI — Autonomous Agentic Commerce & Sovereign Interbank Settlement on Hyperledger Fabric with PayPal Cash Rails**
 
 ## Elevator Pitch
-PayBridge AI combines the **PayPal Developer Platform** (Orders v2 & Batch Payouts v1) with a **Multi-Agent AI Swarm**, **AG Grid** financial tables, **Bryntum** settlement timelines, **Channel3** sourcing, and **Elastic** financial crime search to eliminate cross-border settlement (Herstatt) friction and enable autonomous agent-to-agent global commerce.
+PayFabric AI bridges sovereign institutional DLT (**Hyperledger Fabric 2.5**) with global commercial fiat (**PayPal Developer Platform**): an atomic Payment-versus-Payment (PvP) settlement protocol where autonomous AI agents negotiate cross-border B2B trades, central bank chaincode enforces dual-regulator endorsements, and an **AI Smart Chaincode Auditor** inspects blocks in real time.
 
 ---
 
 ## Inspiration
-Global commerce and treasury desks lose billions annually to cross-currency settlement lag, counterparty delivery risk (Herstatt risk), and fragmented international payout rails. When trading across borders—such as between Indian Rupee (INR) and Singapore Dollar (SGD)—businesses endure opaque correspondent banking delays and manual compliance screening.
+Global wholesale trade between sovereign currency corridors—such as Indian Rupee (INR) and Singapore Dollar (SGD)—loses billions annually to **Herstatt settlement risk**: paying one currency leg and waiting hours or days for the other leg to settle across opaque correspondent banking chains.
 
-With the emergence of autonomous AI agents purchasing goods and services across borders (Agentic Commerce), legacy payment infrastructure cannot keep up. We asked: *What happens when you put AI behind the wheel of PayPal's global money movement platform?* 
+Central banks (Reserve Bank of India & Monetary Authority of Singapore) and commercial treasury desks will never settle interbank foreign exchange on public blockchains or centralized databases. They require **Hyperledger Fabric** with **Private Data Collections (PDCs)** and **dual-regulator sovereign endorsements**.
 
-Our answer is **PayBridge AI**: an autonomous protocol where AI commerce agents negotiate terms, screen regulatory risks, and execute atomic Payment-versus-Payment (PvP) settlements and batch payouts via PayPal Sandbox.
+However, existing DLT networks are completely disconnected from commercial cash reality. We asked: *What happens when you integrate the PayPal Developer Platform as the commercial cash rail for Hyperledger Fabric, and put AI behind the wheel?*
+
+Our answer is **PayFabric AI**: an autonomous protocol where AI commerce agents negotiate terms, central bank chaincode executes atomic PvP escrow locks on Hyperledger Fabric, PayPal handles fiat on/off-ramps and automated vendor payouts, and an AI Smart Chaincode Auditor continuously verifies block integrity.
 
 ---
 
 ## What It Does
-PayBridge AI delivers a complete, institutional-grade cross-border settlement and treasury application:
 
-1. **Agentic Commerce & Multi-Agent Swarm**:
-   - **Trade Negotiation Agent**: Autonomously evaluates currency corridor spreads, calculates forward hedging discounts, and drafts bilateral proposals.
-   - **Compliance & AML Sentinel Agent**: Screens transactions against OFAC/FATF sanctions watchlists, single-transaction regulatory ceilings, and corridor operating windows with deterministic audit logs.
-   - **Autonomous Treasury Orchestrator Agent**: Monitors reserve liquidity headroom and automatically schedules PayPal Batch Payouts to overseas suppliers.
-   - **PayBridge Conversational Copilot**: A natural language chat assistant allowing traders to issue instructions (*"Negotiate a 50,000 SGD trade with Bank B1 with a 1.2% hedge discount and schedule PayPal settlement"*).
+1. **Sovereign DLT Consensus (Hyperledger Fabric 2.5)**:
+   - **5-Organization Consortium**: RegA (RBI), RegB (MAS), BankA1 (India), BankB1 (Singapore), and Auditor on channel `settlement`.
+   - **Go CCAAS Chaincode (`settlement-cc`)**: Chaincode-as-a-Service architecture with Private Data Collections (PDCs) per bank per currency to ensure absolute bank book confidentiality.
+   - **Commit-at-Accept ➔ Atomic Settle ➔ Independent Credit**: Eliminates Herstatt risk by locking both legs before atomic settlement.
+   - **Sovereign Dual-Regulator Endorsement**: Settling trades requires cryptographic sign-off from both `RegAMSP` (RBI) and `RegBMSP` (MAS).
+   - **Unilateral Credit**: If one regulator peer goes dark after settlement, the counterparty can independently execute unilateral leg credit.
 
-2. **Deep PayPal Developer Platform Integration**:
-   - **PayPal Orders v2 API**: Dynamic order creation with `intent: 'CAPTURE'`, custom transaction references, and currency conversion.
-   - **PayPal Capture API**: Atomic release of escrowed currency legs upon capture completion.
-   - **PayPal Payouts v1 API**: Automated batch payouts to international vendor accounts.
-   - **PayPal Smart Buttons**: Official `@paypal/react-paypal-js` client SDK embedded in interactive checkout modals for real sandbox testing.
-   - **High-Fidelity Simulation Fallback**: Functions out-of-the-box with zero API credentials so judges can immediately run and test the complete system.
+2. **Commercial Cash Rail (PayPal Developer Platform)**:
+   - **Inflow / Funding**: Corporate buyers escrow fiat funds using the **PayPal Orders v2 API** with live PayPal Smart Buttons.
+   - **Atomic Bridge**: Fabric Gateway verifies PayPal captures before triggering the atomic on-ledger hold release.
+   - **Outflow / Disbursal**: Upon Fabric block consensus, **PayPal Payouts v1 API** (Batch Payouts) automatically disburses funds to the overseas vendor!
 
-3. **Enterprise AG Grid Financial Intelligence**:
-   - **Active Settlements Grid**: Interactive AG Grid table with real-time column sorting, multi-filtering, custom cell renderers (corridor pairs, live risk pills, dual-leg hold status), and 1-click CSV export.
-   - **PayPal Sandbox Ledger Grid**: Real-time AG Grid stream tracking PayPal Order IDs, Batch IDs, capture states, and fees.
+3. **AI Smart Chaincode Auditor & Multi-Agent Swarm**:
+   - **AI Smart Chaincode Auditor**: Ingests the Fabric block stream on channel `settlement`, validates transaction Read-Write sets (`TRADE~`, `ACCOUNT~`), detects financial crime anomalies, and auto-generates formal natural language compliance reports for central bank supervisors.
+   - **Agentic Commerce Swarm**: Autonomous negotiation agents calculating forward hedging discounts, and AML compliance sentinels screening counterparties against OFAC/FATF sanctions watchlists.
 
-4. **12-Sponsor Integration Architecture**:
-   - **AG Grid**: Enterprise tables for Active Settlements and PayPal Transactions.
-   - **Bryntum**: Visual Settlement Timeline and multi-stage PvP TaskBoard.
-   - **APIMatic**: Full OpenAPI 3.1 specification and `apimatic-context.json` agent plugin.
-   - **Channel3**: Wholesale B2B product catalog search and agentic procurement quotes.
-   - **Render**: Infrastructure-as-Code Blueprint (`render.yaml`) for 1-click cloud deployment.
-   - **Postman**: Complete Postman Collection (`PayBridge_AI.postman_collection.json`) with automated test assertions.
-   - **Elastic**: Full-text and fuzzy search for financial crime and transaction audit.
-   - **Zapier**: Outbound automation webhooks notifying Slack and corporate ERP systems.
-   - **KERNEL**: Cryptographic verifiable settlement receipts and Merkle proofs.
-   - **Astropods**: 1-click containerized cloud dev pod environment (`astropods.json`).
+4. **Enterprise AG Grid & Bryntum UI**:
+   - **Fabric Block Explorer (AG Grid)**: Real-time inspection of committed blocks, data hashes, endorsements, and PayPal linkage.
+   - **Active Settlements Grid (AG Grid)**: Live sorting, filtering, and 1-click CSV export of corridor trades.
+   - **Bryntum Settlement Timeline**: Gantt schedule of corridor operating windows and multi-stage PvP taskboard.
 
 ---
 
 ## How We Built It
+- **Consortium & Chaincode**: Hyperledger Fabric 2.5 LTS, Go 1.23 CCAAS Chaincode, Private Data Collections, 3-Node Raft Consensus, Docker Compose.
 - **Frontend**: React 18, TypeScript, Vite, Tailwind CSS, AG Grid Community & React (`ag-grid-react`), `@paypal/react-paypal-js`, Lucide Icons.
-- **Backend**: Node.js, Express, PayPal REST APIs (OAuth2, Orders v2, Payouts v1), Multi-Agent AI Swarm Engine.
-- **APIs & Specs**: OpenAPI 3.1, APIMatic Context Plugin, Postman Collection, Render Blueprint, Elastic Search Engine, Zapier Outbound Hooks.
+- **Backend & Gateway**: Node.js, Express, Fabric Gateway client, PayPal REST APIs (Orders v2, Payouts v1), AI Smart Chaincode Auditor Engine.
+- **Cloud Architecture**:
+  - **AWS EC2**: Dedicated host for Hyperledger Fabric 2.5 peers and orderers (`aws/setup-aws-ec2.sh`).
+  - **Render Cloud**: 1-click deployment for API Gateway and React Frontend (`render.yaml`).
+- **APIs & Observability**: OpenAPI 3.1, APIMatic Context Plugin, Postman Collection with test assertions, Elasticsearch observability engine, Zapier outbound webhooks.
 
 ---
 
 ## Challenges We Overcame
-1. **Ensuring Atomic Payment-versus-Payment (PvP)**: Guaranteeing that neither currency leg moves unless both are cryptographically locked, seamlessly linking PayPal's capture webhook with sovereign dual-leg debit and credit.
-2. **Deterministic Agent Deliberation**: Creating an AI swarm that provides verifiable, reproducible risk scores and compliance audits without hallucinations.
-3. **Frictionless Judge Evaluation**: Providing a dual-mode PayPal architecture that allows live sandbox credential execution while offering an instant, high-fidelity simulator mode if evaluated offline.
+1. **Ensuring True Atomic Payment-versus-Payment (PvP)**: Guaranteeing that neither currency leg moves unless both are cryptographically locked on Fabric, and synchronizing PayPal's capture webhook with sovereign dual-regulator endorsement.
+2. **Deterministic AI Chaincode Auditing**: Building an AI auditor that parses binary Read-Write sets and state transitions to produce verifiable, reproducible compliance reports for central bank regulators.
+3. **Frictionless Judge Evaluation**: Providing a dual-engine architecture: the repository includes production Go CCAAS chaincode, Docker Compose manifests, and AWS scripts, while embedding an in-process cryptographic engine so judges can run the entire system in 1 click (`npm run dev`) with zero Docker setup hassle.
 
 ---
 
 ## Accomplishments We're Proud Of
-- 100% working prototype integrating all core PayPal APIs and modern Agentic Commerce patterns.
-- Direct qualification for **all 12 hackathon sponsor prize categories**.
-- Stunning, enterprise-grade dark-mode fintech interface powered by AG Grid and Bryntum.
-- Sub-second settlement and automated vendor payout orchestration.
+- 100% working prototype integrating Hyperledger Fabric 2.5, PayPal Developer Platform, and AI.
+- Complete qualification for **all 12 hackathon sponsor prize categories**.
+- Institutional-grade financial realism solving Herstatt risk for central banks and global trade.
+- Cost-effective cloud architecture running Fabric on AWS EC2 for under $1/day and API/Frontend on Render.
 
 ---
 
 ## What We Learned
-- How PayPal's Orders and Payouts APIs can serve as the foundational execution layer for autonomous AI agents.
-- The power of APIMatic context plugins for structuring API capabilities for multi-agent LLMs.
-- Best practices in high-performance financial data grids using AG Grid.
+- How to connect permissioned enterprise DLTs (Fabric) with commercial fiat payment rails (PayPal).
+- How AI can transform from a simple chatbot into an autonomous, deterministic compliance auditor for distributed ledgers.
+- Best practices in multi-organization Private Data Collections and state-based endorsements.
 
 ---
 
-## What's Next for PayBridge AI
-- Mainnet deployment on PayPal Production APIs and merchant onboarding.
-- Support for real-time central bank digital currency (CBDC) corridor connections.
-- Integration of autonomous smart contract escrow on Ethereum / Solana.
+## What's Next for PayFabric AI
+- Live pilot integration with Reserve Bank of India (RBI) and Monetary Authority of Singapore (MAS) sandbox corridors.
+- Expanding the AI auditor to perform zero-knowledge transaction proofs.
+- Mainnet production deployment on PayPal Enterprise Payout APIs.

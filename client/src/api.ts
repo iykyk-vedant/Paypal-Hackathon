@@ -227,6 +227,23 @@ export class ApiClient {
   async getKernelReceipt(tradeId: string) {
     return this.request<any>(`/api/kernel/receipt/${tradeId}`);
   }
+
+  // --- HYPERLEDGER FABRIC 2.5 & AI AUDITOR ---
+  async getFabricStatus() {
+    return this.request<any>('/api/fabric/status');
+  }
+
+  async getFabricBlocks() {
+    return this.request<any[]>('/api/fabric/blocks');
+  }
+
+  async getFabricAuditReport() {
+    return this.request<any>('/api/fabric/audit/latest');
+  }
+
+  async runFabricAudit() {
+    return this.request<any>('/api/fabric/audit/run', { method: 'POST' });
+  }
 }
 
 export const api = new ApiClient();

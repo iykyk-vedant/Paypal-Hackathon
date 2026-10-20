@@ -3,6 +3,8 @@ export type ScreenId =
   | 'active-settlements'
   | 'paypal-ledger'
   | 'bryntum-timeline'
+  | 'fabric-explorer'
+  | 'ai-auditor'
   | 'ai-swarm'
   | 'channel3-sourcing'
   | 'elastic-audit'
@@ -10,6 +12,37 @@ export type ScreenId =
   | 'trade-detail'
   | 'regulator'
   | 'auditor';
+
+export interface FabricBlock {
+  blockNumber: number;
+  channelId: string;
+  txCount: number;
+  dataHash: string;
+  previousHash: string;
+  committedAt: string;
+  transactions: any[];
+}
+
+export interface FabricAuditReport {
+  reportId: string;
+  generatedAt: string;
+  channelId: string;
+  totalBlocksInspected: number;
+  totalTransactionsInspected: number;
+  integrityScore: number;
+  status: string;
+  executiveSummary: string;
+  findings: Array<{
+    txId: string;
+    type: string;
+    severity: string;
+    message: string;
+  }>;
+  supervisorySignoff: {
+    rbiSupervisor: string;
+    masSupervisor: string;
+  };
+}
 
 export interface MeResponse {
   org: string;

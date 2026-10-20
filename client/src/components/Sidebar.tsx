@@ -12,6 +12,8 @@ import {
   FileCheck2,
   Workflow,
   Sparkles,
+  Blocks,
+  Bot,
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -60,6 +62,22 @@ export const Sidebar: React.FC<SidebarProps> = ({
       sublabel: 'Payment Windows & Schedule',
       icon: CalendarDays,
       sponsorBadge: 'Bryntum',
+      badgeColor: 'bg-purple-500/20 text-purple-300 border-purple-500/30',
+    },
+    {
+      id: 'fabric-explorer' as ScreenId,
+      label: 'Fabric Block Explorer',
+      sublabel: 'Hyperledger 2.5 Blocks',
+      icon: Blocks,
+      sponsorBadge: 'Fabric 2.5',
+      badgeColor: 'bg-blue-500/20 text-blue-300 border-blue-500/30',
+    },
+    {
+      id: 'ai-auditor' as ScreenId,
+      label: 'AI Chaincode Auditor',
+      sublabel: 'DLT & Block Inspector',
+      icon: Bot,
+      sponsorBadge: 'AI Auditor',
       badgeColor: 'bg-purple-500/20 text-purple-300 border-purple-500/30',
     },
     {

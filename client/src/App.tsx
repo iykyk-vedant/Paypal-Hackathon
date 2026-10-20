@@ -29,6 +29,8 @@ import { AuditorPortal } from './components/AuditorPortal';
 import { PayPalCheckoutModal } from './components/PayPalCheckoutModal';
 import { AICopilotDrawer } from './components/AICopilotDrawer';
 import { ZapierConfigModal } from './components/ZapierConfigModal';
+import { FabricBlockExplorer } from './components/FabricBlockExplorer';
+import { AIChaincodeAuditorView } from './components/AIChaincodeAuditorView';
 
 export function App() {
   const [currentNodeId, setCurrentNodeId] = useState<string>('banka1');
@@ -229,6 +231,10 @@ export function App() {
               }}
             />
           )}
+
+          {currentScreen === 'fabric-explorer' && <FabricBlockExplorer />}
+
+          {currentScreen === 'ai-auditor' && <AIChaincodeAuditorView />}
 
           {currentScreen === 'ai-swarm' && <AIAgentSwarmView />}
 
