@@ -1,0 +1,215 @@
+---
+Organizations:
+  - &OrdererOrg
+    Name: OrdererOrg
+    ID: OrdererMSP
+    MSPDir: organizations/ordererOrganizations/consortium.local/msp
+    Policies:
+      Readers:
+        Type: Signature
+        Rule: "OR('OrdererMSP.member')"
+      Writers:
+        Type: Signature
+        Rule: "OR('OrdererMSP.member')"
+      Admins:
+        Type: Signature
+        Rule: "OR('OrdererMSP.admin')"
+    OrdererEndpoints:
+      - orderer.consortium.local:7050
+
+  - &RegAOrg
+    Name: RegAMSP
+    ID: RegAMSP
+    MSPDir: organizations/peerOrganizations/rega.consortium.local/msp
+    Policies:
+      Readers:
+        Type: Signature
+        Rule: "OR('RegAMSP.admin', 'RegAMSP.peer', 'RegAMSP.client')"
+      Writers:
+        Type: Signature
+        Rule: "OR('RegAMSP.admin', 'RegAMSP.client')"
+      Admins:
+        Type: Signature
+        Rule: "OR('RegAMSP.admin')"
+      Endorsement:
+        Type: Signature
+        Rule: "OR('RegAMSP.peer')"
+    AnchorPeers:
+      - Host: peer0.rega.consortium.local
+        Port: 7051
+
+  - &RegBOrg
+    Name: RegBMSP
+    ID: RegBMSP
+    MSPDir: organizations/peerOrganizations/regb.consortium.local/msp
+    Policies:
+      Readers:
+        Type: Signature
+        Rule: "OR('RegBMSP.admin', 'RegBMSP.peer', 'RegBMSP.client')"
+      Writers:
+        Type: Signature
+        Rule: "OR('RegBMSP.admin', 'RegBMSP.client')"
+      Admins:
+        Type: Signature
+        Rule: "OR('RegBMSP.admin')"
+      Endorsement:
+        Type: Signature
+        Rule: "OR('RegBMSP.peer')"
+    AnchorPeers:
+      - Host: peer0.regb.consortium.local
+        Port: 8051
+
+  - &BankA1Org
+    Name: BankA1MSP
+    ID: BankA1MSP
+    MSPDir: organizations/peerOrganizations/banka1.consortium.local/msp
+    Policies:
+      Readers:
+        Type: Signature
+        Rule: "OR('BankA1MSP.admin', 'BankA1MSP.peer', 'BankA1MSP.client')"
+      Writers:
+        Type: Signature
+        Rule: "OR('BankA1MSP.admin', 'BankA1MSP.client')"
+      Admins:
+        Type: Signature
+        Rule: "OR('BankA1MSP.admin')"
+      Endorsement:
+        Type: Signature
+        Rule: "OR('BankA1MSP.peer')"
+    AnchorPeers:
+      - Host: peer0.banka1.consortium.local
+        Port: 9051
+
+  - &BankB1Org
+    Name: BankB1MSP
+    ID: BankB1MSP
+    MSPDir: organizations/peerOrganizations/bankb1.consortium.local/msp
+    Policies:
+      Readers:
+        Type: Signature
+        Rule: "OR('BankB1MSP.admin', 'BankB1MSP.peer', 'BankB1MSP.client')"
+      Writers:
+        Type: Signature
+        Rule: "OR('BankB1MSP.admin', 'BankB1MSP.client')"
+      Admins:
+        Type: Signature
+        Rule: "OR('BankB1MSP.admin')"
+      Endorsement:
+        Type: Signature
+        Rule: "OR('BankB1MSP.peer')"
+    AnchorPeers:
+      - Host: peer0.bankb1.consortium.local
+        Port: 10051
+
+  - &AuditorOrg
+    Name: AuditorMSP
+    ID: AuditorMSP
+    MSPDir: organizations/peerOrganizations/auditor.consortium.local/msp
+    Policies:
+      Readers:
+        Type: Signature
+        Rule: "OR('AuditorMSP.admin', 'AuditorMSP.peer', 'AuditorMSP.client')"
+      Writers:
+        Type: Signature
+        Rule: "OR('AuditorMSP.admin', 'AuditorMSP.client')"
+      Admins:
+        Type: Signature
+        Rule: "OR('AuditorMSP.admin')"
+      Endorsement:
+        Type: Signature
+        Rule: "OR('AuditorMSP.peer')"
+    AnchorPeers:
+      - Host: peer0.auditor.consortium.local
+        Port: 11051
+
+Capabilities:
+  Channel: &ChannelCapabilities
+    V2_0: true
+  Orderer: &OrdererCapabilities
+    V2_0: true
+  Application: &ApplicationCapabilities
+    V2_5: true
+
+Application: &ApplicationDefaults
+  Organizations:
+  Policies:
+    LifecycleEndorsement:
+      Type: ImplicitMeta
+      Rule: "MAJORITY Endorsement"
+    Endorsement:
+      Type: ImplicitMeta
+      Rule: "MAJORITY Endorsement"
+    Readers:
+      Type: ImplicitMeta
+      Rule: "ANY Readers"
+    Writers:
+      Type: ImplicitMeta
+      Rule: "ANY Writers"
+    Admins:
+      Type: ImplicitMeta
+      Rule: "MAJORITY Admins"
+  Capabilities:
+    <<: *ApplicationCapabilities
+
+Orderer: &OrdererDefaults
+  OrdererType: etcdraft
+  Addresses:
+    - orderer.consortium.local:7050
+  BatchTimeout: 1s
+  BatchSize:
+    MaxMessageCount: 50
+    AbsoluteMaxBytes: 99 MB
+    PreferredMaxBytes: 512 KB
+  Organizations:
+  Policies:
+    Readers:
+      Type: ImplicitMeta
+      Rule: "ANY Readers"
+    Writers:
+      Type: ImplicitMeta
+      Rule: "ANY Writers"
+    Admins:
+      Type: ImplicitMeta
+      Rule: "MAJORITY Admins"
+    BlockValidation:
+      Type: ImplicitMeta
+      Rule: "ANY Writers"
+
+Channel: &ChannelDefaults
+  Policies:
+    Readers:
+      Type: ImplicitMeta
+      Rule: "ANY Readers"
+    Writers:
+      Type: ImplicitMeta
+      Rule: "ANY Writers"
+    Admins:
+      Type: ImplicitMeta
+      Rule: "MAJORITY Admins"
+  Capabilities:
+    <<: *ChannelCapabilities
+
+Profiles:
+  SettlementChannel:
+    <<: *ChannelDefaults
+    Orderer:
+      <<: *OrdererDefaults
+      OrdererType: etcdraft
+      EtcdRaft:
+        Consenters:
+          - Host: orderer.consortium.local
+            Port: 7050
+            ClientTLSCert: organizations/ordererOrganizations/consortium.local/orderers/orderer.consortium.local/tls/server.crt
+            ServerTLSCert: organizations/ordererOrganizations/consortium.local/orderers/orderer.consortium.local/tls/server.crt
+      Organizations:
+        - *OrdererOrg
+      Capabilities: *OrdererCapabilities
+    Application:
+      <<: *ApplicationDefaults
+      Organizations:
+        - *RegAOrg
+        - *RegBOrg
+        - *BankA1Org
+        - *BankB1Org
+        - *AuditorOrg
+      Capabilities: *ApplicationCapabilities

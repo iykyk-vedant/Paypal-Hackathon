@@ -1,0 +1,50 @@
+[
+  {
+    "name": "coll_INR_A1",
+    "policy": "OR('RegAMSP.member','BankA1MSP.member','AuditorMSP.member')",
+    "requiredPeerCount": 0,
+    "maxPeerCount": 3,
+    "blockToLive": 0,
+    "memberOnlyRead": true,
+    "memberOnlyWrite": true,
+    "endorsementPolicy": {
+      "signaturePolicy": "OR('RegAMSP.member','BankA1MSP.member','AuditorMSP.member')"
+    }
+  },
+  {
+    "name": "coll_INR_B1",
+    "policy": "OR('RegAMSP.member','BankB1MSP.member','AuditorMSP.member')",
+    "requiredPeerCount": 0,
+    "maxPeerCount": 3,
+    "blockToLive": 0,
+    "memberOnlyRead": true,
+    "memberOnlyWrite": true,
+    "endorsementPolicy": {
+      "signaturePolicy": "OR('RegAMSP.member','BankB1MSP.member','AuditorMSP.member')"
+    }
+  },
+  {
+    "name": "coll_SGD_A1",
+    "policy": "OR('RegBMSP.member','BankA1MSP.member','AuditorMSP.member')",
+    "requiredPeerCount": 0,
+    "maxPeerCount": 3,
+    "blockToLive": 0,
+    "memberOnlyRead": true,
+    "memberOnlyWrite": true,
+    "endorsementPolicy": {
+      "signaturePolicy": "OR('RegBMSP.member','BankA1MSP.member','AuditorMSP.member')"
+    }
+  },
+  {
+    "name": "coll_SGD_B1",
+    "policy": "OR('RegBMSP.member','BankB1MSP.member','AuditorMSP.member')",
+    "requiredPeerCount": 0,
+    "maxPeerCount": 3,
+    "blockToLive": 0,
+    "memberOnlyRead": true,
+    "memberOnlyWrite": true,
+    "endorsementPolicy": {
+      "signaturePolicy": "OR('RegBMSP.member','BankB1MSP.member','AuditorMSP.member')"
+    }
+  }
+]

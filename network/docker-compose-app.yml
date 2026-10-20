@@ -1,0 +1,110 @@
+networks:
+  consortium:
+    external: true
+    name: consortium
+
+services:
+  api.rega:
+    container_name: api.rega
+    image: settlement-api:local
+    environment:
+      - ORG=rega
+      - MSP_ID=RegAMSP
+      - PEER_ENDPOINT=peer0.rega.consortium.local:7051
+      - PEER_TLS_CA=/tls/ca.crt
+      - WALLET_DIR=/wallet
+      - IDENTITIES=rega-operator,rega-approver
+      - DEFAULT_IDENTITY=rega-operator
+      - AUTOMATION=true
+      - PORT=3000
+    volumes:
+      - ./network/organizations/peerOrganizations/rega.consortium.local/peers/peer0.rega.consortium.local/tls/ca.crt:/tls/ca.crt:ro
+      - ./network/wallets/rega:/wallet:ro
+    ports:
+      - "3001:3000"
+    networks:
+      - consortium
+
+  api.regb:
+    container_name: api.regb
+    image: settlement-api:local
+    environment:
+      - ORG=regb
+      - MSP_ID=RegBMSP
+      - PEER_ENDPOINT=peer0.regb.consortium.local:8051
+      - PEER_TLS_CA=/tls/ca.crt
+      - WALLET_DIR=/wallet
+      - IDENTITIES=regb-operator,regb-approver
+      - DEFAULT_IDENTITY=regb-operator
+      - AUTOMATION=true
+      - PORT=3000
+    volumes:
+      - ./network/organizations/peerOrganizations/regb.consortium.local/peers/peer0.regb.consortium.local/tls/ca.crt:/tls/ca.crt:ro
+      - ./network/wallets/regb:/wallet:ro
+    ports:
+      - "3002:3000"
+    networks:
+      - consortium
+
+  api.banka1:
+    container_name: api.banka1
+    image: settlement-api:local
+    environment:
+      - ORG=banka1
+      - MSP_ID=BankA1MSP
+      - PEER_ENDPOINT=peer0.banka1.consortium.local:9051
+      - PEER_TLS_CA=/tls/ca.crt
+      - WALLET_DIR=/wallet
+      - IDENTITIES=a1-trader,a1-approver
+      - DEFAULT_IDENTITY=a1-trader
+      - AUTOMATION=true
+      - PORT=3000
+    volumes:
+      - ./network/organizations/peerOrganizations/banka1.consortium.local/peers/peer0.banka1.consortium.local/tls/ca.crt:/tls/ca.crt:ro
+      - ./network/wallets/banka1:/wallet:ro
+    ports:
+      - "3003:3000"
+    networks:
+      - consortium
+
+  api.bankb1:
+    container_name: api.bankb1
+    image: settlement-api:local
+    environment:
+      - ORG=bankb1
+      - MSP_ID=BankB1MSP
+      - PEER_ENDPOINT=peer0.bankb1.consortium.local:10051
+      - PEER_TLS_CA=/tls/ca.crt
+      - WALLET_DIR=/wallet
+      - IDENTITIES=b1-trader,b1-approver
+      - DEFAULT_IDENTITY=b1-trader
+      - AUTOMATION=true
+      - PORT=3000
+    volumes:
+      - ./network/organizations/peerOrganizations/bankb1.consortium.local/peers/peer0.bankb1.consortium.local/tls/ca.crt:/tls/ca.crt:ro
+      - ./network/wallets/bankb1:/wallet:ro
+    ports:
+      - "3004:3000"
+    networks:
+      - consortium
+
+  api.auditor:
+    container_name: api.auditor
+    image: settlement-api:local
+    environment:
+      - ORG=auditor
+      - MSP_ID=AuditorMSP
+      - PEER_ENDPOINT=peer0.auditor.consortium.local:11051
+      - PEER_TLS_CA=/tls/ca.crt
+      - WALLET_DIR=/wallet
+      - IDENTITIES=aud-reader
+      - DEFAULT_IDENTITY=aud-reader
+      - AUTOMATION=false
+      - PORT=3000
+    volumes:
+      - ./network/organizations/peerOrganizations/auditor.consortium.local/peers/peer0.auditor.consortium.local/tls/ca.crt:/tls/ca.crt:ro
+      - ./network/wallets/auditor:/wallet:ro
+    ports:
+      - "3005:3000"
+    networks:
+      - consortium

@@ -1,0 +1,47 @@
+OrdererOrgs:
+  - Name: Orderer
+    Domain: consortium.local
+    EnableNodeOUs: true
+    Specs:
+      - Hostname: orderer
+
+PeerOrgs:
+  - Name: RegA
+    Domain: rega.consortium.local
+    EnableNodeOUs: true
+    Template:
+      Count: 1
+    Users:
+      Count: 2
+
+  - Name: RegB
+    Domain: regb.consortium.local
+    EnableNodeOUs: true
+    Template:
+      Count: 1
+    Users:
+      Count: 2
+
+  - Name: BankA1
+    Domain: banka1.consortium.local
+    EnableNodeOUs: true
+    Template:
+      Count: 1
+    Users:
+      Count: 2
+
+  - Name: BankB1
+    Domain: bankb1.consortium.local
+    EnableNodeOUs: true
+    Template:
+      Count: 1
+    Users:
+      Count: 2
+
+  - Name: Auditor
+    Domain: auditor.consortium.local
+    EnableNodeOUs: true
+    Template:
+      Count: 1
+    Users:
+      Count: 2

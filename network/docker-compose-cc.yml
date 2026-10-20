@@ -1,0 +1,55 @@
+networks:
+  consortium:
+    external: true
+    name: consortium
+
+services:
+  cc.rega:
+    container_name: cc.rega
+    image: settlement-cc:latest
+    environment:
+      - CHAINCODE_SERVER_ADDRESS=0.0.0.0:9999
+      - CORE_CHAINCODE_ID_NAME=${PACKAGE_ID_REGA}
+      - CHAINCODE_ID=${PACKAGE_ID_REGA}
+    networks:
+      - consortium
+
+  cc.regb:
+    container_name: cc.regb
+    image: settlement-cc:latest
+    environment:
+      - CHAINCODE_SERVER_ADDRESS=0.0.0.0:9999
+      - CORE_CHAINCODE_ID_NAME=${PACKAGE_ID_REGB}
+      - CHAINCODE_ID=${PACKAGE_ID_REGB}
+    networks:
+      - consortium
+
+  cc.banka1:
+    container_name: cc.banka1
+    image: settlement-cc:latest
+    environment:
+      - CHAINCODE_SERVER_ADDRESS=0.0.0.0:9999
+      - CORE_CHAINCODE_ID_NAME=${PACKAGE_ID_BANKA1}
+      - CHAINCODE_ID=${PACKAGE_ID_BANKA1}
+    networks:
+      - consortium
+
+  cc.bankb1:
+    container_name: cc.bankb1
+    image: settlement-cc:latest
+    environment:
+      - CHAINCODE_SERVER_ADDRESS=0.0.0.0:9999
+      - CORE_CHAINCODE_ID_NAME=${PACKAGE_ID_BANKB1}
+      - CHAINCODE_ID=${PACKAGE_ID_BANKB1}
+    networks:
+      - consortium
+
+  cc.auditor:
+    container_name: cc.auditor
+    image: settlement-cc:latest
+    environment:
+      - CHAINCODE_SERVER_ADDRESS=0.0.0.0:9999
+      - CORE_CHAINCODE_ID_NAME=${PACKAGE_ID_AUDITOR}
+      - CHAINCODE_ID=${PACKAGE_ID_AUDITOR}
+    networks:
+      - consortium
