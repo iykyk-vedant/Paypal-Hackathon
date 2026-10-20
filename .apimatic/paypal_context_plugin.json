@@ -1,0 +1,61 @@
+{
+  "$schema": "https://apimatic.io/schemas/context-plugin-v1.json",
+  "plugin": {
+    "name": "apimatic-paybridge-paypal-context-plugin",
+    "version": "1.0.0",
+    "provider": "APIMatic",
+    "api": "PayPal Developer Platform",
+    "description": "APIMatic Context Plugin providing version-aware, type-safe API context for PayPal Checkout, Payments, and Disputes to AI agents in PayBridge AI.",
+    "target_apis": [
+      {
+        "name": "Orders API",
+        "version": "v2",
+        "baseUrl": "https://api-m.sandbox.paypal.com/v2/checkout/orders",
+        "capabilities": [
+          "create_order",
+          "authorize_order",
+          "capture_order",
+          "get_order_details"
+        ],
+        "context_files": [
+          "openapi.yaml"
+        ]
+      },
+      {
+        "name": "Payments API",
+        "version": "v2",
+        "baseUrl": "https://api-m.sandbox.paypal.com/v2/payments",
+        "capabilities": [
+          "refund_captured_payment",
+          "void_authorized_payment",
+          "get_capture_details"
+        ]
+      },
+      {
+        "name": "Payouts API",
+        "version": "v1",
+        "baseUrl": "https://api-m.sandbox.paypal.com/v1/payments/payouts",
+        "capabilities": [
+          "create_batch_payout",
+          "get_payout_batch_details",
+          "get_payout_item_details"
+        ]
+      },
+      {
+        "name": "Webhooks API",
+        "version": "v1",
+        "baseUrl": "https://api-m.sandbox.paypal.com/v1/notifications/webhooks-events",
+        "subscribed_events": [
+          "CHECKOUT.ORDER.APPROVED",
+          "PAYMENT.CAPTURE.COMPLETED",
+          "PAYMENT.CAPTURE.DENIED",
+          "PAYMENT.PAYOUTSBATCH.SUCCESS"
+        ]
+      }
+    ],
+    "ai_agent_guidance": {
+      "grounding_doctrine": "Agents must strictly format settlement captures to /v2/checkout/orders/{id}/capture with idempotency keys and avoid hallucinated parameters.",
+      "actuator_enforcement": "Use void_authorized_payment for orders prior to settlement, and refund_captured_payment for settled captures."
+    }
+  }
+}

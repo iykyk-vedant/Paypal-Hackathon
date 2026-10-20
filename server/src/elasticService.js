@@ -4,12 +4,67 @@
 
 import { ulid } from 'ulid';
 
-const ELASTIC_URL = process.env.ELASTIC_URL || '';
+const ELASTIC_URL = process.env.ELASTIC_URL || process.env.ELASTIC_ENDPOINT || '';
 const ELASTIC_API_KEY = process.env.ELASTIC_API_KEY || '';
+
+const SEED_THREAT_INTEL = [
+  {
+    incidentId: 'ATK-8812',
+    title: 'Account Takeover with Foreign Tor Proxy',
+    category: 'Account Takeover',
+    targetItem: 'Apple MacBook Pro 16',
+    riskScore: 9.4,
+    description: 'High-velocity syndicate using Romanian & Dutch Tor exit nodes to purchase high-value hardware with 400% spending spikes.',
+    indicators: ['Tor Exit Node', 'Cross-border Proxy', 'Velocity Surge', '400% Amount Spike', 'Account Takeover'],
+    recommendedAction: 'REFUND_CAPTURE',
+    resolution: 'Auto-Refunded via PayPal Payments v2 refund_capture',
+    esqlSignature: "FROM paybridge_threat_intel | WHERE amount > 3000 AND location LIKE '%Romania%'",
+  },
+  {
+    incidentId: 'BOT-4401',
+    title: 'Card-Testing Bot Microtransaction Burst',
+    category: 'Card Testing Bot',
+    targetItem: 'Digital Services / Authorization Probe',
+    riskScore: 9.6,
+    description: 'Distributed headless bot swarm cycling stolen PayPal vaulted cards using $1.28 microtransactions at 140ms intervals.',
+    indicators: ['Bot Signature', 'Headless Browser', 'Rapid Velocity Burst', 'Disposable Email Domain'],
+    recommendedAction: 'VOID_AUTHORIZATION',
+    resolution: 'Auto-Voided via PayPal Payments v2 void_authorization',
+    esqlSignature: 'FROM paybridge_threat_intel | WHERE amount < 5.0 | STATS count() BY payer_email',
+  },
+  {
+    incidentId: 'EXP-9102',
+    title: 'Client-Side Cart Price Tampering / Slashing',
+    category: 'Cart Price Tampering',
+    targetItem: 'Apple MacBook Pro 16',
+    riskScore: 9.8,
+    description: 'Exploit injecting client-side DOM price manipulations, reducing $3,499.00 electronics to $149.00 prior to PayPal token creation.',
+    indicators: ['CHANNEL3_PRICE_TAMPERING', 'Cart Slashing (-95.7%)', 'DOM Manipulation', 'Severe FMV Discrepancy'],
+    recommendedAction: 'REFUND_CAPTURE',
+    resolution: 'Auto-Refunded via PayPal Payments v2 refund_capture',
+    esqlSignature: 'FROM paybridge_threat_intel | WHERE variance_pct < -50.0',
+  },
+  {
+    incidentId: 'SAFE-1001',
+    title: 'Verified Legitimate Cross-Border Settlement',
+    category: 'Legitimate Treasury Settlement',
+    targetItem: 'Industrial Medical Diagnostic Sensors',
+    riskScore: 1.2,
+    description: 'Dual-regulator signed wholesale procurement matching bilateral corridor limits, valid LEI, and clean KYC.',
+    indicators: ['Verified Central Bank Endorsement', 'Clean KYC/AML', 'Valid LEI Code', 'Within Window Limit'],
+    recommendedAction: 'APPROVE',
+    resolution: 'Auto-Approved and atomic PvP settlement executed on Hyperledger Fabric',
+    esqlSignature: 'FROM paybridge_threat_intel | WHERE riskScore < 2.0',
+  },
+];
 
 class InMemoryElasticEngine {
   constructor() {
     this.index = new Map();
+    // Seed initial threat intelligence database
+    for (const item of SEED_THREAT_INTEL) {
+      this.indexDocument('paybridge_threat_intel', item.incidentId, item);
+    }
   }
 
   indexDocument(indexName, id, doc) {

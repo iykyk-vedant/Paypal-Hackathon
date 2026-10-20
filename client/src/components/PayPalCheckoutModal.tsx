@@ -141,7 +141,7 @@ export const PayPalCheckoutModal: React.FC<PayPalCheckoutModalProps> = ({
           <div className="space-y-3">
             <PayPalScriptProvider
               options={{
-                clientId: 'test',
+                clientId: import.meta.env.VITE_PAYPAL_CLIENT_ID || 'BAAoSTmkXgCQIERz4dHRWTkEOoNY3nQ7iNQDJ4BR_XA2W7G5UqzOg7kXRYwi7UMpLPm2ZlQ-MB5995rn3w',
                 currency: 'USD',
                 intent: 'capture',
               }}

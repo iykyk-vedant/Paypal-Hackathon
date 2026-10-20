@@ -2,10 +2,12 @@
 // Autonomous Agentic Commerce & Cross-Border Treasury Protocol
 // Integrates PayPal Sandbox, Multi-Agent AI Swarm, AG Grid APIs, Elastic, Channel3, and Zapier
 
+import 'dotenv/config';
+import dotenv from 'dotenv';
+dotenv.config({ path: '../.env' });
+dotenv.config({ path: './server/.env' });
 import express from 'express';
 import cors from 'cors';
-import dotenv from 'dotenv';
-dotenv.config();
 
 import {
   accountsStore,
@@ -264,7 +266,19 @@ app.get('/api/ai/treasury-orchestrate', async (req, res) => {
 
 app.post('/api/ai/copilot', async (req, res) => {
   try {
-    const { message, context } = req.body;
+    const message = req.body.message || req.body.prompt || '';
+    const context = req.body.context || {};
+    const reply = await agentChatCopilot(message, context);
+    res.json(reply);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/ai/copilot/chat', async (req, res) => {
+  try {
+    const message = req.body.message || req.body.prompt || '';
+    const context = req.body.context || {};
     const reply = await agentChatCopilot(message, context);
     res.json(reply);
   } catch (err) {
@@ -276,6 +290,12 @@ app.post('/api/ai/copilot', async (req, res) => {
 
 // Channel3
 app.get('/api/channel3/catalog', async (req, res) => {
+  const { q, category } = req.query;
+  const catalog = await searchChannel3Catalog(q, category);
+  res.json(catalog);
+});
+
+app.get('/api/channel3/search', async (req, res) => {
   const { q, category } = req.query;
   const catalog = await searchChannel3Catalog(q, category);
   res.json(catalog);

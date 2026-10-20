@@ -66,15 +66,56 @@ const GLOBAL_CATALOG = [
   },
 ];
 
+const CHANNEL3_API_URL = process.env.CHANNEL3_API_URL || 'https://api.trychannel3.com/v1/search';
+
 /**
  * Search Channel3 Product Catalog for Agentic Commerce
  */
 export async function searchChannel3Catalog(query = '', category = '') {
   const q = query.toLowerCase().trim();
-  let results = GLOBAL_CATALOG;
+  let liveProducts = [];
+
+  if (CHANNEL3_API_KEY) {
+    try {
+      const response = await fetch(CHANNEL3_API_URL, {
+        method: 'POST',
+        headers: {
+          'x-api-key': CHANNEL3_API_KEY,
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+        body: JSON.stringify({ query: query || 'wholesale electronics supplies', limit: 8 }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        if (Array.isArray(data.products)) {
+          liveProducts = data.products.map((p) => ({
+            sku: p.id || `CH3-${ulid().slice(0, 6)}`,
+            title: p.title || 'Enterprise Verified Sourcing Item',
+            category: p.category || 'Global B2B Wholesale',
+            supplierOrg: 'BankB1',
+            supplierName: p.brand ? `${p.brand} Sourcing Partner` : 'SingaMed Global Tech Pte Ltd',
+            country: 'Singapore',
+            unitPrice: p.price || 150.0,
+            currency: 'USD',
+            minOrderQty: 25,
+            availableStock: 2500,
+            specifications: p.description ? p.description.slice(0, 120) + '...' : 'ISO-9001 certified global procurement',
+            leadTimeDays: 4,
+            isLiveChannel3: true,
+          }));
+        }
+      }
+    } catch (err) {
+      console.warn('[Channel3] Live API call failed, falling back to curated catalog:', err.message);
+    }
+  }
+
+  let combined = [...liveProducts, ...GLOBAL_CATALOG];
 
   if (q) {
-    results = results.filter(
+    combined = combined.filter(
       (item) =>
         item.title.toLowerCase().includes(q) ||
         item.category.toLowerCase().includes(q) ||
@@ -84,14 +125,15 @@ export async function searchChannel3Catalog(query = '', category = '') {
   }
 
   if (category && category !== 'ALL') {
-    results = results.filter((item) => item.category === category);
+    combined = combined.filter((item) => item.category === category);
   }
 
   return {
     query,
-    count: results.length,
-    results,
-    poweredBy: 'Channel3 Sourcing & Product Catalog API',
+    count: combined.length,
+    liveItemCount: liveProducts.length,
+    results: combined,
+    poweredBy: liveProducts.length > 0 ? 'Channel3 Live 100M+ Products API' : 'Channel3 Curated Sourcing Engine',
     timestamp: new Date().toISOString(),
   };
 }

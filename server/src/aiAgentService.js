@@ -10,6 +10,37 @@ import { CORRIDORS, FX_RATES, getCalculatedFx } from './corridorRules.js';
 
 const GEMINI_KEY = process.env.GEMINI_API_KEY || '';
 const OPENAI_KEY = process.env.OPENAI_API_KEY || '';
+const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
+
+/**
+ * Call Google Gemini 2.5 Flash reasoning engine
+ */
+async function callGeminiFlash(userPrompt, systemInstruction = '') {
+  const apiKey = process.env.GEMINI_API_KEY || GEMINI_KEY;
+  const model = process.env.GEMINI_MODEL || GEMINI_MODEL;
+  if (!apiKey) return null;
+  try {
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+    const payload = {
+      contents: [{ parts: [{ text: userPrompt }] }],
+    };
+    if (systemInstruction) {
+      payload.systemInstruction = { parts: [{ text: systemInstruction }] };
+    }
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    if (response.ok) {
+      const data = await response.json();
+      return data.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || null;
+    }
+  } catch (err) {
+    console.warn('[Gemini 2.5 Flash] Call error:', err.message);
+  }
+  return null;
+}
 
 /**
  * 1. Trade Negotiation Agent (Agentic Commerce)
@@ -271,7 +302,20 @@ export async function agentChatCopilot(userPrompt, context = {}) {
     };
   }
 
-  // General assistant response
+  // Live Gemini 2.5 Flash AI reasoning
+  if (GEMINI_KEY) {
+    const systemPrompt = `You are PayBridge AI Copilot, the intelligent treasury and autonomous commerce assistant. You orchestrate cross-border settlement between India (RBI, BankA1) and Singapore (MAS, BankB1), backed by Hyperledger Fabric 2.5 atomic PvP and PayPal Developer Platform Sandbox orders and payouts. Answer concisely with bullet points and bold technical highlights. Keep responses under 4 sentences.`;
+    const geminiReply = await callGeminiFlash(userPrompt, systemPrompt);
+    if (geminiReply) {
+      return {
+        reply: geminiReply,
+        actionType: 'GEMINI_REASONING',
+        poweredBy: 'Google Gemini 2.5 Flash',
+      };
+    }
+  }
+
+  // General assistant response fallback
   return {
     reply: `Hello! I am your **PayBridge AI Copilot**, orchestrating autonomous agentic commerce, cross-border treasury settlements, and PayPal Sandbox payouts.\n\n` +
       `Here is what you can ask me to do:\n` +
