@@ -1,0 +1,46 @@
+{
+  "$schema": "https://apimatic.io/schemas/context-plugin/v1.json",
+  "pluginName": "PayBridgePayPalContextPlugin",
+  "version": "1.0.0",
+  "description": "APIMatic Context Plugin for PayBridge AI: Autonomous Agentic Commerce & PayPal Settlement",
+  "specifications": [
+    {
+      "path": "./openapi.yaml",
+      "format": "OpenAPI3"
+    }
+  ],
+  "agentIntegration": {
+    "frameworks": ["LangChain", "AutoGen", "CustomMultiAgentSwarm"],
+    "toolBindings": [
+      {
+        "agentRole": "TradeNegotiatorAgent",
+        "allowedOperations": [
+          "POST /api/ai/negotiate",
+          "POST /trades",
+          "GET /api/channel3/catalog"
+        ]
+      },
+      {
+        "agentRole": "ComplianceSentinelAgent",
+        "allowedOperations": [
+          "POST /api/ai/risk-screen",
+          "GET /refusals",
+          "GET /rules/{jur}"
+        ]
+      },
+      {
+        "agentRole": "TreasuryOrchestratorAgent",
+        "allowedOperations": [
+          "POST /api/paypal/orders/create",
+          "POST /api/paypal/orders/{id}/capture",
+          "POST /api/paypal/payouts/batch",
+          "POST /trades/{id}/settle"
+        ]
+      }
+    ]
+  },
+  "sdkGeneration": {
+    "languages": ["TypeScript", "Python", "Go", "Java"],
+    "outputDirectory": "./generated-sdks"
+  }
+}

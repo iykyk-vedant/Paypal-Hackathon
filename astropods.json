@@ -1,0 +1,16 @@
+{
+  "name": "paybridge-ai-sandbox",
+  "version": "1.0.0",
+  "description": "Astropods containerized development and runtime pod for PayBridge AI",
+  "baseImage": "node:22-bookworm-slim",
+  "ports": [
+    { "port": 3001, "protocol": "HTTP", "description": "PayBridge Express API" },
+    { "port": 5173, "protocol": "HTTP", "description": "PayBridge Vite Client" }
+  ],
+  "env": {
+    "PAYPAL_MODE": "sandbox",
+    "PORT": "3001"
+  },
+  "postCreateCommand": "npm run setup",
+  "runCommand": "npm run dev"
+}

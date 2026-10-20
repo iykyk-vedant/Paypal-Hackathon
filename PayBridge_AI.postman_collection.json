@@ -1,0 +1,183 @@
+{
+  "info": {
+    "_postman_id": "paybridge-ai-postman-v1",
+    "name": "PayBridge AI - PayPal & Multi-Agent Settlement Suite",
+    "description": "Comprehensive Postman test collection for PayBridge AI: End-to-end testing of PayPal Sandbox Orders, Payouts, AI Swarm, AG Grid data feeds, Channel3, and Elastic search.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "1. System Health & Discovery",
+      "item": [
+        {
+          "name": "Check Health",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/health", "host": ["{{baseUrl}}"], "path": ["health"] }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () { pm.response.to.have.status(200); });",
+                  "pm.test('System is online', function () { const j = pm.response.json(); pm.expect(j.status).to.eql('online'); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get Node Identity /me",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "X-Operator", "value": "a1-trader" }],
+            "url": { "raw": "{{baseUrl}}/me", "host": ["{{baseUrl}}"], "path": ["me"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "2. Multi-Agent AI Swarm",
+      "item": [
+        {
+          "name": "Trade Negotiation Agent",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"buyerOrg\": \"BankA1\",\n  \"sellerOrg\": \"BankB1\",\n  \"currencyFrom\": \"INR\",\n  \"currencyTo\": \"SGD\",\n  \"amountFrom\": 100000000\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/ai/negotiate", "host": ["{{baseUrl}}"], "path": ["api", "ai", "negotiate"] }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Confidence score is above 90%', function () { const j = pm.response.json(); pm.expect(j.confidenceScore).to.be.above(0.9); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Compliance & AML Sentinel",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"tradeId\": \"T-TEST-001\",\n  \"currencyA\": \"INR\",\n  \"amountA\": \"83500000\",\n  \"currencyB\": \"SGD\",\n  \"amountB\": \"1000000\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/ai/risk-screen", "host": ["{{baseUrl}}"], "path": ["api", "ai", "risk-screen"] }
+          }
+        },
+        {
+          "name": "Treasury Orchestrator Float",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/api/ai/treasury-orchestrate", "host": ["{{baseUrl}}"], "path": ["api", "ai", "treasury-orchestrate"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "3. PayPal Sandbox APIs",
+      "item": [
+        {
+          "name": "Create PayPal Order",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"tradeId\": \"T-1048\",\n  \"amount\": 160000,\n  \"currency\": \"USD\",\n  \"description\": \"PayBridge Medical Equipment Trade T-1048\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/paypal/orders/create", "host": ["{{baseUrl}}"], "path": ["api", "paypal", "orders", "create"] }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const j = pm.response.json();",
+                  "pm.test('Received PayPal Order ID', function () { pm.expect(j.orderId).to.not.be.undefined; });",
+                  "pm.environment.set('paypalOrderId', j.orderId);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Capture PayPal Order",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"tradeId\": \"T-1048\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/paypal/orders/{{paypalOrderId}}/capture", "host": ["{{baseUrl}}"], "path": ["api", "paypal", "orders", "{{paypalOrderId}}", "capture"] }
+          }
+        },
+        {
+          "name": "Execute PayPal Batch Payout",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"tradeId\": \"T-1048\",\n  \"recipientEmail\": \"vendor-payout-sandbox@paybridge.ai\",\n  \"amount\": 160000,\n  \"currency\": \"USD\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/paypal/payouts/batch", "host": ["{{baseUrl}}"], "path": ["api", "paypal", "payouts", "batch"] }
+          }
+        },
+        {
+          "name": "Get PayPal Transaction Ledger",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/api/paypal/ledger", "host": ["{{baseUrl}}"], "path": ["api", "paypal", "ledger"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "4. Sponsor Integrations",
+      "item": [
+        {
+          "name": "Channel3 Catalog Search",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/api/channel3/catalog?q=sensor", "host": ["{{baseUrl}}"], "path": ["api", "channel3", "catalog"], "query": [{ "key": "q", "value": "sensor" }] }
+          }
+        },
+        {
+          "name": "Elastic Search Observability",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/api/elastic/search?q=1048", "host": ["{{baseUrl}}"], "path": ["api", "elastic", "search"], "query": [{ "key": "q", "value": "1048" }] }
+          }
+        },
+        {
+          "name": "Zapier Webhook Trigger",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"eventType\": \"POSTMAN_AUTOMATED_AUDIT\",\n  \"payload\": { \"verified\": true }\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/zapier/trigger", "host": ["{{baseUrl}}"], "path": ["api", "zapier", "trigger"] }
+          }
+        }
+      ]
+    }
+  ]
+}

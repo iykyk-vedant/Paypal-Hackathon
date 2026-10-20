@@ -1,0 +1,229 @@
+openapi: 3.1.0
+info:
+  title: PayBridge AI - Autonomous Agentic Commerce & Cross-Border Treasury API
+  description: >-
+    PayBridge AI combines the PayPal Developer Platform (Orders v2, Payouts v1)
+    with a Multi-Agent AI Swarm, AG Grid real-time tables, Channel3 sourcing,
+    and Elastic observability to eliminate cross-border settlement friction.
+  version: 1.0.0
+  contact:
+    name: PayBridge Developer Team
+    email: developers@paybridge.ai
+servers:
+  - url: http://localhost:3001
+    description: Local Dev Server
+  - url: https://paybridge-api.onrender.com
+    description: Render Cloud Production Service
+paths:
+  /health:
+    get:
+      summary: Health and System Status
+      responses:
+        '200':
+          description: System operational status
+  /me:
+    get:
+      summary: Get active node identity and role
+      parameters:
+        - in: header
+          name: X-Operator
+          schema:
+            type: string
+            default: a1-trader
+      responses:
+        '200':
+          description: Active identity profile
+  /trades:
+    get:
+      summary: List all active and settled bilateral trades
+      responses:
+        '200':
+          description: Array of trade composites
+    post:
+      summary: Propose a new bilateral trade with atomic hold
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                proposer:
+                  type: string
+                cparty:
+                  type: string
+                ccyA:
+                  type: string
+                amountA:
+                  type: number
+                ccyB:
+                  type: string
+                amountB:
+                  type: number
+                fxRate:
+                  type: string
+                reference:
+                  type: string
+      responses:
+        '201':
+          description: Proposed trade record
+  /trades/{id}/accept:
+    post:
+      summary: Counterparty accepts trade and locks opposing leg
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Accepted trade
+  /trades/{id}/settle:
+    post:
+      summary: Atomic settlement trigger (Payment-versus-Payment)
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Settled trade with KERNEL receipt hash
+  /api/paypal/orders/create:
+    post:
+      summary: Create PayPal Orders v2 Sandbox Order
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                tradeId:
+                  type: string
+                amount:
+                  type: number
+                currency:
+                  type: string
+                description:
+                  type: string
+      responses:
+        '200':
+          description: PayPal Order response with approve link
+  /api/paypal/orders/{id}/capture:
+    post:
+      summary: Capture PayPal Order and finalize atomic trade
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Capture details
+  /api/paypal/payouts/batch:
+    post:
+      summary: Trigger PayPal Batch Payout v1 for vendor disbursement
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                tradeId:
+                  type: string
+                recipientEmail:
+                  type: string
+                amount:
+                  type: number
+                currency:
+                  type: string
+      responses:
+        '200':
+          description: Payout batch response
+  /api/ai/negotiate:
+    post:
+      summary: AI Trade Negotiation Agent (Agentic Commerce)
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                buyerOrg:
+                  type: string
+                sellerOrg:
+                  type: string
+                currencyFrom:
+                  type: string
+                currencyTo:
+                  type: string
+                amountFrom:
+                  type: number
+      responses:
+        '200':
+          description: Negotiated trade proposal with FX hedging
+  /api/ai/risk-screen:
+    post:
+      summary: AI Compliance & AML Sentinel Agent
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                tradeId:
+                  type: string
+                amountA:
+                  type: string
+                currencyA:
+                  type: string
+                amountB:
+                  type: string
+                currencyB:
+                  type: string
+      responses:
+        '200':
+          description: Risk score and pass/refuse verdict
+  /api/channel3/catalog:
+    get:
+      summary: Search Channel3 B2B Product Catalog
+      parameters:
+        - in: query
+          name: q
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Catalog search results
+  /api/elastic/search:
+    get:
+      summary: Elastic Observability & Financial Crime Search
+      parameters:
+        - in: query
+          name: q
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Elastic search hits and query latency
+  /api/zapier/trigger:
+    post:
+      summary: Dispatch Zapier Outbound Automation Webhook
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                eventType:
+                  type: string
+                payload:
+                  type: object
+      responses:
+        '200':
+          description: Zapier delivery status
