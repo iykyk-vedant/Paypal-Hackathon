@@ -1,0 +1,72 @@
+@import 'ag-grid-community/styles/ag-grid.css';
+@import 'ag-grid-community/styles/ag-theme-quartz.css';
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-[#0B1120] text-slate-100 overflow-x-hidden;
+  }
+}
+
+/* Custom AG Grid Dark Styling */
+.ag-theme-quartz-dark {
+  --ag-background-color: #111827;
+  --ag-header-background-color: #0F172A;
+  --ag-odd-row-background-color: #111827;
+  --ag-row-hover-color: #1E293B;
+  --ag-border-color: #334155;
+  --ag-header-foreground-color: #94A3B8;
+  --ag-foreground-color: #F8FAFC;
+  --ag-selected-row-background-color: rgba(0, 112, 186, 0.15);
+  font-family: 'Inter', sans-serif;
+  border-radius: 0.75rem;
+}
+
+/* Glassmorphism card styles */
+.glass-panel {
+  background: rgba(17, 24, 39, 0.75);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(51, 65, 85, 0.6);
+}
+
+.glass-panel-glow {
+  background: rgba(17, 24, 39, 0.85);
+  backdrop-filter: blur(16px);
+  border: 1px solid rgba(0, 112, 186, 0.4);
+  box-shadow: 0 0 25px -5px rgba(0, 112, 186, 0.15);
+}
+
+/* Custom Scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #0B1120;
+}
+::-webkit-scrollbar-thumb {
+  background: #334155;
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #0070BA;
+}
+
+/* Micro animations */
+@keyframes pulseGlow {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.75;
+    transform: scale(1.02);
+  }
+}
+
+.animate-pulse-glow {
+  animation: pulseGlow 3s infinite ease-in-out;
+}
