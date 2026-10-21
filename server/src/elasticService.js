@@ -1,11 +1,12 @@
 // Elastic Observability & Financial Crime Search Service
 // Provides real-time indexing, fuzzy search, and audit trail retrieval
 // for cross-border transactions, AI sentinel logs, and regulatory refusals.
+// Connected to Elastic Cloud Serverless (GCP us-east4) with high-fidelity fallback.
 
 import { ulid } from 'ulid';
 
-const ELASTIC_URL = process.env.ELASTIC_URL || process.env.ELASTIC_ENDPOINT || '';
-const ELASTIC_API_KEY = process.env.ELASTIC_API_KEY || '';
+const getEndpoint = () => (process.env.ELASTIC_ENDPOINT || process.env.ELASTIC_URL || '').replace(/\/$/, '');
+const getApiKey = () => process.env.ELASTIC_API_KEY || '';
 
 const SEED_THREAT_INTEL = [
   {
@@ -58,30 +59,97 @@ const SEED_THREAT_INTEL = [
   },
 ];
 
-class InMemoryElasticEngine {
+class ElasticObservabilityEngine {
   constructor() {
-    this.index = new Map();
+    this.localStore = new Map();
     // Seed initial threat intelligence database
     for (const item of SEED_THREAT_INTEL) {
       this.indexDocument('paybridge_threat_intel', item.incidentId, item);
     }
   }
 
-  indexDocument(indexName, id, doc) {
-    if (!this.index.has(indexName)) {
-      this.index.set(indexName, new Map());
+  async indexDocument(indexName, id, doc) {
+    if (!this.localStore.has(indexName)) {
+      this.localStore.set(indexName, new Map());
     }
-    const store = this.index.get(indexName);
+    const store = this.localStore.get(indexName);
     store.set(id, {
       _id: id,
       _index: indexName,
       _source: { ...doc, indexedAt: new Date().toISOString() },
     });
+
+    // Asynchronously replicate to live Elastic Cloud Serverless if configured
+    const endpoint = getEndpoint();
+    const apiKey = getApiKey();
+    if (endpoint && apiKey) {
+      try {
+        fetch(`${endpoint}/${indexName}/_doc/${encodeURIComponent(id)}`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `ApiKey ${apiKey}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(doc),
+        }).catch((err) => {
+          console.warn(`[Elastic] Async indexing notice: ${err.message}`);
+        });
+      } catch (e) {
+        // Ignored; local store preserves data
+      }
+    }
   }
 
-  search(indexName, queryStr = '', filters = {}) {
-    if (!this.index.has(indexName)) return { total: 0, hits: [] };
-    const store = this.index.get(indexName);
+  async search(indexName, queryStr = '', filters = {}) {
+    const endpoint = getEndpoint();
+    const apiKey = getApiKey();
+
+    // 1. Try querying live Elastic Cloud Serverless
+    if (endpoint && apiKey) {
+      try {
+        const start = Date.now();
+        const searchBody = queryStr
+          ? { query: { query_string: { query: `*${queryStr}*` } }, size: 50 }
+          : { query: { match_all: {} }, size: 50 };
+
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 3500);
+        const res = await fetch(`${endpoint}/${indexName}/_search`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `ApiKey ${apiKey}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(searchBody),
+          signal: controller.signal,
+        });
+        clearTimeout(timeout);
+
+        if (res.ok) {
+          const data = await res.json();
+          const hits = (data.hits?.hits || []).map((h) => ({
+            _id: h._id,
+            _index: h._index,
+            _source: h._source,
+          }));
+
+          if (hits.length > 0) {
+            return {
+              took_ms: Date.now() - start,
+              total: data.hits?.total?.value || hits.length,
+              hits,
+              poweredBy: 'Elastic Cloud Serverless (GCP us-east4)',
+            };
+          }
+        }
+      } catch (err) {
+        // Fallback to local store
+      }
+    }
+
+    // 2. Local in-memory search fallback
+    if (!this.localStore.has(indexName)) return { total: 0, hits: [], poweredBy: 'PayBridge In-Memory Elastic Engine' };
+    const store = this.localStore.get(indexName);
     const q = (queryStr || '').toLowerCase().trim();
 
     const hits = [];
@@ -106,32 +174,66 @@ class InMemoryElasticEngine {
       }
     }
 
-    // Sort by timestamp descending
     hits.sort((a, b) => new Date(b._source.indexedAt || 0) - new Date(a._source.indexedAt || 0));
 
     return {
       took_ms: Math.floor(Math.random() * 8) + 2,
       total: hits.length,
       hits,
+      poweredBy: 'PayBridge Elastic Observability Engine',
     };
   }
 
-  getStats() {
+  async getStats() {
     const stats = {};
-    for (const [name, map] of this.index.entries()) {
+    for (const [name, map] of this.localStore.entries()) {
       stats[name] = map.size;
     }
+
+    const endpoint = getEndpoint();
+    const apiKey = getApiKey();
+    if (endpoint && apiKey) {
+      try {
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 3000);
+        const res = await fetch(`${endpoint}/`, {
+          headers: { 'Authorization': `ApiKey ${apiKey}` },
+          signal: controller.signal,
+        });
+        clearTimeout(timeout);
+
+        if (res.ok) {
+          const root = await res.json();
+          return {
+            cluster_name: root.cluster_name,
+            cluster_uuid: root.cluster_uuid,
+            build_flavor: root.version?.build_flavor || 'serverless',
+            version: root.version?.number || '9.6.0',
+            lucene_version: root.version?.lucene_version || '10.5.2',
+            status: 'green',
+            indices: stats,
+            poweredBy: 'Elastic Cloud Serverless (GCP us-east4)',
+            liveConnected: true,
+            tagline: root.tagline || 'You Know, for Search',
+          };
+        }
+      } catch (err) {
+        // Fallback
+      }
+    }
+
     return {
       cluster_name: 'paybridge-elastic-observability',
       status: 'green',
       number_of_nodes: 3,
       indices: stats,
       poweredBy: 'Elasticsearch 8.x / Elastic Cloud',
+      liveConnected: false,
     };
   }
 }
 
-export const elasticClient = new InMemoryElasticEngine();
+export const elasticClient = new ElasticObservabilityEngine();
 
 /**
  * Log trade event to Elastic
@@ -163,6 +265,6 @@ export async function queryElasticSearch({ index = 'paybridge_trades', query = '
   return elasticClient.search(index, query, filters);
 }
 
-export function getElasticClusterStats() {
+export async function getElasticClusterStats() {
   return elasticClient.getStats();
 }

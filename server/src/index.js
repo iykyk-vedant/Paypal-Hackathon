@@ -318,8 +318,9 @@ app.get('/api/elastic/search', async (req, res) => {
   res.json(results);
 });
 
-app.get('/api/elastic/stats', (req, res) => {
-  res.json(getElasticClusterStats());
+app.get('/api/elastic/stats', async (req, res) => {
+  const stats = await getElasticClusterStats();
+  res.json(stats);
 });
 
 // Zapier
