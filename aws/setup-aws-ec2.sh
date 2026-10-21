@@ -33,8 +33,10 @@ if ! command -v docker &> /dev/null; then
     sudo sh get-docker.sh || sudo apt-get install -y docker.io docker-compose-v2 docker-buildx-plugin
     sudo usermod -aG docker $USER
     rm -f get-docker.sh
+    sudo chmod 666 /var/run/docker.sock || true
     echo "Docker installed successfully: $(docker --version)"
 fi
+sudo chmod 666 /var/run/docker.sock || true
 
 # 4. Pull Required Hyperledger Fabric 2.5 Images
 echo "Pulling official Hyperledger Fabric 2.5 Docker images..."
@@ -53,6 +55,7 @@ docker compose up -d
 
 # 7. Configure Auto-Restart on EC2 Reboot / Start-Stop
 echo "Configuring automatic startup on EC2 boot/reboot..."
+chmod +x network/start-fabric.sh network/stop-fabric.sh
 CURRENT_DIR=$(pwd)
 sudo bash -c "cat <<EOF > /etc/systemd/system/payfabric.service
 [Unit]
@@ -64,8 +67,8 @@ After=docker.service network-online.target
 Type=oneshot
 RemainAfterExit=yes
 WorkingDirectory=${CURRENT_DIR}
-ExecStart=/usr/bin/docker compose up -d
-ExecStop=/usr/bin/docker compose stop
+ExecStart=/bin/bash ${CURRENT_DIR}/network/start-fabric.sh
+ExecStop=/bin/bash ${CURRENT_DIR}/network/stop-fabric.sh
 TimeoutStartSec=0
 
 [Install]
