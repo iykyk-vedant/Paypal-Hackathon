@@ -14,6 +14,7 @@ services:
   orderer.consortium:
     container_name: orderer.consortium
     image: hyperledger/fabric-orderer:2.5
+    restart: always
     environment:
       - FABRIC_LOGGING_SPEC=INFO
       - ORDERER_GENERAL_LISTENADDRESS=0.0.0.0
@@ -54,6 +55,7 @@ services:
   peer0.rega:
     container_name: peer0.rega
     image: hyperledger/fabric-peer:2.5
+    restart: always
     environment:
       - FABRIC_CFG_PATH=/etc/hyperledger/peercfg
       - FABRIC_LOGGING_SPEC=INFO
@@ -93,6 +95,7 @@ services:
   peer0.regb:
     container_name: peer0.regb
     image: hyperledger/fabric-peer:2.5
+    restart: always
     environment:
       - FABRIC_CFG_PATH=/etc/hyperledger/peercfg
       - FABRIC_LOGGING_SPEC=INFO
@@ -132,6 +135,7 @@ services:
   peer0.banka1:
     container_name: peer0.banka1
     image: hyperledger/fabric-peer:2.5
+    restart: always
     environment:
       - FABRIC_CFG_PATH=/etc/hyperledger/peercfg
       - FABRIC_LOGGING_SPEC=INFO
@@ -171,6 +175,7 @@ services:
   peer0.bankb1:
     container_name: peer0.bankb1
     image: hyperledger/fabric-peer:2.5
+    restart: always
     environment:
       - FABRIC_CFG_PATH=/etc/hyperledger/peercfg
       - FABRIC_LOGGING_SPEC=INFO
@@ -210,6 +215,7 @@ services:
   peer0.auditor:
     container_name: peer0.auditor
     image: hyperledger/fabric-peer:2.5
+    restart: always
     environment:
       - FABRIC_CFG_PATH=/etc/hyperledger/peercfg
       - FABRIC_LOGGING_SPEC=INFO

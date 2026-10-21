@@ -7,6 +7,7 @@ services:
   cc.rega:
     container_name: cc.rega
     image: settlement-cc:latest
+    restart: always
     environment:
       - CHAINCODE_SERVER_ADDRESS=0.0.0.0:9999
       - CORE_CHAINCODE_ID_NAME=${PACKAGE_ID_REGA}
@@ -17,6 +18,7 @@ services:
   cc.regb:
     container_name: cc.regb
     image: settlement-cc:latest
+    restart: always
     environment:
       - CHAINCODE_SERVER_ADDRESS=0.0.0.0:9999
       - CORE_CHAINCODE_ID_NAME=${PACKAGE_ID_REGB}
@@ -27,6 +29,7 @@ services:
   cc.banka1:
     container_name: cc.banka1
     image: settlement-cc:latest
+    restart: always
     environment:
       - CHAINCODE_SERVER_ADDRESS=0.0.0.0:9999
       - CORE_CHAINCODE_ID_NAME=${PACKAGE_ID_BANKA1}
@@ -37,6 +40,7 @@ services:
   cc.bankb1:
     container_name: cc.bankb1
     image: settlement-cc:latest
+    restart: always
     environment:
       - CHAINCODE_SERVER_ADDRESS=0.0.0.0:9999
       - CORE_CHAINCODE_ID_NAME=${PACKAGE_ID_BANKB1}
@@ -47,6 +51,7 @@ services:
   cc.auditor:
     container_name: cc.auditor
     image: settlement-cc:latest
+    restart: always
     environment:
       - CHAINCODE_SERVER_ADDRESS=0.0.0.0:9999
       - CORE_CHAINCODE_ID_NAME=${PACKAGE_ID_AUDITOR}

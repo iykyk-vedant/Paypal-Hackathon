@@ -51,8 +51,35 @@ fi
 echo "Launching 5-peer + 3-orderer Fabric network..."
 docker compose up -d
 
+# 7. Configure Auto-Restart on EC2 Reboot / Start-Stop
+echo "Configuring automatic startup on EC2 boot/reboot..."
+CURRENT_DIR=$(pwd)
+sudo bash -c "cat <<EOF > /etc/systemd/system/payfabric.service
+[Unit]
+Description=PayFabric Hyperledger Fabric 2.5 Auto-Restart Service
+Requires=docker.service
+After=docker.service network-online.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+WorkingDirectory=${CURRENT_DIR}
+ExecStart=/usr/bin/docker compose up -d
+ExecStop=/usr/bin/docker compose stop
+TimeoutStartSec=0
+
+[Install]
+WantedBy=multi-user.target
+EOF"
+
+sudo systemctl daemon-reload
+sudo systemctl enable docker
+sudo systemctl enable payfabric.service
+
 echo "========================================================================"
-echo "  SUCCESS! Hyperledger Fabric 2.5 is now running on AWS EC2."
+echo "  SUCCESS! Hyperledger Fabric 2.5 is running and configured to AUTO-START."
+echo "  Whenever you STOP and START this EC2 instance, all peers will automatically"
+echo "  re-launch and restore ledger state with zero manual commands required."
 echo "  Peer Ports Open for External gRPC:"
 echo "    • peer0.rega:     7051"
 echo "    • peer0.regb:     8051"
