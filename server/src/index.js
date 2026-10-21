@@ -38,6 +38,12 @@ import {
 import { searchChannel3Catalog, generateProcurementQuote } from './channel3Service.js';
 import { queryElasticSearch, getElasticClusterStats } from './elasticService.js';
 import { triggerZapierWebhook, getZapierDispatchedHistory, setZapierWebhookUrl } from './zapierService.js';
+import {
+  getKernelHealth,
+  createKernelBrowserSession,
+  auditMerchantStorefrontDOM,
+  verifyCarrierDisputeEvidence,
+} from './kernelService.js';
 import { CORRIDORS, FX_RATES, getCalculatedFx } from './corridorRules.js';
 import { getFabricBlocks, auditFabricLedger } from './aiChaincodeAuditor.js';
 
@@ -338,6 +344,39 @@ app.post('/api/zapier/config', (req, res) => {
   const { url } = req.body;
   setZapierWebhookUrl(url);
   res.json({ ok: true, webhookUrl: url });
+});
+
+// KERNEL Cloud Browser Infrastructure (kernel.sh)
+app.get('/api/kernel/health', async (req, res) => {
+  const health = await getKernelHealth();
+  res.json(health);
+});
+
+app.post('/api/kernel/browsers/create', async (req, res) => {
+  try {
+    const session = await createKernelBrowserSession(req.body);
+    res.json(session);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/kernel/audit-checkout', async (req, res) => {
+  try {
+    const audit = await auditMerchantStorefrontDOM(req.body);
+    res.json(audit);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/kernel/verify-tracking', async (req, res) => {
+  try {
+    const proof = await verifyCarrierDisputeEvidence(req.body);
+    res.json(proof);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 // KERNEL Cryptographic Receipt
