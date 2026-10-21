@@ -29,12 +29,11 @@ fi
 # 3. Install Docker Engine & Docker Compose v2
 if ! command -v docker &> /dev/null; then
     echo "Installing Docker..."
-    curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
-    echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
-    sudo apt-get update -y
-    sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-compose-plugin
+    curl -fsSL https://get.docker.com -o get-docker.sh
+    sudo sh get-docker.sh || sudo apt-get install -y docker.io docker-compose-v2 docker-buildx-plugin
     sudo usermod -aG docker $USER
-    echo "Docker installed: $(docker --version)"
+    rm -f get-docker.sh
+    echo "Docker installed successfully: $(docker --version)"
 fi
 
 # 4. Pull Required Hyperledger Fabric 2.5 Images
