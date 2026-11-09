@@ -8,27 +8,28 @@ interface ConsortiumBarProps {
 
 export const ConsortiumBar: React.FC<ConsortiumBarProps> = ({ currentNodeId, onSelectNode }) => {
   return (
-    <div className="bg-[#090D1A] border-b border-slate-800/80 px-4 py-2.5 flex items-center justify-between text-xs overflow-x-auto gap-4">
-      <div className="flex items-center gap-2 text-slate-400 font-medium whitespace-nowrap">
-        <span className="inline-block w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-        <span className="uppercase tracking-wider text-[11px] text-slate-400">Consortium Nodes:</span>
+    <div className="flex flex-col gap-2 overflow-hidden border-b border-slate-200/80 bg-slate-50 px-4 py-2.5 text-xs sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+      <div className="flex items-center gap-2 whitespace-nowrap font-medium text-slate-600">
+        <span className="inline-block h-2 w-2 rounded-full bg-slate-500" aria-hidden="true"></span>
+        <span className="text-[11px] uppercase tracking-wider text-slate-700">Demo identities:</span>
       </div>
 
-      <div className="flex items-center gap-2 overflow-x-auto py-0.5">
+      <div className="flex max-w-full items-center gap-2 overflow-x-auto py-1">
         {CONSORTIUM_NODES.map((node) => {
           const isActive = currentNodeId === node.id;
           return (
             <button
               key={node.id}
               onClick={() => onSelectNode(node.id, node.operator)}
-              className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border text-xs font-medium transition-all whitespace-nowrap ${
+              aria-pressed={isActive}
+              className={`flex min-h-10 shrink-0 items-center gap-2 rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors whitespace-nowrap ${
                 isActive
-                  ? 'bg-primary/20 border-primary text-white shadow-glow'
-                  : 'bg-slate-900/60 border-slate-800 text-slate-400 hover:text-slate-200 hover:border-slate-700'
+                  ? 'bg-sky-100 border-sky-200 text-slate-900 shadow-glow'
+                  : 'bg-white/60 border-slate-200 text-slate-600 hover:text-slate-800 hover:border-slate-300'
               }`}
             >
               <span>{node.label}</span>
-              <span className={`text-[10px] ${isActive ? 'text-primary-light font-semibold' : 'text-slate-400'}`}>
+              <span className={`hidden text-[10px] sm:inline ${isActive ? 'text-sky-800 font-semibold' : 'text-slate-600'}`}>
                 {node.sublabel}
               </span>
             </button>
@@ -36,16 +37,6 @@ export const ConsortiumBar: React.FC<ConsortiumBarProps> = ({ currentNodeId, onS
         })}
       </div>
 
-      <div className="hidden lg:flex items-center gap-3 text-slate-400 text-[11px] whitespace-nowrap">
-        <span className="flex items-center gap-1.5 bg-slate-900 px-2.5 py-1 rounded-md border border-slate-800">
-          <span className="w-1.5 h-1.5 rounded-full bg-paypal-gold"></span>
-          PayPal Sandbox: <strong className="text-slate-200">Connected</strong>
-        </span>
-        <span className="flex items-center gap-1.5 bg-slate-900 px-2.5 py-1 rounded-md border border-slate-800">
-          <span className="w-1.5 h-1.5 rounded-full bg-accent-cyan"></span>
-          AI Swarm: <strong className="text-slate-200">Autonomous</strong>
-        </span>
-      </div>
     </div>
   );
 };

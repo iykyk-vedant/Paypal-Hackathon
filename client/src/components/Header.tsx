@@ -1,6 +1,6 @@
 import React from 'react';
 import { ScreenId, MeResponse } from '../types';
-import { Bot, PlusCircle, RefreshCw, Sparkles, ShieldCheck } from 'lucide-react';
+import { Bot, PlusCircle, RefreshCw, ShieldCheck, Zap } from 'lucide-react';
 
 interface HeaderProps {
   me: MeResponse | null;
@@ -19,60 +19,70 @@ export const Header: React.FC<HeaderProps> = ({
   onNavigate,
   onToggleCopilot,
   onRefresh,
+  currentScreen,
 }) => {
+  const sections: { id: ScreenId; label: string }[] = [
+    { id: 'desk', label: 'Trader desk' },
+    { id: 'active-settlements', label: 'Active settlements' },
+    { id: 'paypal-ledger', label: 'PayPal ledger' },
+    { id: 'bryntum-timeline', label: 'Settlement timeline' },
+    { id: 'fabric-explorer', label: 'Fabric explorer' },
+    { id: 'ai-auditor', label: 'AI auditor' },
+    { id: 'ai-swarm', label: 'AI agent tools' },
+    { id: 'channel3-sourcing', label: 'Product catalog' },
+    { id: 'elastic-audit', label: 'Activity search' },
+    { id: 'regulator', label: 'Regulator console' },
+    { id: 'auditor', label: 'Auditor portal' },
+  ];
+
   return (
-    <header className="bg-slate-900/90 border-b border-slate-800 backdrop-blur-md sticky top-0 z-40 px-6 py-3.5">
+    <header className="sticky top-0 z-40 border-b border-slate-200 bg-white px-4 py-3 shadow-sm sm:px-6">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         {/* Left: Branding & Tagline */}
         <div className="flex items-center gap-3.5">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-primary-dark via-primary to-accent-cyan p-0.5 shadow-glow flex items-center justify-center">
-            <div className="w-full h-full bg-slate-950 rounded-[10px] flex items-center justify-center font-black text-xl text-primary-light">
-              ⚡
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-sky-200 bg-gradient-to-tr from-sky-50 via-sky-100 to-emerald-50 p-0.5">
+              <div className="flex h-full w-full items-center justify-center rounded-[10px] bg-white text-sky-800">
+                <Zap className="h-5 w-5" aria-hidden="true" />
             </div>
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <h1 className="text-xl font-extrabold tracking-tight text-white flex items-center gap-1.5 font-sans">
-                Pay<span className="text-primary-light">Bridge</span> <span className="bg-gradient-to-r from-accent-cyan to-accent-emerald bg-clip-text text-transparent">AI</span>
+              <h1 className="text-xl font-extrabold tracking-tight text-slate-900 flex items-center gap-1.5 font-sans">
+                Pay<span className="text-sky-800">Bridge</span> <span className="bg-gradient-to-r from-sky-800 to-emerald-800 bg-clip-text text-transparent">AI</span>
               </h1>
-              <span className="bg-paypal-blue/30 border border-paypal-lightBlue/40 text-paypal-lightBlue text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">
-                PayPal AI Hackathon
-              </span>
             </div>
-            <p className="text-xs text-slate-400 font-medium">
-              Autonomous Agentic Commerce & Sovereign Cross-Border Treasury Protocol
+            <p className="hidden text-xs font-medium text-slate-600 sm:block">
+              Treasury operations for cross-border trade
             </p>
           </div>
         </div>
 
-        {/* Center: Sponsor Eligible Badges Pill Array */}
-        <div className="hidden xl:flex items-center gap-1.5 bg-slate-950/70 border border-slate-800/80 px-3 py-1.5 rounded-full text-[11px]">
-          <span className="text-slate-400 font-medium flex items-center gap-1">
-            <Sparkles className="w-3 h-3 text-accent-cyan" /> Sponsor Tech:
-          </span>
-          <span className="bg-primary/20 text-primary-light px-2 py-0.5 rounded-full font-semibold border border-primary/30">PayPal Orders & Payouts</span>
-          <span className="bg-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded-full font-semibold border border-emerald-500/30">AG Grid</span>
-          <span className="bg-purple-500/20 text-purple-300 px-2 py-0.5 rounded-full font-semibold border border-purple-500/30">Bryntum</span>
-          <span className="bg-blue-500/20 text-blue-300 px-2 py-0.5 rounded-full font-semibold border border-blue-500/30">APIMatic</span>
-          <span className="bg-amber-500/20 text-amber-300 px-2 py-0.5 rounded-full font-semibold border border-amber-500/30">Channel3</span>
-          <span className="bg-cyan-500/20 text-cyan-300 px-2 py-0.5 rounded-full font-semibold border border-cyan-500/30">Elastic</span>
-          <span className="bg-orange-500/20 text-orange-300 px-2 py-0.5 rounded-full font-semibold border border-orange-500/30">Postman</span>
-          <span className="bg-rose-500/20 text-rose-300 px-2 py-0.5 rounded-full font-semibold border border-rose-500/30">Render</span>
-        </div>
+        <label className="w-full md:hidden">
+          <span className="sr-only">Go to section</span>
+          <select
+            value={currentScreen}
+            onChange={(event) => onNavigate(event.target.value as ScreenId)}
+            className="min-h-11 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm text-slate-900 focus:outline-none"
+            aria-label="Go to section"
+          >
+            {sections.map((section) => <option key={section.id} value={section.id}>{section.label}</option>)}
+          </select>
+        </label>
 
         {/* Right: Actions, Operator Selector, AI Copilot */}
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center justify-end gap-2 sm:gap-3">
           {/* Operator Switcher */}
-          <div className="flex items-center gap-2 bg-slate-950 border border-slate-800 rounded-lg px-2.5 py-1 text-xs">
-            <ShieldCheck className="w-4 h-4 text-slate-400" />
-            <span className="text-slate-400 hidden sm:inline">Operator:</span>
+          <div className="flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs">
+            <ShieldCheck className="w-4 h-4 text-slate-600" />
+            <span className="hidden text-slate-600 sm:inline">Operator:</span>
             <select
               value={activeOperator}
               onChange={(e) => onOperatorChange(e.target.value)}
-              className="bg-transparent text-white font-mono font-medium focus:outline-none cursor-pointer text-xs"
+              aria-label="Active operator"
+              className="min-h-10 cursor-pointer bg-transparent font-mono text-xs font-medium text-slate-800 focus:outline-none"
             >
               {(me?.identities || ['a1-trader', 'a1-approver', 'b1-trader', 'b1-approver', 'rega-operator', 'regb-operator', 'aud-reader']).map((op) => (
-                <option key={op} value={op} className="bg-slate-900 text-white">
+                <option key={op} value={op} className="bg-white text-slate-900">
                   {op}
                 </option>
               ))}
@@ -83,24 +93,25 @@ export const Header: React.FC<HeaderProps> = ({
           <button
             onClick={onRefresh}
             title="Refresh Ledger & Accounts"
-            className="p-2 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-white transition-all border border-slate-700/60"
+            aria-label="Refresh ledger and accounts"
+            className="min-h-10 min-w-10 rounded-lg border border-slate-200 bg-white p-2 text-slate-600 transition-colors hover:bg-sky-50 hover:text-sky-900"
           >
-            <RefreshCw className="w-4 h-4" />
+            <RefreshCw className="w-4 h-4" aria-hidden="true" />
           </button>
 
           {/* AI Copilot Toggle Button */}
           <button
             onClick={onToggleCopilot}
-            className="flex items-center gap-2 px-3.5 py-2 rounded-lg bg-gradient-to-r from-accent-purple/30 to-primary/40 hover:from-accent-purple/40 hover:to-primary/50 text-white text-xs font-semibold border border-accent-purple/40 shadow-glow transition-all"
+            className="flex min-h-10 items-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-3.5 py-2 text-sm font-semibold text-emerald-900 transition-colors hover:bg-emerald-100"
           >
-            <Bot className="w-4 h-4 text-accent-cyan animate-pulse" />
+            <Bot className="w-4 h-4 text-cyan-800" aria-hidden="true" />
             <span>AI Copilot</span>
           </button>
 
           {/* New Trade Proposal Button */}
           <button
             onClick={() => onNavigate('new-trade')}
-            className="flex items-center gap-2 px-3.5 py-2 rounded-lg bg-primary hover:bg-primary-light text-white text-xs font-semibold shadow-glow transition-all"
+            className="flex min-h-10 items-center gap-2 rounded-lg border border-sky-200 bg-sky-100 px-3.5 py-2 text-sm font-semibold text-sky-900 transition-colors hover:bg-sky-200"
           >
             <PlusCircle className="w-4 h-4" />
             <span>New Trade</span>

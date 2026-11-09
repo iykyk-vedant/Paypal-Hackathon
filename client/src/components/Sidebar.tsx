@@ -11,7 +11,6 @@ import {
   Scale,
   FileCheck2,
   Workflow,
-  Sparkles,
   Blocks,
   Bot,
 } from 'lucide-react';
@@ -29,80 +28,60 @@ export const Sidebar: React.FC<SidebarProps> = ({
   me,
   onOpenZapierModal,
 }) => {
-  const isRegulator = me?.orgType === 'regulator';
-  const isAuditor = me?.orgType === 'auditor';
-
   const navItems = [
     {
       id: 'desk' as ScreenId,
       label: 'Trader Desk',
-      sublabel: 'Reserves & Accounts',
+      sublabel: 'Accounts & cash positions',
       icon: LayoutDashboard,
-      badge: 'Live',
     },
     {
       id: 'active-settlements' as ScreenId,
       label: 'Active Settlements',
-      sublabel: 'AG Grid Corridor Flow',
+      sublabel: 'Payments & settlement status',
       icon: Table,
-      sponsorBadge: 'AG Grid',
-      badgeColor: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30',
     },
     {
       id: 'paypal-ledger' as ScreenId,
       label: 'PayPal Sandbox Ledger',
-      sublabel: 'Orders & Batch Payouts',
+      sublabel: 'Orders & payout history',
       icon: CreditCard,
-      sponsorBadge: 'PayPal API',
-      badgeColor: 'bg-primary/20 text-primary-light border-primary/30',
     },
     {
       id: 'bryntum-timeline' as ScreenId,
       label: 'Settlement Timeline',
-      sublabel: 'Payment Windows & Schedule',
+      sublabel: 'Payment windows & schedule',
       icon: CalendarDays,
-      sponsorBadge: 'Bryntum',
-      badgeColor: 'bg-purple-500/20 text-purple-300 border-purple-500/30',
     },
     {
       id: 'fabric-explorer' as ScreenId,
       label: 'Fabric Block Explorer',
-      sublabel: 'Hyperledger 2.5 Blocks',
+      sublabel: 'Sample ledger records',
       icon: Blocks,
-      sponsorBadge: 'Fabric 2.5',
-      badgeColor: 'bg-blue-500/20 text-blue-300 border-blue-500/30',
     },
     {
       id: 'ai-auditor' as ScreenId,
       label: 'AI Chaincode Auditor',
-      sublabel: 'DLT & Block Inspector',
+      sublabel: 'Ledger rule review',
       icon: Bot,
-      sponsorBadge: 'AI Auditor',
-      badgeColor: 'bg-purple-500/20 text-purple-300 border-purple-500/30',
     },
     {
       id: 'ai-swarm' as ScreenId,
       label: 'AI Multi-Agent Swarm',
-      sublabel: 'Negotiator • AML • Treasury',
+      sublabel: 'Negotiation & risk tools',
       icon: Cpu,
-      sponsorBadge: 'Agentic AI',
-      badgeColor: 'bg-cyan-500/20 text-cyan-300 border-cyan-500/30',
     },
     {
       id: 'channel3-sourcing' as ScreenId,
-      label: 'Channel3 Sourcing',
-      sublabel: 'B2B Catalog & Inventory',
+      label: 'Product Catalog',
+      sublabel: 'Supplier search & quotes',
       icon: ShoppingBag,
-      sponsorBadge: 'Channel3',
-      badgeColor: 'bg-amber-500/20 text-amber-300 border-amber-500/30',
     },
     {
       id: 'elastic-audit' as ScreenId,
-      label: 'Elastic Observability',
-      sublabel: 'Financial Crime & Audit',
+      label: 'Activity Search',
+      sublabel: 'Audit and event records',
       icon: Search,
-      sponsorBadge: 'Elastic',
-      badgeColor: 'bg-blue-500/20 text-blue-300 border-blue-500/30',
     },
     {
       id: 'regulator' as ScreenId,
@@ -112,21 +91,19 @@ export const Sidebar: React.FC<SidebarProps> = ({
     },
     {
       id: 'auditor' as ScreenId,
-      label: 'Auditor Reconstruction',
-      sublabel: 'KERNEL Cryptographic Proofs',
+      label: 'Receipt Review',
+      sublabel: 'Settlement receipt details',
       icon: FileCheck2,
-      sponsorBadge: 'KERNEL',
-      badgeColor: 'bg-slate-700 text-slate-300 border-slate-600',
     },
   ];
 
   return (
-    <aside className="w-64 bg-[#090E1D] border-r border-slate-800 flex flex-col justify-between shrink-0 select-none">
+    <aside aria-label="Primary navigation" className="hidden w-72 shrink-0 select-none flex-col justify-between overflow-y-auto border-r border-slate-200 bg-white md:flex">
       <div className="p-4 space-y-6">
         {/* Navigation Category: Core Operations */}
         <div>
-          <div className="px-3 mb-2 text-[10px] font-bold uppercase tracking-wider text-slate-400">
-            Core Operations
+          <div className="mb-2 px-3 text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-600">
+            Banking
           </div>
           <nav className="space-y-1">
             {navItems.map((item) => {
@@ -137,81 +114,66 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 <button
                   key={item.id}
                   onClick={() => onNavigate(item.id)}
-                  className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-left text-xs font-medium transition-all group ${
+                  aria-current={isActive ? 'page' : undefined}
+                  className={`min-h-12 w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-left text-sm font-medium transition-colors group focus-visible:outline-none ${
                     isActive
-                      ? 'bg-primary/20 text-white border border-primary/50 shadow-glow font-semibold'
-                      : 'text-slate-300 hover:text-white hover:bg-slate-800/60 border border-transparent'
+                    ? 'border border-sky-200 bg-sky-50 text-slate-900 font-semibold'
+                      : 'border border-transparent text-slate-700 hover:bg-slate-50 hover:text-slate-900'
                   }`}
                 >
                   <div className="flex items-center gap-3 min-w-0">
                     <Icon
+                      aria-hidden="true"
                       className={`w-4 h-4 shrink-0 transition-colors ${
-                        isActive ? 'text-primary-light' : 'text-slate-400 group-hover:text-slate-200'
+                        isActive ? 'text-sky-800' : 'text-slate-600 group-hover:text-slate-800'
                       }`}
                     />
                     <div className="truncate">
                       <div className="truncate leading-tight">{item.label}</div>
-                      <div className="text-[10px] text-slate-400 truncate leading-tight mt-0.5">
+                      <div className="text-[11px] text-slate-700 truncate leading-tight mt-0.5">
                         {item.sublabel}
                       </div>
                     </div>
                   </div>
 
-                  {item.sponsorBadge && (
-                    <span
-                      className={`text-[9px] px-1.5 py-0.5 rounded border font-mono font-semibold ml-1 shrink-0 ${
-                        item.badgeColor || 'bg-slate-800 text-slate-300 border-slate-700'
-                      }`}
-                    >
-                      {item.sponsorBadge}
-                    </span>
-                  )}
-                  {item.badge && !item.sponsorBadge && (
-                    <span className="text-[9px] bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-1.5 py-0.5 rounded font-mono font-semibold">
-                      {item.badge}
-                    </span>
-                  )}
                 </button>
               );
             })}
           </nav>
         </div>
 
-        {/* Zapier Outbound Automation Trigger */}
+        {/* Automation settings */}
         {onOpenZapierModal && (
           <div className="px-1">
             <button
               onClick={onOpenZapierModal}
-              className="w-full flex items-center justify-between p-3 rounded-xl bg-gradient-to-r from-orange-500/10 to-amber-500/10 border border-orange-500/30 hover:border-orange-500/50 text-slate-200 hover:text-white text-xs transition-all group"
+              className="min-h-12 w-full flex items-center justify-between rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm text-slate-700 transition-colors hover:bg-sky-50 hover:text-slate-900 group"
             >
               <div className="flex items-center gap-2.5">
-                <Workflow className="w-4 h-4 text-orange-400 group-hover:animate-spin" />
+                <Workflow className="w-4 h-4 text-sky-800" aria-hidden="true" />
                 <div className="text-left">
-                  <div className="font-semibold text-orange-300 text-xs">Zapier Webhooks</div>
-                  <div className="text-[10px] text-slate-400">Slack & ERP Automation</div>
+                  <div className="font-semibold text-slate-900 text-sm">Automation settings</div>
+                  <div className="text-xs text-slate-600">Workflow notifications</div>
                 </div>
               </div>
-              <span className="text-[9px] bg-orange-500/20 text-orange-300 px-1.5 py-0.5 rounded border border-orange-500/40 font-mono">
-                Zapier
-              </span>
             </button>
           </div>
         )}
       </div>
 
       {/* Footer System Status Card */}
-      <div className="p-4 border-t border-slate-800/80 bg-slate-950/40 text-[11px] space-y-2">
-        <div className="flex items-center justify-between text-slate-400">
-          <span>Active Rail:</span>
-          <span className="font-mono text-emerald-400 font-semibold">PayPal Sandbox v2</span>
+      <div className="space-y-2 border-t border-slate-200 bg-slate-50 p-4 text-xs">
+        <div className="flex items-center justify-between text-slate-600">
+          <span>Environment:</span>
+          <span className="font-mono font-semibold text-emerald-800">Sandbox</span>
         </div>
-        <div className="flex items-center justify-between text-slate-400">
-          <span>Corridor Mode:</span>
-          <span className="font-mono text-slate-300 font-semibold">PvP Atomic Lock</span>
+        <div className="flex items-center justify-between text-slate-600">
+          <span>Ledger:</span>
+          <span className="font-mono font-semibold text-slate-700">In-memory demo</span>
         </div>
-        <div className="flex items-center justify-between text-slate-400">
-          <span>Sponsors Eligible:</span>
-          <span className="font-mono text-accent-cyan font-bold">12 / 12 Verified</span>
+        <div className="flex items-center justify-between text-slate-600">
+          <span>Fabric:</span>
+          <span className="font-mono font-semibold text-slate-700">Fixtures</span>
         </div>
       </div>
     </aside>
