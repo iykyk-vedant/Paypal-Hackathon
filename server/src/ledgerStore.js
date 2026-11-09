@@ -301,6 +301,15 @@ export function linkPayPalOrder(tradeId, orderId, status = 'APPROVED') {
 export async function settleTrade(tradeId, paypalCaptureData = null) {
   const item = tradesStore.find(t => t.trade.tradeId === tradeId);
   if (!item) throw new Error(`Trade ${tradeId} not found`);
+  if (item.trade.status !== 'ACCEPTED') {
+    throw new Error(`Trade ${tradeId} must be ACCEPTED before settlement (current: ${item.trade.status})`);
+  }
+  if (!paypalCaptureData || paypalCaptureData.status !== 'COMPLETED') {
+    throw new Error('A completed PayPal capture is required before settlement');
+  }
+  if (paypalCaptureData.tradeId !== tradeId || paypalCaptureData.orderId !== item.trade.paypalOrderId) {
+    throw new Error('PayPal capture does not match the linked trade order');
+  }
 
   item.trade.status = 'SETTLED';
   item.trade.settledAt = Date.now();
@@ -353,6 +362,7 @@ export async function settleTrade(tradeId, paypalCaptureData = null) {
   });
 
   // Autonomous Vendor Payout via PayPal
+  item.trade.payoutStatus = 'PENDING';
   try {
     const payoutRes = await executePayPalPayout({
       tradeId,
@@ -363,6 +373,7 @@ export async function settleTrade(tradeId, paypalCaptureData = null) {
     });
 
     item.trade.payoutBatchId = payoutRes.payoutBatchId;
+    item.trade.payoutStatus = payoutRes.status;
 
     const payoutLedgerEntry = {
       transactionId: `TX-PAYPAL-${ulid().slice(0, 8)}`,
@@ -374,7 +385,7 @@ export async function settleTrade(tradeId, paypalCaptureData = null) {
       netAmount: `${item.trade.ccyB} ${(Number(item.trade.amountB) / 100).toLocaleString()}`,
       sender: 'PayBridge Settlement Custody',
       recipient: payoutRes.recipientEmail,
-      status: 'SUCCESS',
+      status: payoutRes.status,
       timestamp: new Date().toISOString(),
       corridor: 'Automated Agentic Payout',
     };
@@ -382,6 +393,8 @@ export async function settleTrade(tradeId, paypalCaptureData = null) {
     indexPayPalTransaction(payoutLedgerEntry);
   } catch (payoutErr) {
     console.warn(`Autonomous payout step warning:`, payoutErr.message);
+    item.trade.payoutStatus = 'FAILED';
+    item.trade.payoutError = 'Payout provider call failed; retry or reconcile manually.';
   }
 
   return item;

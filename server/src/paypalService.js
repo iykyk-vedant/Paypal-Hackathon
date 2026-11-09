@@ -35,9 +35,8 @@ export async function getPayPalAccessToken() {
     });
 
     if (!response.ok) {
-      const errText = await response.text();
-      console.warn(`[PayPal OAuth] Live call failed, falling back to simulation: ${errText}`);
-      return 'simulated_sandbox_access_token_' + Date.now();
+      console.warn(`[PayPal OAuth] Sandbox authentication failed (HTTP ${response.status})`);
+      throw new Error(`PayPal Sandbox authentication failed (HTTP ${response.status})`);
     }
 
     const data = await response.json();
@@ -46,8 +45,9 @@ export async function getPayPalAccessToken() {
     console.log(`[PayPal OAuth] Successfully authenticated with PayPal Sandbox API`);
     return cachedAccessToken;
   } catch (err) {
-    console.warn(`[PayPal OAuth] Error fetching token:`, err.message);
-    return 'simulated_sandbox_access_token_' + Date.now();
+    if (err.message?.startsWith('PayPal Sandbox authentication failed')) throw err;
+    console.warn('[PayPal OAuth] Network request failed');
+    throw new Error('PayPal Sandbox authentication could not reach the provider');
   }
 }
 
@@ -105,8 +105,12 @@ export async function createPayPalOrder({ tradeId, amount, currency = 'USD', des
           createdAt: new Date().toISOString(),
         };
       }
+      console.warn(`[PayPal Orders] Sandbox order creation failed (HTTP ${response.status})`);
+      throw new Error(`PayPal Sandbox order creation failed (HTTP ${response.status})`);
     } catch (err) {
-      console.warn(`[PayPal Orders] Live order creation error, using simulation fallback:`, err.message);
+      if (err.message?.startsWith('PayPal Sandbox order creation failed')) throw err;
+      console.warn('[PayPal Orders] Sandbox request failed');
+      throw new Error('PayPal Sandbox order creation could not reach the provider');
     }
   }
 
@@ -168,8 +172,12 @@ export async function capturePayPalOrder(orderId, tradeId) {
           details: liveCapture,
         };
       }
+      console.warn(`[PayPal Capture] Sandbox capture failed (HTTP ${response.status})`);
+      throw new Error(`PayPal Sandbox capture failed (HTTP ${response.status})`);
     } catch (err) {
-      console.warn(`[PayPal Capture] Live capture error, fallback to simulation:`, err.message);
+      if (err.message?.startsWith('PayPal Sandbox capture failed')) throw err;
+      console.warn('[PayPal Capture] Sandbox request failed');
+      throw new Error('PayPal Sandbox capture could not reach the provider');
     }
   }
 
@@ -245,8 +253,12 @@ export async function executePayPalPayout({ tradeId, recipientEmail, amount, cur
           executedAt: new Date().toISOString(),
         };
       }
+      console.warn(`[PayPal Payouts] Sandbox payout failed (HTTP ${response.status})`);
+      throw new Error(`PayPal Sandbox payout failed (HTTP ${response.status})`);
     } catch (err) {
-      console.warn(`[PayPal Payouts] Live payout error, using simulation fallback:`, err.message);
+      if (err.message?.startsWith('PayPal Sandbox payout failed')) throw err;
+      console.warn('[PayPal Payouts] Sandbox request failed');
+      throw new Error('PayPal Sandbox payout could not reach the provider');
     }
   }
 

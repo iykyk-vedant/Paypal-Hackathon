@@ -8,6 +8,7 @@ dotenv.config({ path: '../.env' });
 dotenv.config({ path: './server/.env' });
 import express from 'express';
 import cors from 'cors';
+import net from 'node:net';
 
 import {
   accountsStore,
@@ -200,10 +201,19 @@ app.get('/supply/:ccy', (req, res) => {
 app.post('/api/paypal/orders/create', async (req, res) => {
   try {
     const { tradeId, amount, currency, description, counterparty } = req.body;
-    const order = await createPayPalOrder({ tradeId, amount, currency, description, counterparty });
-    if (tradeId) {
-      linkPayPalOrder(tradeId, order.orderId, 'CREATED');
+    const trade = tradesStore.find((item) => item.trade.tradeId === tradeId);
+    if (!trade) return res.status(404).json({ error: 'Trade not found' });
+    if (trade.trade.status !== 'ACCEPTED') {
+      return res.status(409).json({ error: 'Trade must be accepted before creating a payment order' });
     }
+    if (!Number.isFinite(Number(amount)) || Number(amount) <= 0 || Number(amount) !== Number(trade.trade.amountA)) {
+      return res.status(400).json({ error: 'Payment amount must match the accepted trade amount' });
+    }
+    if (currency && currency !== 'USD') {
+      return res.status(400).json({ error: 'PayPal checkout currently supports USD only' });
+    }
+    const order = await createPayPalOrder({ tradeId, amount, currency, description, counterparty });
+    linkPayPalOrder(tradeId, order.orderId, 'CREATED');
     res.json(order);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -213,10 +223,16 @@ app.post('/api/paypal/orders/create', async (req, res) => {
 app.post('/api/paypal/orders/:id/capture', async (req, res) => {
   try {
     const { tradeId } = req.body;
-    const capture = await capturePayPalOrder(req.params.id, tradeId);
-    if (tradeId) {
-      await settleTrade(tradeId, capture);
+    const trade = tradesStore.find((item) => item.trade.tradeId === tradeId);
+    if (!trade) return res.status(404).json({ error: 'Trade not found' });
+    if (!trade.trade.paypalOrderId || trade.trade.paypalOrderId !== req.params.id) {
+      return res.status(409).json({ error: 'Order is not linked to this trade' });
     }
+    if (trade.trade.status !== 'ACCEPTED') {
+      return res.status(409).json({ error: 'Trade must be accepted before capture' });
+    }
+    const capture = await capturePayPalOrder(req.params.id, tradeId);
+    await settleTrade(tradeId, capture);
     res.json(capture);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -225,7 +241,30 @@ app.post('/api/paypal/orders/:id/capture', async (req, res) => {
 
 app.post('/api/paypal/payouts/batch', async (req, res) => {
   try {
-    const payout = await executePayPalPayout(req.body);
+    const trade = tradesStore.find((item) => item.trade.tradeId === req.body.tradeId);
+    if (!trade) return res.status(404).json({ error: 'Trade not found' });
+    if (trade.trade.status !== 'SETTLED') {
+      return res.status(409).json({ error: 'A payout is allowed only for a settled trade' });
+    }
+    if (trade.trade.payoutStatus !== 'FAILED') {
+      return res.status(409).json({ error: 'Only a failed payout can be retried' });
+    }
+    trade.trade.payoutStatus = 'PENDING';
+    let payout;
+    try {
+      payout = await executePayPalPayout({
+        tradeId: trade.trade.tradeId,
+        recipientEmail: 'vendor-payout-sandbox@paybridge.ai',
+        amount: trade.trade.amountB,
+        currency: trade.trade.ccyB === 'SGD' ? 'SGD' : 'USD',
+        note: `Retry payout for settled trade ${trade.trade.tradeId}`,
+      });
+    } catch (err) {
+      trade.trade.payoutStatus = 'FAILED';
+      throw err;
+    }
+    trade.trade.payoutBatchId = payout.payoutBatchId;
+    trade.trade.payoutStatus = payout.status;
     res.json(payout);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -394,12 +433,35 @@ app.get('/api/kernel/receipt/:tradeId', (req, res) => {
 
 // --- HYPERLEDGER FABRIC 2.5 & AI AUDITOR ROUTES ---
 
-app.get('/api/fabric/status', (req, res) => {
-  const isAws = !!process.env.FABRIC_HOST;
+function checkTcpReachability(host, port, timeoutMs = 1500) {
+  if (!host) return Promise.resolve(false);
+  return new Promise((resolve) => {
+    const socket = net.createConnection({ host, port: Number(port) || 9051 });
+    const finish = (reachable) => {
+      socket.destroy();
+      resolve(reachable);
+    };
+    socket.setTimeout(timeoutMs, () => finish(false));
+    socket.once('connect', () => finish(true));
+    socket.once('error', () => finish(false));
+  });
+}
+
+app.get('/api/fabric/status', async (req, res) => {
+  const peerConfigured = Boolean(process.env.FABRIC_HOST);
+  const peerReachable = await checkTcpReachability(
+    process.env.FABRIC_HOST,
+    process.env.FABRIC_PEER_PORT || 9051,
+  );
   res.json({
-    connected: true,
-    mode: isAws ? 'AWS_CLOUD_FABRIC_LIVE' : 'EMBEDDED_FABRIC_ENGINE',
-    endpoint: process.env.FABRIC_HOST ? `${process.env.FABRIC_HOST}:${process.env.FABRIC_PEER_PORT || 9051}` : 'localhost:9051 (Embedded Engine)',
+    connected: false,
+    gatewayConnected: false,
+    mode: 'DEMO_FIXTURES',
+    ledgerSource: 'SEEDED_SAMPLE_DATA',
+    peerConfigured,
+    peerReachable,
+    endpoint: peerConfigured ? `${process.env.FABRIC_HOST}:${process.env.FABRIC_PEER_PORT || 9051}` : null,
+    connectionNote: 'Peer TCP reachability does not mean this app is connected to Fabric; no Gateway client or identity is configured.',
     channelId: 'settlement',
     chaincodeId: 'settlement-cc',
     organizations: ['RegAMSP (RBI)', 'RegBMSP (MAS)', 'BankA1MSP', 'BankB1MSP', 'AuditorMSP'],
