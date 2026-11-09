@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useRef, useCallback } from 'react';
 import { AgGridReact } from 'ag-grid-react';
+import '../grid.css';
 import { ColDef, GridReadyEvent, ICellRendererParams } from 'ag-grid-community';
 import { TradeComposite, ScreenId } from '../types';
 import { formatMinorUnits } from '../api';
@@ -51,7 +52,7 @@ export const ActiveSettlementsAGGrid: React.FC<ActiveSettlementsAGGridProps> = (
           const tradeId = params.value;
           return (
             <div className="flex items-center h-full">
-              <span className="font-mono font-bold text-accent-cyan hover:underline cursor-pointer">
+              <span className="font-mono font-bold text-cyan-800 hover:underline cursor-pointer">
                 {tradeId}
               </span>
             </div>
@@ -64,19 +65,19 @@ export const ActiveSettlementsAGGrid: React.FC<ActiveSettlementsAGGridProps> = (
         width: 150,
         cellRenderer: (params: ICellRendererParams) => {
           const status = params.value;
-          let color = 'bg-slate-800 text-slate-300 border-slate-700';
+          let color = 'bg-slate-100 text-slate-700 border-slate-300';
           let icon = <Clock className="w-3 h-3" />;
 
           if (status === 'SETTLED') {
-            color = 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40';
-            icon = <CheckCircle2 className="w-3 h-3 text-emerald-400" />;
+            color = 'bg-emerald-100 text-emerald-800 border-emerald-200';
+            icon = <CheckCircle2 className="w-3 h-3 text-emerald-800" />;
           } else if (status === 'ACCEPTED') {
-            color = 'bg-primary/20 text-primary-light border-primary/40';
-            icon = <Sparkles className="w-3 h-3 text-primary-light" />;
+            color = 'bg-sky-100 text-sky-800 border-sky-200';
+            icon = <Sparkles className="w-3 h-3 text-sky-800" />;
           } else if (status === 'PROPOSED') {
-            color = 'bg-amber-500/20 text-amber-300 border-amber-500/40';
+            color = 'bg-amber-100 text-amber-800 border-amber-200';
           } else if (status === 'REFUSED') {
-            color = 'bg-rose-500/20 text-rose-300 border-rose-500/40';
+            color = 'bg-rose-100 text-rose-800 border-rose-200/40';
           }
 
           return (
@@ -96,7 +97,7 @@ export const ActiveSettlementsAGGrid: React.FC<ActiveSettlementsAGGridProps> = (
         cellRenderer: (params: ICellRendererParams) => {
           return (
             <div className="flex items-center h-full">
-              <span className="bg-slate-900 border border-slate-700/80 px-2 py-0.5 rounded text-xs font-mono font-bold text-white">
+              <span className="bg-white border border-slate-300/80 px-2 py-0.5 rounded text-xs font-mono font-bold text-slate-900">
                 {params.value}
               </span>
             </div>
@@ -110,7 +111,7 @@ export const ActiveSettlementsAGGrid: React.FC<ActiveSettlementsAGGridProps> = (
         cellRenderer: (params: ICellRendererParams) => {
           const ccy = params.data?.trade?.ccyA || 'INR';
           return (
-            <div className="flex items-center h-full font-mono font-semibold text-slate-200">
+            <div className="flex items-center h-full font-mono font-semibold text-slate-800">
               {formatMinorUnits(params.value, ccy)}
             </div>
           );
@@ -123,7 +124,7 @@ export const ActiveSettlementsAGGrid: React.FC<ActiveSettlementsAGGridProps> = (
         cellRenderer: (params: ICellRendererParams) => {
           const ccy = params.data?.trade?.ccyB || 'SGD';
           return (
-            <div className="flex items-center h-full font-mono font-semibold text-slate-200">
+            <div className="flex items-center h-full font-mono font-semibold text-slate-800">
               {formatMinorUnits(params.value, ccy)}
             </div>
           );
@@ -135,7 +136,7 @@ export const ActiveSettlementsAGGrid: React.FC<ActiveSettlementsAGGridProps> = (
         width: 120,
         cellRenderer: (params: ICellRendererParams) => {
           return (
-            <div className="flex items-center h-full font-mono text-xs text-slate-300">
+            <div className="flex items-center h-full font-mono text-xs text-slate-700">
               {params.value || 'N/A'}
             </div>
           );
@@ -151,14 +152,14 @@ export const ActiveSettlementsAGGrid: React.FC<ActiveSettlementsAGGridProps> = (
           return (
             <div className="flex flex-col justify-center h-full text-xs">
               {orderId ? (
-                <span className="font-mono text-paypal-gold text-[11px] font-semibold truncate flex items-center gap-1">
+                <span className="font-mono text-amber-800 text-[11px] font-semibold truncate flex items-center gap-1">
                   <span className="w-1.5 h-1.5 rounded-full bg-paypal-gold"></span>
                   {orderId}
                 </span>
               ) : (
-                <span className="text-slate-500 text-[11px]">Ready to Authorize</span>
+                <span className="text-slate-600 text-[11px]">Ready to Authorize</span>
               )}
-              <span className="text-[10px] text-slate-400">{status}</span>
+              <span className="text-[10px] text-slate-600">{status}</span>
             </div>
           );
         },
@@ -177,8 +178,8 @@ export const ActiveSettlementsAGGrid: React.FC<ActiveSettlementsAGGridProps> = (
               <span
                 className={`text-[11px] font-mono px-2 py-0.5 rounded border ${
                   bothHeld
-                    ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'
-                    : 'bg-amber-500/10 text-amber-400 border-amber-500/30'
+                    ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
+                    : 'bg-amber-50 text-amber-800 border-amber-200'
                 }`}
               >
                 {bothHeld ? '🔒 Both Legs Locked' : '⏳ Awaiting Dual Hold'}
@@ -202,14 +203,14 @@ export const ActiveSettlementsAGGrid: React.FC<ActiveSettlementsAGGridProps> = (
               {isAccepted && (
                 <button
                   onClick={() => onOpenPayPalModal(tradeComposite)}
-                  className="px-2.5 py-1 rounded bg-gradient-to-r from-paypal-blue to-primary hover:from-primary hover:to-primary-light text-white font-semibold text-xs shadow-glow flex items-center gap-1 transition-all"
+                  className="px-2.5 py-1 rounded bg-gradient-to-r from-paypal-blue to-primary hover:from-sky-100 hover:to-sky-100 text-slate-900 font-semibold text-xs shadow-glow flex items-center gap-1 transition-all"
                   title="Checkout & Settle via PayPal Sandbox"
                 >
                   <Play className="w-3 h-3 fill-white" /> Settle PayPal
                 </button>
               )}
               {isSettled && (
-                <span className="text-xs text-emerald-400 font-mono flex items-center gap-1 font-semibold">
+                <span className="text-xs text-emerald-800 font-mono flex items-center gap-1 font-semibold">
                   <CheckCircle2 className="w-3.5 h-3.5" /> Settled
                 </span>
               )}
@@ -218,7 +219,7 @@ export const ActiveSettlementsAGGrid: React.FC<ActiveSettlementsAGGridProps> = (
                   onSelectTrade(tradeComposite.trade.tradeId);
                   onNavigate('trade-detail');
                 }}
-                className="p-1.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition-colors"
+                className="p-1.5 rounded bg-slate-100 hover:bg-slate-200 text-slate-700 hover:text-slate-900 transition-colors"
                 title="View Full Settlement Details"
               >
                 <Eye className="w-3.5 h-3.5" />
@@ -241,21 +242,21 @@ export const ActiveSettlementsAGGrid: React.FC<ActiveSettlementsAGGridProps> = (
   return (
     <div className="p-6 space-y-6 max-w-[1600px] mx-auto w-full">
       {/* Top Header Card */}
-      <div className="glass-panel rounded-2xl p-6 border border-slate-800 flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="glass-panel rounded-2xl p-6 border border-slate-200 flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-3">
-            <div className="p-2.5 bg-emerald-500/20 text-emerald-400 rounded-xl border border-emerald-500/30">
+            <div className="p-2.5 bg-emerald-100 text-emerald-800 rounded-xl border border-emerald-200">
               <Table className="w-6 h-6" />
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h2 className="text-xl font-bold text-white tracking-tight">Active Settlements & Corridor Flow</h2>
-                <span className="bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">
-                  Powered by AG Grid
+                <h2 className="text-xl font-bold text-slate-900 tracking-tight">Active Settlements & Corridor Flow</h2>
+                <span className="bg-emerald-100 text-emerald-800 border border-emerald-200 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">
+
                 </span>
               </div>
-              <p className="text-xs text-slate-400 mt-0.5">
-                Enterprise real-time grid of sovereign Payment-versus-Payment (PvP) settlement transactions.
+              <p className="text-xs text-slate-600 mt-0.5">
+                Settlement records in the in-memory demo ledger. They are not synchronized with Fabric.
               </p>
             </div>
           </div>
@@ -265,26 +266,26 @@ export const ActiveSettlementsAGGrid: React.FC<ActiveSettlementsAGGridProps> = (
         <div className="flex items-center flex-wrap gap-3">
           {/* Quick Search */}
           <div className="relative">
-            <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+            <Search className="w-4 h-4 text-slate-600 absolute left-3 top-1/2 -translate-y-1/2" />
             <input
               type="text"
               placeholder="Quick search trades..."
               value={quickFilterText}
               onChange={(e) => setQuickFilterText(e.target.value)}
-              className="bg-slate-950 border border-slate-700 rounded-lg pl-9 pr-3 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-primary w-52"
+              className="bg-white border border-slate-300 rounded-lg pl-9 pr-3 py-1.5 text-xs text-slate-900 placeholder-slate-500 focus:outline-none focus:border-sky-200 w-52"
             />
           </div>
 
           {/* Status Filter Buttons */}
-          <div className="flex items-center bg-slate-950 border border-slate-800 rounded-lg p-0.5 text-xs">
+          <div className="flex items-center bg-white border border-slate-200 rounded-lg p-0.5 text-xs">
             {['ALL', 'PROPOSED', 'ACCEPTED', 'SETTLED'].map((st) => (
               <button
                 key={st}
                 onClick={() => setStatusFilter(st)}
                 className={`px-2.5 py-1 rounded-md font-medium transition-all ${
                   statusFilter === st
-                    ? 'bg-primary text-white font-semibold'
-                    : 'text-slate-400 hover:text-white'
+                    ? 'bg-sky-100 text-slate-900 font-semibold'
+                    : 'text-slate-600 hover:text-slate-900'
                 }`}
               >
                 {st}
@@ -295,17 +296,17 @@ export const ActiveSettlementsAGGrid: React.FC<ActiveSettlementsAGGridProps> = (
           {/* Export CSV Button */}
           <button
             onClick={handleExportCsv}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-white text-xs font-medium transition-all"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 border border-slate-300 text-slate-900 text-xs font-medium transition-all"
           >
-            <Download className="w-3.5 h-3.5 text-emerald-400" />
+            <Download className="w-3.5 h-3.5 text-emerald-800" />
             <span>Export CSV</span>
           </button>
         </div>
       </div>
 
       {/* AG Grid Container */}
-      <div className="glass-panel rounded-2xl p-4 border border-slate-800 shadow-xl overflow-hidden">
-        <div className="ag-theme-quartz-dark w-full h-[520px]">
+      <div className="glass-panel rounded-2xl p-4 border border-slate-200 shadow-xl overflow-hidden">
+        <div className="ag-theme-quartz w-full h-[520px]">
           <AgGridReact
             ref={gridRef}
             rowData={rowData}
@@ -323,24 +324,24 @@ export const ActiveSettlementsAGGrid: React.FC<ActiveSettlementsAGGridProps> = (
 
       {/* Grid Legend & Metrics Footer */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="glass-panel p-4 rounded-xl border border-slate-800/80">
-          <div className="text-slate-400 text-xs font-medium">Total Pipeline Trades</div>
-          <div className="text-xl font-bold text-white mt-1 font-mono">{trades.length} Trades</div>
-          <div className="text-[11px] text-emerald-400 mt-1 flex items-center gap-1">
-            <CheckCircle2 className="w-3 h-3" /> Real-time AG Grid sorting & filtering active
+        <div className="glass-panel p-4 rounded-xl border border-slate-200/80">
+          <div className="text-slate-600 text-xs font-medium">Total Pipeline Trades</div>
+          <div className="text-xl font-bold text-slate-900 mt-1 font-mono">{trades.length} Trades</div>
+          <div className="text-[11px] text-emerald-800 mt-1 flex items-center gap-1">
+            <CheckCircle2 className="w-3 h-3" aria-hidden="true" /> Sorting, filtering, and export available
           </div>
         </div>
-        <div className="glass-panel p-4 rounded-xl border border-slate-800/80">
-          <div className="text-slate-400 text-xs font-medium">Settled Volume (Atomic PvP)</div>
-          <div className="text-xl font-bold text-emerald-400 mt-1 font-mono">
+        <div className="glass-panel p-4 rounded-xl border border-slate-200/80">
+          <div className="text-slate-600 text-xs font-medium">Settled Demo Trades</div>
+          <div className="text-xl font-bold text-emerald-800 mt-1 font-mono">
             {trades.filter((t) => t.trade.status === 'SETTLED').length} Settled
           </div>
-          <div className="text-[11px] text-slate-400 mt-1">Dual-leg funds debited & credited simultaneously</div>
+          <div className="text-[11px] text-slate-700 mt-1">Status recorded in the in-memory demo ledger</div>
         </div>
-        <div className="glass-panel p-4 rounded-xl border border-slate-800/80">
-          <div className="text-slate-400 text-xs font-medium">PayPal Sandbox Readiness</div>
-          <div className="text-xl font-bold text-paypal-gold mt-1 font-mono">100% Sandbox</div>
-          <div className="text-[11px] text-slate-400 mt-1">Orders v2 capture & Batch Payouts active</div>
+        <div className="glass-panel p-4 rounded-xl border border-slate-200/80">
+          <div className="text-slate-600 text-xs font-medium">PayPal Sandbox Readiness</div>
+          <div className="text-xl font-bold text-amber-800 mt-1 font-mono">Sandbox mode</div>
+          <div className="text-[11px] text-slate-700 mt-1">Live calls require valid credentials and payer approval</div>
         </div>
       </div>
     </div>
