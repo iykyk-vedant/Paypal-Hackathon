@@ -1,7 +1,6 @@
 // AI Smart Chaincode & DLT Auditor Service
-// Ingests Hyperledger Fabric 2.5 Block Streams, Inspects Read-Write Sets,
-// Validates Dual-Regulator Endorsements, Detects Financial Crime Anomalies,
-// and Generates Formal Natural Language Compliance Reports.
+// Deterministic demo auditor over seeded example records. It does not connect
+// to a Fabric block stream or cryptographically verify endorsements.
 
 import { ulid } from 'ulid';
 
@@ -108,7 +107,7 @@ export async function auditFabricLedger() {
           txId: tx.txId,
           type: 'COMPLIANCE_PASS',
           severity: 'INFO',
-          message: `Tx ${tx.txId} strictly satisfied sovereign dual-regulator endorsement policy (RBI + MAS).`,
+          message: `Fixture lists both regulator MSPs; endorsement signatures were not cryptographically verified.`,
         });
       } else {
         anomalousTxCount++;
@@ -127,7 +126,7 @@ export async function auditFabricLedger() {
         txId: tx.txId,
         type: 'PAYPAL_ATOMIC_BRIDGE',
         severity: 'INFO',
-        message: `Verified cryptographic link to PayPal Sandbox Order ${tx.paypalLinkage.orderId} and Payout ${tx.paypalLinkage.payoutBatchId}.`,
+        message: `Fixture contains PayPal Order ${tx.paypalLinkage.orderId} and payout ${tx.paypalLinkage.payoutBatchId}; no external verification was performed.`,
       });
     }
   });
@@ -136,14 +135,15 @@ export async function auditFabricLedger() {
   const integrityScore = Math.max(0, 100 - anomalousTxCount * 25);
 
   const executiveSummary =
-    `The AI Smart Chaincode Auditor inspected ${totalBlocks} Hyperledger Fabric blocks ` +
-    `and ${totalTxs} transactions on channel 'settlement'. Dual-regulator endorsement compliance ` +
-    `is at ${( (dualEndorsedCount / (totalTxs || 1)) * 100 ).toFixed(1)}%. ` +
-    `Zero unauthorized double-spends or MVCC version conflicts detected. ` +
-    `All settlement state transitions match verified PayPal Sandbox captures.`;
+    `DEMO FIXTURES ONLY: inspected ${totalBlocks} seeded example blocks and ${totalTxs} example transactions. ` +
+    `${dualEndorsedCount} settlement fixture(s) list both regulator MSPs. ` +
+    `No live Fabric connection, cryptographic endorsement verification, double-spend analysis, ` +
+    `MVCC check, or PayPal capture verification was performed.`;
 
   return {
     reportId,
+    dataSource: 'SEEDED_DEMO_FIXTURES',
+    auditorMode: 'DETERMINISTIC_FIXTURE_CHECK',
     generatedAt: new Date().toISOString(),
     channelId: 'settlement',
     totalBlocksInspected: totalBlocks,
@@ -153,8 +153,8 @@ export async function auditFabricLedger() {
     executiveSummary,
     findings,
     supervisorySignoff: {
-      rbiSupervisor: 'VERIFIED_ED25519_VALID',
-      masSupervisor: 'VERIFIED_ED25519_VALID',
+      rbiSupervisor: 'NOT_VERIFIED_DEMO_FIXTURE',
+      masSupervisor: 'NOT_VERIFIED_DEMO_FIXTURE',
     },
   };
 }
