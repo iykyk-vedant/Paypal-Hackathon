@@ -12,11 +12,11 @@ import {
 } from './types';
 
 export const CONSORTIUM_NODES = [
-  { id: 'banka1', label: '🏛️ Bank A1', sublabel: '(India / Mumbai Desk)', operator: 'a1-trader', port: 3003, type: 'bank', color: 'hover:border-blue-400/60' },
-  { id: 'bankb1', label: '🏛️ Bank B1', sublabel: '(Singapore Desk)', operator: 'b1-trader', port: 3004, type: 'bank', color: 'hover:border-teal-400/60' },
-  { id: 'rega', label: '⚖️ RegA (RBI)', sublabel: '(INR Issuer / Supervisor)', operator: 'rega-operator', port: 3001, type: 'regulator', color: 'hover:border-amber-400/60' },
-  { id: 'regb', label: '⚖️ RegB (MAS)', sublabel: '(SGD Issuer / Supervisor)', operator: 'regb-operator', port: 3002, type: 'regulator', color: 'hover:border-cyan-400/60' },
-  { id: 'auditor', label: '🔍 Auditor', sublabel: '(Cryptographic Observer)', operator: 'aud-reader', port: 3005, type: 'auditor', color: 'hover:border-purple-400/60' },
+  { id: 'banka1', label: 'Bank A1', sublabel: '(India / Mumbai Desk)', operator: 'a1-trader', port: 3003, type: 'bank', color: 'hover:border-blue-400/60' },
+  { id: 'bankb1', label: 'Bank B1', sublabel: '(Singapore Desk)', operator: 'b1-trader', port: 3004, type: 'bank', color: 'hover:border-teal-400/60' },
+  { id: 'rega', label: 'RegA (RBI)', sublabel: '(INR Issuer / Supervisor)', operator: 'rega-operator', port: 3001, type: 'regulator', color: 'hover:border-amber-400/60' },
+  { id: 'regb', label: 'RegB (MAS)', sublabel: '(SGD Issuer / Supervisor)', operator: 'regb-operator', port: 3002, type: 'regulator', color: 'hover:border-cyan-400/60' },
+  { id: 'auditor', label: 'Auditor', sublabel: '(Demo Observer)', operator: 'aud-reader', port: 3005, type: 'auditor', color: 'hover:border-purple-400/60' },
 ] as const;
 
 export function formatMinorUnits(minorStr: string | number | bigint | undefined, ccy: string): string {
@@ -67,7 +67,10 @@ export class ApiClient {
       ...(options.headers || {}),
     };
 
-    const res = await fetch(endpoint, { ...options, headers });
+    let apiBase = (import.meta.env.VITE_API_URL || '').replace(/\/$/, '');
+    if (apiBase && !/^https?:\/\//i.test(apiBase)) apiBase = `https://${apiBase}`;
+    const url = endpoint.startsWith('http') ? endpoint : `${apiBase}${endpoint}`;
+    const res = await fetch(url, { ...options, headers });
     if (!res.ok) {
       let errBody;
       try {
