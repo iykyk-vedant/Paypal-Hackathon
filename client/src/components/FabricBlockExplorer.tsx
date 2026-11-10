@@ -5,6 +5,7 @@ import { ColDef, ICellRendererParams } from 'ag-grid-community';
 import { api } from '../api';
 import { FabricBlock } from '../types';
 import { Blocks, Search, Download, CheckCircle2, Cloud, Server, ShieldCheck, ExternalLink } from 'lucide-react';
+import { FabricLedgerActions } from './FabricLedgerActions';
 
 export const FabricBlockExplorer: React.FC = () => {
   const gridRef = useRef<AgGridReact>(null);
@@ -199,6 +200,11 @@ export const FabricBlockExplorer: React.FC = () => {
           <p className="text-[11px] text-slate-500">{ledgerSnapshot.notice || 'Queries are not transactions and do not change ledger state.'}</p>
         </section>
       )}
+
+      <FabricLedgerActions
+        enabled={Boolean(status?.gatewayConnected && status?.writeReady)}
+        onChanged={fetchData}
+      />
 
       {/* Consortium Architecture & Consensus Meta */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">

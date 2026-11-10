@@ -78,7 +78,15 @@ export class ApiClient {
       } catch {
         errBody = { error: await res.text() };
       }
-      throw new Error(errBody.error || `HTTP ${res.status}: ${res.statusText}`);
+      const error = new Error(errBody.error || `HTTP ${res.status}: ${res.statusText}`) as Error & {
+        transactionId?: string;
+        validationCode?: string;
+        commitStatusUnknown?: boolean;
+      };
+      error.transactionId = errBody.transactionId;
+      error.validationCode = errBody.validationCode;
+      error.commitStatusUnknown = errBody.commitStatusUnknown;
+      throw error;
     }
     return res.json();
   }
@@ -241,6 +249,44 @@ export class ApiClient {
 
   async getFabricLedgerSnapshot() {
     return this.request<any>('/api/fabric/ledger');
+  }
+
+  async proposeFabricTrade(payload: {
+    proposerMsp: 'BankA1MSP' | 'BankB1MSP';
+    ccyA: 'INR' | 'SGD';
+    amountA: string;
+    ccyB: 'INR' | 'SGD';
+    amountB: string;
+    fxRate?: string;
+    reference?: string;
+  }, writeToken: string) {
+    return this.request<any>('/api/fabric/trades/propose', {
+      method: 'POST',
+      headers: { 'X-Fabric-Write-Token': writeToken },
+      body: JSON.stringify(payload),
+    });
+  }
+
+  async acceptFabricTrade(tradeId: string, writeToken: string) {
+    return this.request<any>(`/api/fabric/trades/${encodeURIComponent(tradeId)}/accept`, {
+      method: 'POST', headers: { 'X-Fabric-Write-Token': writeToken },
+    });
+  }
+
+  async settleFabricTrade(tradeId: string, writeToken: string) {
+    return this.request<any>(`/api/fabric/trades/${encodeURIComponent(tradeId)}/settle`, {
+      method: 'POST',
+      headers: { 'X-Fabric-Write-Token': writeToken },
+      body: JSON.stringify({ confirmSettlement: true }),
+    });
+  }
+
+  async performFabricLegAction(tradeId: string, leg: 'A' | 'B', operation: 'debit' | 'credit', writeToken: string) {
+    return this.request<any>(`/api/fabric/trades/${encodeURIComponent(tradeId)}/legs/${leg}/${operation}`, {
+      method: 'POST',
+      headers: { 'X-Fabric-Write-Token': writeToken },
+      body: JSON.stringify({ confirmSettlement: true }),
+    });
   }
 
   async getFabricBlocks() {
