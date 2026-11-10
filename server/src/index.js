@@ -22,7 +22,9 @@ const {
   paypalLedgerStore,
   proposeTrade,
   acceptTrade,
-  settleTrade,
+  recordPayPalCapture,
+  recordFabricSettlement,
+  recordFabricLegAction,
   recordRefusal,
   linkPayPalOrder,
 } = await import('./ledgerStore.js');
@@ -43,8 +45,8 @@ const {
 } = await import('./aiAgentService.js');
 
 const { searchChannel3Catalog, generateProcurementQuote } = await import('./channel3Service.js');
-const { queryElasticSearch, getElasticClusterStats } = await import('./elasticService.js');
-const { triggerZapierWebhook, getZapierDispatchedHistory, setZapierWebhookUrl } = await import('./zapierService.js');
+const { queryElasticSearch, getElasticClusterStats, indexTradeEvent, indexComplianceLog, indexPayPalTransaction } = await import('./elasticService.js');
+const { triggerZapierWebhook, getZapierDispatchedHistory, getZapierStatus } = await import('./zapierService.js');
 const {
   getKernelHealth,
   createKernelBrowserSession,
@@ -92,7 +94,7 @@ app.get('/health', (req, res) => {
     version: '1.0.0-hackathon',
     paypalMode: getPayPalMode(),
     geminiConfigured: Boolean(process.env.GEMINI_API_KEY),
-    ledgerMode: 'in_memory_demo',
+    ledgerMode: 'in_memory_workflow_with_optional_fabric_test_ledger',
     fabricGatewayConfigured: ['1', 'true', 'yes', 'on'].includes(String(process.env.FABRIC_GATEWAY_ENABLED || '').toLowerCase()),
     prototypeNotice: 'Hackathon prototype; demo operator headers are not authentication.',
     timestamp: new Date().toISOString(),
@@ -166,9 +168,26 @@ app.get('/trades/:id', (req, res) => {
   res.json(item);
 });
 
-app.post('/trades', (req, res) => {
+app.post('/trades', async (req, res) => {
   try {
-    const trade = proposeTrade(req.body);
+    const body = req.body || {};
+    const riskAssessment = await agentScreenCompliance({
+      proposerOrg: body.proposerMsp === 'BankB1MSP' ? 'BankB1' : 'BankA1',
+      counterpartyOrg: body.counterpartyMsp === 'BankA1MSP' ? 'BankA1' : 'BankB1',
+      currencyA: body.ccyA,
+      amountA: String(body.amountA || 0),
+      currencyB: body.ccyB,
+      amountB: String(body.amountB || 0),
+    });
+    indexComplianceLog({ type: 'PRE_TRADE_RISK_SCREEN', ...riskAssessment });
+    if (riskAssessment.verdict !== 'APPROVED') {
+      recordRefusal(null, body.ccyA === 'INR' ? 'JUR-A' : 'JUR-B', 'PRE_TRADE_RISK_REFUSED', body.proposerMsp || 'BankA1MSP');
+      return res.status(422).json({ error: 'Trade did not pass the prototype pre-trade risk rules.', riskAssessment });
+    }
+    const trade = proposeTrade(body);
+    trade.trade.riskAssessment = riskAssessment;
+    if (body.channel3Quote) trade.trade.channel3Quote = body.channel3Quote;
+    indexTradeEvent(trade.trade);
     res.status(201).json(trade);
   } catch (err) {
     res.status(400).json({ error: err.message });
@@ -299,6 +318,20 @@ app.post('/api/paypal/orders/:id/capture', async (req, res) => {
         receiptHash: trade.trade.receiptHash || null,
       });
     }
+    if (trade.trade.paypalCaptureId && trade.trade.paypalCaptureDetails) {
+      return res.json({
+        ...trade.trade.paypalCaptureDetails,
+        orderId: trade.trade.paypalOrderId,
+        tradeId,
+        status: 'COMPLETED',
+        fundingAmountMinor: trade.trade.paypalCaptureDetails.fundingAmountMinor,
+        isSimulation: trade.trade.paypalMode === 'SIMULATION',
+        providerMode: trade.trade.paypalMode === 'SIMULATION' ? 'simulation' : 'sandbox',
+        settlementStatus: trade.settle.status,
+        fundingQuote: trade.trade.paypalFundingQuote,
+        receiptHash: trade.trade.receiptHash || null,
+      });
+    }
     if (trade.trade.status !== 'ACCEPTED') {
       return res.status(409).json({ error: 'Trade must be accepted before capture' });
     }
@@ -311,15 +344,16 @@ app.post('/api/paypal/orders/:id/capture', async (req, res) => {
     if (capture.fundingAmountMinor !== String(expectedAmount)) {
       return res.status(409).json({ error: 'Captured PayPal amount did not match the approved USD funding quote' });
     }
-    const settled = await settleTrade(tradeId, capture);
+    const captured = recordPayPalCapture(tradeId, capture);
     res.json({
       ...capture,
       fundingQuote: trade.trade.paypalFundingQuote,
-      payoutStatus: settled.trade.payoutStatus || null,
-      payoutMode: settled.trade.payoutMode || null,
-      payoutBatchId: settled.trade.payoutBatchId || null,
-      payoutError: settled.trade.payoutError || null,
-      receiptHash: settled.trade.receiptHash || null,
+      settlementStatus: captured.settle.status,
+      payoutStatus: captured.trade.payoutStatus || null,
+      payoutMode: captured.trade.payoutMode || null,
+      payoutBatchId: captured.trade.payoutBatchId || null,
+      payoutError: captured.trade.payoutError || null,
+      receiptHash: captured.trade.receiptHash || null,
     });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -333,8 +367,14 @@ app.post('/api/paypal/payouts/batch', async (req, res) => {
     if (trade.trade.status !== 'SETTLED') {
       return res.status(409).json({ error: 'A payout is allowed only for a settled trade' });
     }
-    if (trade.trade.payoutStatus !== 'FAILED') {
-      return res.status(409).json({ error: 'Only a failed payout can be retried' });
+    if (!trade.trade.paypalCaptureId || !String(trade.trade.paypalStatus || '').startsWith('CAPTURED_')) {
+      return res.status(409).json({ error: 'A verified PayPal capture is required before payout' });
+    }
+    if (!['USD', 'SGD'].includes(trade.trade.ccyB)) {
+      return res.status(422).json({ error: `PayPal Sandbox payout is not configured for ${trade.trade.ccyB}; no currency conversion was attempted.` });
+    }
+    if (trade.trade.payoutStatus && trade.trade.payoutStatus !== 'FAILED') {
+      return res.status(409).json({ error: 'A payout has already been initiated for this trade' });
     }
     trade.trade.payoutStatus = 'PENDING';
     let payout;
@@ -354,6 +394,25 @@ app.post('/api/paypal/payouts/batch', async (req, res) => {
     trade.trade.payoutBatchId = payout.payoutBatchId;
     trade.trade.payoutStatus = payout.status;
     trade.trade.payoutMode = payout.providerMode || (payout.isSimulation ? 'simulation' : 'sandbox');
+    const payoutLedgerEntry = {
+      transactionId: `TX-PAYPAL-${payout.payoutBatchId}`,
+      tradeId: trade.trade.tradeId,
+      type: payout.isSimulation ? 'BATCH_PAYOUT_SIMULATED' : 'BATCH_PAYOUT_SANDBOX',
+      payoutBatchId: payout.payoutBatchId,
+      paypalMode: trade.trade.payoutMode,
+      isSimulation: Boolean(payout.isSimulation),
+      grossAmount: `${trade.trade.ccyB} ${(Number(trade.trade.amountB) / 100).toFixed(2)}`,
+      netAmount: `${trade.trade.ccyB} ${(Number(trade.trade.amountB) / 100).toFixed(2)}`,
+      sender: 'PayBridge Sandbox Demo',
+      recipient: payout.recipientEmail,
+      status: payout.status,
+      timestamp: new Date().toISOString(),
+      corridor: `${trade.trade.ccyA} <-> ${trade.trade.ccyB}`,
+    };
+    paypalLedgerStore.unshift(payoutLedgerEntry);
+    indexPayPalTransaction(payoutLedgerEntry);
+    indexTradeEvent(trade.trade);
+    triggerZapierWebhook('PAYPAL_PAYOUT_INITIATED', { tradeId: trade.trade.tradeId, payoutBatchId: payout.payoutBatchId, status: payout.status, mode: trade.trade.payoutMode });
     res.json(payout);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -421,6 +480,7 @@ app.post('/api/ai/copilot/chat', async (req, res) => {
 });
 
 // --- SPONSOR ENDPOINTS ---
+const zapierManualDispatches = [];
 
 // Channel3
 app.get('/api/channel3/catalog', async (req, res) => {
@@ -459,19 +519,47 @@ app.get('/api/elastic/stats', async (req, res) => {
 
 // Zapier
 app.post('/api/zapier/trigger', async (req, res) => {
-  const { eventType, payload } = req.body;
-  const result = await triggerZapierWebhook(eventType || 'MANUAL_TEST', payload || {});
+  if (req.body?.eventType !== 'MANUAL_TEST_TRIGGER') {
+    return res.status(400).json({ error: 'Only the manual test event can be triggered from the public dashboard.' });
+  }
+  const now = Date.now();
+  while (zapierManualDispatches.length && now - zapierManualDispatches[0] > 10 * 60 * 1000) zapierManualDispatches.shift();
+  if (zapierManualDispatches.length >= 5) return res.status(429).json({ error: 'Manual Zapier test limit reached; try again later.' });
+  zapierManualDispatches.push(now);
+  const result = await triggerZapierWebhook('MANUAL_TEST_TRIGGER', {
+    protocol: 'PayBridge AI settlement demo',
+    triggeredAt: new Date(now).toISOString(),
+    action: 'operator_manual_test',
+  });
   res.json(result);
+});
+
+app.get('/api/zapier/status', (req, res) => {
+  res.json(getZapierStatus());
 });
 
 app.get('/api/zapier/events', (req, res) => {
   res.json(getZapierDispatchedHistory());
 });
 
-app.post('/api/zapier/config', (req, res) => {
-  const { url } = req.body;
-  setZapierWebhookUrl(url);
-  res.json({ ok: true, webhookUrl: url });
+app.get('/api/integrations/status', async (req, res) => {
+  const fabric = await getFabricGatewayStatus();
+  const elasticConfigured = Boolean(process.env.ELASTIC_ENDPOINT || process.env.ELASTIC_URL) && Boolean(process.env.ELASTIC_API_KEY);
+  const kernel = await getKernelHealth();
+  const zapier = getZapierStatus();
+  res.json({
+    checkedAt: new Date().toISOString(),
+    integrations: {
+      paypal: { status: getPayPalMode() === 'sandbox' ? 'configured' : 'simulation', mode: getPayPalMode(), role: 'Sandbox checkout/capture and explicitly requested payout' },
+      channel3: { status: process.env.CHANNEL3_API_KEY ? 'configured' : 'curated_fallback', role: 'Product discovery and procurement quotes' },
+      gemini: { status: process.env.GEMINI_API_KEY ? 'configured' : 'unconfigured', role: 'Explanation of deterministic prototype risk results' },
+      elasticsearch: { status: elasticConfigured ? 'configured' : 'local_fallback', role: 'Search and workflow event indexing' },
+      kernel: { status: kernel.liveConnected ? 'connected' : 'simulation', mode: kernel.mode, role: 'Optional browser-session infrastructure; demo audit scenario is not live DOM evidence' },
+      zapier: { status: zapier.configured ? 'configured' : 'unconfigured', mode: zapier.mode, role: 'Outbound workflow event webhook; configure ZAPIER_WEBHOOK_URL (MCP server URL is not a Catch webhook)' },
+      fabric: { status: fabric.gatewayConnected ? 'connected' : 'unavailable', mode: fabric.mode, writesEnabled: fabric.writesEnabled, writeReady: fabric.writeReady, role: 'Live test-ledger reads and explicitly confirmed test writes' },
+    },
+    prototypeNotice: 'Configured indicates credentials or gateway readiness; it does not guarantee every provider operation will succeed.',
+  });
 });
 
 // Optional browser audit integration
@@ -558,7 +646,7 @@ app.get('/api/fabric/status', async (req, res) => {
     organizations: ['RegAMSP (RBI)', 'RegBMSP (MAS)', 'BankA1MSP', 'BankB1MSP', 'AuditorMSP'],
     activeEndorsementPolicy: "AND('RegAMSP.peer', 'RegBMSP.peer')",
     consensus: 'Raft (configured network; topology claims require live verification)',
-    sampleTopology: status.mode !== 'LIVE_READ_ONLY',
+    sampleTopology: !status.gatewayConnected,
     dualEngineReady: false,
   });
 });
@@ -595,7 +683,25 @@ app.post('/api/fabric/trades/propose', authorizeFabricWrite, async (req, res) =>
     if (!writeStatus.writeReady) {
       return res.status(503).json({ error: 'Fabric trade writes are not ready. Configure rotated BankA1 and BankB1 identities and enable writes.' });
     }
-    res.status(201).json(await proposeFabricTrade(req.body));
+    const { sourceTradeId, ...proposalInput } = req.body || {};
+    let sourceTrade = null;
+    if (sourceTradeId) {
+      sourceTrade = tradesStore.find((item) => item.trade.tradeId === sourceTradeId);
+      if (!sourceTrade) return res.status(404).json({ error: 'Linked demo trade not found' });
+      if (sourceTrade.trade.status !== 'ACCEPTED') return res.status(409).json({ error: 'Linked demo trade must be accepted before creating its Fabric proposal' });
+      if (sourceTrade.trade.fabricTradeId) return res.status(409).json({ error: 'A Fabric trade is already linked to this demo trade' });
+      if (proposalInput.proposerMsp !== sourceTrade.trade.proposerMsp || proposalInput.ccyA !== sourceTrade.trade.ccyA || proposalInput.ccyB !== sourceTrade.trade.ccyB || String(proposalInput.amountA) !== String(sourceTrade.trade.amountA) || String(proposalInput.amountB) !== String(sourceTrade.trade.amountB)) {
+        return res.status(409).json({ error: 'Fabric proposal terms must exactly match the accepted demo trade' });
+      }
+    }
+    const outcome = await proposeFabricTrade({ ...proposalInput, reference: proposalInput.reference || sourceTrade?.trade.reference });
+    if (sourceTrade) {
+      sourceTrade.trade.fabricTradeId = outcome.tradeId;
+      sourceTrade.trade.fabricStatus = 'PROPOSED';
+      indexTradeEvent(sourceTrade.trade);
+      triggerZapierWebhook('FABRIC_PROPOSAL_LINKED', { sourceTradeId, fabricTradeId: outcome.tradeId, transactionId: outcome.transactionId });
+    }
+    res.status(201).json({ ...outcome, sourceTradeId: sourceTrade?.trade.tradeId || null });
   } catch (err) {
     res.status(400).json({ error: err.message, transactionId: err.transactionId, validationCode: err.validationCode, commitStatusUnknown: err.commitStatusUnknown });
   }
@@ -607,7 +713,14 @@ app.post('/api/fabric/trades/:tradeId/accept', authorizeFabricWrite, async (req,
     if (!writeStatus.writeReady) {
       return res.status(503).json({ error: 'Fabric trade writes are not ready. Configure rotated BankA1 and BankB1 identities and enable writes.' });
     }
-    res.json(await acceptFabricTrade(req.params.tradeId));
+    const outcome = await acceptFabricTrade(req.params.tradeId);
+    const sourceTrade = tradesStore.find((item) => item.trade.fabricTradeId === req.params.tradeId);
+    if (sourceTrade) {
+      sourceTrade.trade.fabricStatus = 'ACCEPTED';
+      indexTradeEvent(sourceTrade.trade);
+      triggerZapierWebhook('FABRIC_TRADE_ACCEPTED', { sourceTradeId: sourceTrade.trade.tradeId, fabricTradeId: req.params.tradeId, transactionId: outcome.transactionId });
+    }
+    res.json(outcome);
   } catch (err) {
     res.status(400).json({ error: err.message, transactionId: err.transactionId, validationCode: err.validationCode, commitStatusUnknown: err.commitStatusUnknown });
   }
@@ -619,7 +732,16 @@ app.post('/api/fabric/trades/:tradeId/settle', authorizeFabricWrite, async (req,
     if (!writeStatus.writeReady) {
       return res.status(503).json({ error: 'Fabric trade writes are not ready. Configure rotated BankA1 and BankB1 identities and enable writes.' });
     }
-    res.json(await settleFabricTrade(req.params.tradeId, req.body?.confirmSettlement === true));
+    const sourceTrade = tradesStore.find((item) => item.trade.fabricTradeId === req.params.tradeId);
+    if (sourceTrade && (!sourceTrade.trade.paypalCaptureId || !String(sourceTrade.trade.paypalStatus || '').startsWith('CAPTURED_'))) {
+      return res.status(409).json({ error: 'Capture the linked PayPal Sandbox order before confirming Fabric settlement.' });
+    }
+    const outcome = await settleFabricTrade(req.params.tradeId, req.body?.confirmSettlement === true);
+    if (sourceTrade) {
+      const updated = recordFabricSettlement(sourceTrade.trade.tradeId, outcome);
+      indexTradeEvent(updated.trade);
+    }
+    res.json({ ...outcome, sourceTradeId: sourceTrade?.trade.tradeId || null });
   } catch (err) {
     res.status(400).json({ error: err.message, transactionId: err.transactionId, validationCode: err.validationCode, commitStatusUnknown: err.commitStatusUnknown });
   }
@@ -632,7 +754,14 @@ app.post('/api/fabric/trades/:tradeId/legs/:leg/:operation', authorizeFabricWrit
       return res.status(503).json({ error: 'Fabric trade writes are not ready. Configure rotated BankA1 and BankB1 identities and enable writes.' });
     }
     const { tradeId, leg, operation } = req.params;
-    res.json(await performFabricLegAction(tradeId, leg.toUpperCase(), operation.toLowerCase(), req.body?.confirmSettlement === true));
+    const outcome = await performFabricLegAction(tradeId, leg.toUpperCase(), operation.toLowerCase(), req.body?.confirmSettlement === true);
+    const sourceTrade = tradesStore.find((item) => item.trade.fabricTradeId === tradeId);
+    if (sourceTrade) {
+      recordFabricLegAction(sourceTrade.trade.tradeId, leg.toUpperCase(), operation.toLowerCase(), outcome);
+      triggerZapierWebhook('FABRIC_VALUE_LEG_COMMITTED', { sourceTradeId: sourceTrade.trade.tradeId, fabricTradeId: tradeId, leg: leg.toUpperCase(), operation: operation.toLowerCase(), transactionId: outcome.transactionId, signedBy: outcome.signedBy });
+      indexTradeEvent(sourceTrade.trade);
+    }
+    res.json(outcome);
   } catch (err) {
     res.status(400).json({ error: err.message, transactionId: err.transactionId, validationCode: err.validationCode, commitStatusUnknown: err.commitStatusUnknown });
   }

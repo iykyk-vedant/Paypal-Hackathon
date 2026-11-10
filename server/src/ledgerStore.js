@@ -7,7 +7,6 @@ import { createHash } from 'node:crypto';
 import { CORRIDORS, REFUSAL_CODES } from './corridorRules.js';
 import { indexTradeEvent, indexComplianceLog, indexPayPalTransaction } from './elasticService.js';
 import { triggerZapierWebhook } from './zapierService.js';
-import { executePayPalPayout } from './paypalService.js';
 
 // Multi-currency accounts for consortium institutions
 export const accountsStore = [
@@ -301,17 +300,17 @@ export function linkPayPalOrder(tradeId, orderId, status = 'APPROVED') {
 }
 
 /**
- * Record demo settlement on the in-memory ledger after PayPal capture verification.
- * Does not submit to Fabric or atomically move real currency legs.
+ * Record a verified PayPal capture as funding only. Fabric settlement is a separate
+ * explicit action and the local trade remains unsettled until all Fabric value legs commit.
  */
-export async function settleTrade(tradeId, paypalCaptureData = null) {
+export function recordPayPalCapture(tradeId, paypalCaptureData = null) {
   const item = tradesStore.find(t => t.trade.tradeId === tradeId);
   if (!item) throw new Error(`Trade ${tradeId} not found`);
   if (item.trade.status !== 'ACCEPTED') {
-    throw new Error(`Trade ${tradeId} must be ACCEPTED before settlement (current: ${item.trade.status})`);
+    throw new Error(`Trade ${tradeId} must be ACCEPTED before PayPal capture (current: ${item.trade.status})`);
   }
   if (!paypalCaptureData || paypalCaptureData.status !== 'COMPLETED') {
-    throw new Error('A completed PayPal capture is required before settlement');
+    throw new Error('A completed PayPal capture is required');
   }
   if (paypalCaptureData.tradeId !== tradeId || paypalCaptureData.orderId !== item.trade.paypalOrderId) {
     throw new Error('PayPal capture does not match the linked trade order');
@@ -321,42 +320,24 @@ export async function settleTrade(tradeId, paypalCaptureData = null) {
     throw new Error('PayPal capture amount does not match the approved USD funding quote');
   }
 
-  item.trade.status = 'SETTLED';
-  item.trade.settledAt = Date.now();
+  if (item.trade.paypalCaptureId) {
+    if (item.trade.paypalCaptureId === paypalCaptureData.captureId) return item;
+    throw new Error('A different PayPal capture is already linked to this trade');
+  }
   item.trade.paypalStatus = paypalCaptureData.isSimulation ? 'CAPTURED_SIMULATED' : 'CAPTURED_SANDBOX';
   item.trade.paypalMode = paypalCaptureData.isSimulation ? 'SIMULATION' : 'PAYPAL_SANDBOX';
   item.trade.paypalCaptureId = paypalCaptureData.captureId;
-
-  item.legA.holdStatus = 'DEBITED';
-  item.legA.creditStatus = 'CREDITED';
-  item.legB.holdStatus = 'DEBITED';
-  item.legB.creditStatus = 'CREDITED';
-
-  const txId = `tx-demo-${ulid().slice(0, 12)}`;
-  const settledAt = new Date().toISOString();
-  const receiptPayload = {
-    tradeId,
-    txId,
-    sourceAmountMinor: String(item.trade.amountA),
-    sourceCurrency: item.trade.ccyA,
-    counterAmountMinor: String(item.trade.amountB),
-    counterCurrency: item.trade.ccyB,
-    paypalOrderId: item.trade.paypalOrderId,
-    paypalCaptureId: paypalCaptureData.captureId,
-    paypalFundingAmountMinor: String(expectedFundingMinor),
-    paypalMode: paypalCaptureData.isSimulation ? 'SIMULATION' : 'PAYPAL_SANDBOX',
-    settledAt,
+  item.trade.paypalCaptureDetails = {
+    captureId: paypalCaptureData.captureId,
+    status: paypalCaptureData.status,
+    fundingAmountMinor: paypalCaptureData.fundingAmountMinor,
+    capturedAt: paypalCaptureData.capturedAt || new Date().toISOString(),
+    providerMode: paypalCaptureData.isSimulation ? 'simulation' : 'sandbox',
   };
-  const receiptHash = `0x${createHash('sha256').update(JSON.stringify(receiptPayload)).digest('hex')}`;
-
-  item.trade.receiptHash = receiptHash;
-  item.trade.receiptPayload = receiptPayload;
   item.settle = {
-    status: 'SETTLED_DEMO',
-    txId,
-    settledAt,
-    receiptHash,
-    dataSource: 'IN_MEMORY_DEMO_LEDGER',
+    status: 'AWAITING_EXPLICIT_FABRIC_SETTLEMENT',
+    capturedAt: new Date().toISOString(),
+    dataSource: 'PAYPAL_SANDBOX_CAPTURE',
   };
 
   // Record in PayPal Ledger
@@ -382,56 +363,91 @@ export async function settleTrade(tradeId, paypalCaptureData = null) {
   paypalLedgerStore.unshift(paypalEntry);
   indexPayPalTransaction(paypalEntry);
   indexTradeEvent(item.trade);
-
-  // Trigger Zapier Webhook
-  triggerZapierWebhook('DEMO_SETTLED', {
+  triggerZapierWebhook('PAYPAL_CAPTURED_PENDING_FABRIC', {
     tradeId,
-    txId,
-    receiptHash,
+    paypalOrderId: item.trade.paypalOrderId,
+    paypalCaptureId: paypalCaptureData.captureId,
     corridor: `${item.trade.ccyA}/${item.trade.ccyB}`,
-    settledAt: item.settle.settledAt,
+    capturedAt: item.settle.capturedAt,
+    nextStep: 'EXPLICIT_FABRIC_SETTLEMENT',
   });
+  return item;
+}
 
-  // Autonomous Vendor Payout via PayPal
-  item.trade.payoutStatus = 'PENDING';
-  try {
-    const payoutRes = await executePayPalPayout({
-      tradeId,
-      recipientEmail: 'vendor-payout-sandbox@paybridge.ai',
-      amount: item.trade.amountB,
-      currency: item.trade.ccyB === 'SGD' ? 'SGD' : 'USD',
-      note: `PayBridge demo settlement payout for ${tradeId}`,
-    });
-
-    item.trade.payoutBatchId = payoutRes.payoutBatchId;
-    item.trade.payoutStatus = payoutRes.status;
-    item.trade.payoutMode = payoutRes.providerMode || (payoutRes.isSimulation ? 'simulation' : 'sandbox');
-
-    const payoutLedgerEntry = {
-      transactionId: `TX-PAYPAL-${ulid().slice(0, 8)}`,
-      tradeId,
-      type: payoutRes.isSimulation ? 'BATCH_PAYOUT_SIMULATED' : 'BATCH_PAYOUT_SANDBOX',
-      payoutBatchId: payoutRes.payoutBatchId,
-      paypalMode: payoutRes.isSimulation ? 'SIMULATION' : 'PAYPAL_SANDBOX',
-      isSimulation: Boolean(payoutRes.isSimulation),
-      grossAmount: `${item.trade.ccyB} ${(Number(item.trade.amountB) / 100).toLocaleString()}`,
-      paypalFee: payoutRes.isSimulation ? '$0.00 USD (Simulated)' : 'Sandbox Fee',
-      netAmount: `${item.trade.ccyB} ${(Number(item.trade.amountB) / 100).toLocaleString()}`,
-      sender: 'PayBridge Settlement Custody',
-      recipient: payoutRes.recipientEmail,
-      status: payoutRes.isSimulation ? 'SIMULATED' : payoutRes.status,
-      timestamp: new Date().toISOString(),
-      corridor: 'PayPal Sandbox Payout',
-    };
-    paypalLedgerStore.unshift(payoutLedgerEntry);
-    indexPayPalTransaction(payoutLedgerEntry);
-  } catch (payoutErr) {
-    console.warn(`Autonomous payout step warning:`, payoutErr.message);
-    item.trade.payoutStatus = 'FAILED';
-    item.trade.payoutMode = 'sandbox';
-    item.trade.payoutError = 'Payout provider call failed; retry or reconcile manually.';
+/** Mark the local demo workflow settled only after a confirmed Fabric commit. */
+export function recordFabricSettlement(tradeId, fabricOutcome) {
+  const item = tradesStore.find((t) => t.trade.tradeId === tradeId);
+  if (!item) throw new Error(`Trade ${tradeId} not found`);
+  if (!item.trade.paypalCaptureId || !String(item.trade.paypalStatus || '').startsWith('CAPTURED_')) {
+    throw new Error('A verified PayPal capture is required before completing this linked Fabric settlement');
   }
+  if (!fabricOutcome?.transactionId || fabricOutcome.status !== 'SETTLED') {
+    throw new Error('A confirmed successful Fabric settlement commit is required');
+  }
+  if (item.trade.fabricTransactionId === fabricOutcome.transactionId) return item;
+  item.trade.fabricStatus = 'SETTLED_PENDING_VALUE_LEGS';
+  item.trade.fabricTransactionId = fabricOutcome.transactionId;
+  item.trade.fabricLegActions = item.trade.fabricLegActions || {};
+  item.settle = {
+    status: 'FABRIC_SETTLED_PENDING_VALUE_LEGS',
+    txId: fabricOutcome.transactionId,
+    dataSource: 'HYPERLEDGER_FABRIC_GATEWAY',
+  };
+  indexTradeEvent(item.trade);
+  triggerZapierWebhook('FABRIC_SETTLE_APPROVED_AFTER_PAYPAL_CAPTURE', {
+    tradeId,
+    fabricTradeId: item.trade.fabricTradeId,
+    transactionId: fabricOutcome.transactionId,
+    paypalCaptureId: item.trade.paypalCaptureId,
+    nextStep: 'COMMIT_ALL_FOUR_VALUE_LEG_ACTIONS',
+  });
+  return item;
+}
 
+/** Track each separately committed debit/credit leg; only finalize after all four. */
+export function recordFabricLegAction(tradeId, leg, operation, outcome) {
+  const item = tradesStore.find((t) => t.trade.tradeId === tradeId);
+  if (!item) throw new Error(`Trade ${tradeId} not found`);
+  if (!item.trade.fabricTransactionId || item.trade.fabricStatus !== 'SETTLED_PENDING_VALUE_LEGS') {
+    throw new Error('The linked Fabric settlement must be approved before value legs are recorded');
+  }
+  if (!['A', 'B'].includes(leg) || !['debit', 'credit'].includes(operation) || !outcome?.transactionId) {
+    throw new Error('A confirmed Fabric leg transaction is required');
+  }
+  const actionKey = `${leg}_${operation}`;
+  item.trade.fabricLegActions = item.trade.fabricLegActions || {};
+  item.trade.fabricLegActions[actionKey] = outcome.transactionId;
+  if (operation === 'debit') item[`leg${leg}`].holdStatus = 'DEBITED';
+  else item[`leg${leg}`].creditStatus = 'CREDITED';
+
+  const required = ['A_debit', 'A_credit', 'B_debit', 'B_credit'];
+  if (required.every((key) => item.trade.fabricLegActions[key])) {
+    item.trade.status = 'SETTLED';
+    item.trade.fabricStatus = 'SETTLED';
+    item.trade.settledAt = Date.now();
+    const settledAt = new Date().toISOString();
+    const receiptPayload = {
+      tradeId,
+      fabricTradeId: item.trade.fabricTradeId,
+      fabricTransactionId: item.trade.fabricTransactionId,
+      fabricValueLegTransactions: item.trade.fabricLegActions,
+      sourceAmountMinor: String(item.trade.amountA),
+      sourceCurrency: item.trade.ccyA,
+      counterAmountMinor: String(item.trade.amountB),
+      counterCurrency: item.trade.ccyB,
+      paypalOrderId: item.trade.paypalOrderId,
+      paypalCaptureId: item.trade.paypalCaptureId,
+      paypalFundingAmountMinor: String(item.trade.paypalFundingQuote.paymentAmountMinor),
+      paypalMode: item.trade.paypalMode,
+      settledAt,
+    };
+    const receiptHash = `0x${createHash('sha256').update(JSON.stringify(receiptPayload)).digest('hex')}`;
+    item.trade.receiptHash = receiptHash;
+    item.trade.receiptPayload = receiptPayload;
+    item.settle = { status: 'SETTLED_ON_FABRIC', txId: item.trade.fabricTransactionId, settledAt, receiptHash, dataSource: 'HYPERLEDGER_FABRIC_GATEWAY' };
+    triggerZapierWebhook('FABRIC_VALUE_SETTLEMENT_COMPLETED', { tradeId, fabricTradeId: item.trade.fabricTradeId, fabricTransactionId: item.trade.fabricTransactionId, receiptHash, settledAt });
+  }
+  indexTradeEvent(item.trade);
   return item;
 }
 
