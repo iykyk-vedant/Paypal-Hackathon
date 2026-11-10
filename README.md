@@ -25,6 +25,7 @@ PayBridge AI is a hackathon prototype for reviewing cross-border trade proposals
 flowchart LR
     U[Trader in browser] --> W[React + TypeScript web app]
     W -->|HTTPS API requests| A[Node.js + Express API]
+    A -->|Persist demo workflow and sessions| D[(Render PostgreSQL)]
     A -->|Sandbox orders and capture| P[PayPal Sandbox]
     A -. optional .-> G[Gemini explanations]
     A -. optional .-> C[Channel3 product search]
@@ -40,7 +41,7 @@ The web app and API are separate services. A Channel3 quote can prefill a trade;
 - **Trade proposals:** Indicative proposals from static demo FX values and an illustrative volume heuristic.
 - **Risk review:** Deterministic prototype corridor checks and a small built-in sample blocklist. Gemini can explain the result, but it does not make the decision.
 - **PayPal Sandbox:** Optional order approval and capture with server-side verification against the demo funding quote. Capture records funding only; it does not mark the trade settled or send an automatic payout.
-- **Review trail:** In-memory demo events and a local SHA-256 receipt digest for inspecting the prototype workflow.
+- **Review trail:** PostgreSQL-backed demo trades, PayPal entries, refusals, and sessions when `DATABASE_URL` is configured, plus a local SHA-256 receipt digest.
 - **Fabric panel:** Optional live chaincode queries and guarded test writes for proposal, acceptance, regulator-endorsed settlement, and separate debit/credit legs.
 - **Operations UI:** Trade and activity views powered by React, TypeScript, and AG Grid.
 
@@ -60,20 +61,20 @@ Fabric is one optional subsystem inside the wider PayBridge demo. The components
 | AG Grid and settlement timeline | No | UI views for demo data; they are not ledger nodes or transaction processors. |
 | Fabric block table and fixture auditor | No live block connection | These views use sample block fixtures. Live QSCC block retrieval and decoding are not implemented. |
 
-The regular proposal and acceptance records are still held in memory. The Fabric panel can link an accepted trade and require a completed PayPal capture before chaincode settlement. Chaincode settlement and each of the four value-leg writes are separate commits; a partial sequence needs operator reconciliation. This is a sequential hackathon demonstration, not a production payment rail.
+The regular proposal and acceptance records are persisted in PostgreSQL when configured. The Fabric panel can link an accepted trade and require a completed PayPal capture before chaincode settlement. Chaincode settlement and each of the four value-leg writes are separate commits; a partial sequence needs operator reconciliation. This is a sequential hackathon demonstration, not a production payment rail.
 
 ## Important boundaries
 
 | Area | Current behavior |
 | --- | --- |
-| Ordinary trades | Stored in backend memory and lost when the API restarts or redeploys. |
+| Ordinary trades | Stored in PostgreSQL when `DATABASE_URL` is configured. Without it, the API uses temporary in-memory demo storage. |
 | PayPal | Sandbox only; a capture does not automatically or atomically settle a Fabric trade. |
 | FX and risk | Illustrative rates and prototype checks; not live quotes, official screening, compliance clearance, or financial advice. |
 | Fabric blocks | The block explorer table and auditor use sample fixtures; live QSCC block decoding is not implemented. |
 | Fabric writes | Disabled by default. When enabled, the API submits to the separate test ledger; balances must already be funded through authorized regulator operations. |
-| Access control | `X-Operator` selects a demo view and is not authentication. The shared Fabric write token is not per-user or per-bank authorization. |
+| Access control | Seven password-protected demo roles have separate workspaces and API permissions. Expiring session hashes are stored in PostgreSQL when configured. This is a prototype access layer, not a production identity system. Fabric writes also require the shared write token and chaincode authorization. |
 
-The Fabric backend holds both BankA1 and BankB1 signing identities when writes are enabled. This centralizes signing authority and is suitable only for a tightly controlled hackathon demonstration. The app does not connect PayPal capture to Fabric settlement.
+The Fabric backend holds both BankA1 and BankB1 signing identities when writes are enabled. This centralizes signing authority and is suitable only for a tightly controlled hackathon demonstration. The linked workflow checks for a verified PayPal Sandbox capture before allowing Fabric settlement, but the two systems remain separate and cannot commit atomically.
 
 ## Run locally
 
@@ -93,6 +94,15 @@ npm run dev
 
 Open [http://localhost:5173](http://localhost:5173). The API listens on port `3001` by default.
 
+The public landing page opens without a password. With PostgreSQL configured, the seven demo operators have individually hashed passwords in `paybridge_users`; sessions are stored in `paybridge_sessions` and expire after eight hours. On first database startup, the API imports passwords supplied through the server-only `PAYBRIDGE_PASSWORD_*` environment variables for missing operators. It does not overwrite existing database users. Without PostgreSQL, local development reads those variables directly.
+
+| Role | Workspace | Main actions |
+| --- | --- | --- |
+| Bank A1 / Bank B1 trader | Trading desk | Propose demo trades, review settlements, explore sourcing and AI tools. |
+| Bank A1 / Bank B1 approver | Settlement desk | Accept the counterparty's proposal, capture own-bank Sandbox funding, and submit authorized Fabric test writes with the separate write token. |
+| RegA / RegB supervisor | Regulator console | Review own-jurisdiction sample rules, reserve, and refusals; inspect ledger information. |
+| Consortium auditor | Receipt review | Inspect trade receipts, Fabric records, and activity search. |
+
 To build the frontend:
 
 ```bash
@@ -103,8 +113,11 @@ npm run build
 
 Copy `.env.example` to `.env` and set only the server-side integrations you plan to use. For the browser-based PayPal Sandbox button, copy `client/.env.example` to `client/.env` and set `VITE_PAYPAL_CLIENT_ID` to the **Sandbox client ID only**. Keep `PAYPAL_CLIENT_SECRET` in the backend environment. Restart the relevant server after changing environment variables.
 
+Set `DATABASE_URL` on the API to use PostgreSQL. The API creates its `paybridge_records`, `paybridge_users`, and `paybridge_sessions` tables on startup, seeds demo fixtures only where absent, and loads stored workflow state before serving requests. Production startup requires `DATABASE_URL` and fails if the database cannot be reached. Local development can omit it and use temporary memory storage. `/health` reports `storageMode` and `databaseReady`. The Fabric ledger remains separate; PostgreSQL stores the app's local workflow and transient handoff data, not blockchain state. A PayPal provider call and a database write cannot be one atomic transaction, so interrupted provider operations still require operator reconciliation.
+
 | Integration | Environment variables | Notes |
 | --- | --- | --- |
+| PostgreSQL | `DATABASE_URL` | Use the Render database's internal URL on the API service in the same workspace and region. |
 | PayPal | `PAYPAL_MODE`, `PAYPAL_CLIENT_ID`, `PAYPAL_CLIENT_SECRET` | Use Sandbox credentials. Missing credentials leave the app in simulation mode. Capture does not settle Fabric. |
 | Gemini | `GEMINI_API_KEY`, `GEMINI_MODEL` | Explanations only; deterministic demo checks remain the decision source. |
 | Channel3 | `CHANNEL3_API_KEY`, `CHANNEL3_API_URL` | Optional product sourcing. |
@@ -142,7 +155,7 @@ FABRIC_TLS_CA_BASE64=<peer TLS CA certificate>
 
 Also configure `FABRIC_HOST`, `FABRIC_PEER_PORT`, `FABRIC_TLS_SERVER_NAME`, `FABRIC_MSP_ID`, `FABRIC_CHANNEL`, and `FABRIC_CHAINCODE`. Keep private keys and the write token in the hosting provider’s secret manager. Do not reuse identities that were exposed or committed in the past. The browser asks an authorized operator for the write token and keeps it in page memory for that session.
 
-Writes submit permanent test-ledger transactions. For a linked flow, create and accept the Fabric proposal, capture the linked PayPal Sandbox order, then explicitly confirm Fabric settlement. Commit all four value legs afterward; the app only labels the local workflow settled once all four commits have succeeded. Each call is a separate ledger transaction and a failure can leave partial state. Trades need funded accounts and must satisfy chaincode rules. Proposal details used by the counterparty are held in backend memory for up to 30 minutes, so keep one API instance running during the proposal/acceptance flow. If it restarts, re-propose the trade. This sequence is a prototype and does not make PayPal and Fabric atomic.
+Writes submit permanent test-ledger transactions. For a linked flow, create and accept the Fabric proposal, capture the linked PayPal Sandbox order, then explicitly confirm Fabric settlement. Commit all four value legs afterward; the app only labels the local workflow settled once all four commits have succeeded. Each call is a separate ledger transaction and a failure can leave partial state. Trades need funded accounts and must satisfy chaincode rules. Proposal details used by the counterparty are persisted in PostgreSQL when configured; the chaincode acceptance deadline still applies. This sequence is a prototype and does not make PayPal and Fabric atomic.
 
 ## Deploy on Render
 
@@ -158,6 +171,10 @@ Deploy the API and frontend as separate services:
 | Health Check Path | `/health` |
 
 Choose a paid always-on compute plan for a live presentation. Add backend integration credentials in the service’s Environment settings. Configure the Fabric variables above only after verifying that rotated test identities and peer network access are ready.
+
+Add `DATABASE_URL` to this API service's Environment settings using the **internal** connection URL of your existing Render Postgres database. The API and database must be in the same Render workspace and region. Do not put the URL in the frontend environment or commit it to Git. The API also maps a matching Virginia Render external database hostname to its private hostname when running on Render, which avoids the self-signed certificate error from `sslmode=verify-full` on private connections. Deploy the API, then check that `/health` returns `storageMode: "postgresql"` and `databaseReady: true`.
+
+Set each `PAYBRIDGE_PASSWORD_*` variable on the API before the first database startup to provision missing operators. Changing those variables later does not replace database passwords. The landing page stays public; all business API routes require a session. Run one API instance for this prototype because active trade objects are also cached in process memory between database writes.
 
 ### Frontend Static Site
 

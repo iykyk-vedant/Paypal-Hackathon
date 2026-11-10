@@ -12,6 +12,22 @@ services:
     envVars:
       - key: NODE_ENV
         value: production
+      - key: DATABASE_URL
+        sync: false
+      - key: PAYBRIDGE_PASSWORD_A1_TRADER
+        sync: false
+      - key: PAYBRIDGE_PASSWORD_A1_APPROVER
+        sync: false
+      - key: PAYBRIDGE_PASSWORD_B1_TRADER
+        sync: false
+      - key: PAYBRIDGE_PASSWORD_B1_APPROVER
+        sync: false
+      - key: PAYBRIDGE_PASSWORD_REGA
+        sync: false
+      - key: PAYBRIDGE_PASSWORD_REGB
+        sync: false
+      - key: PAYBRIDGE_PASSWORD_AUDITOR
+        sync: false
       - key: PAYPAL_MODE
         value: sandbox
       - key: FABRIC_GATEWAY_ENABLED

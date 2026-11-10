@@ -2,23 +2,59 @@ openapi: 3.1.0
 info:
   title: PayBridge AI - Cross-Border Trade Prototype API
   description: >-
-    Hackathon prototype API combining an in-memory demo trade ledger,
+    Hackathon prototype API combining a PostgreSQL-backed demo trade workflow,
     deterministic corridor rules, optional Gemini explanations, and
     PayPal Developer Platform (Orders v2, Payouts v1) Sandbox or simulation.
-    Demo operator headers are not authentication; not production-ready.
+    Password-protected demo roles use expiring bearer sessions stored in PostgreSQL when configured.
+    This prototype access layer is not a production identity system.
   version: 1.0.0
   contact:
     name: PayBridge AI Contributors
 servers:
   - url: http://localhost:3001
     description: Local Prototype Dev Server
+security:
+  - bearerAuth: []
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      description: Token returned by POST /auth/login
 paths:
   /health:
     get:
       summary: Health and System Status
+      security: []
       responses:
         '200':
           description: System operational status
+  /auth/login:
+    post:
+      summary: Sign in to a configured demo role
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [operator, password]
+              properties:
+                operator:
+                  type: string
+                password:
+                  type: string
+                  format: password
+      responses:
+        '200':
+          description: Bearer token and role profile
+  /auth/logout:
+    post:
+      summary: End the current demo session
+      responses:
+        '200':
+          description: Session revoked
   /api/fabric/status:
     get:
       summary: Check Fabric Gateway query connectivity
@@ -30,12 +66,6 @@ paths:
     get:
       summary: Read a live Fabric chaincode snapshot
       description: Requires a configured Fabric Gateway identity. Evaluates chaincode queries only and never submits a transaction. Private account queries may be denied by chaincode access rules.
-      parameters:
-        - in: header
-          name: X-Operator
-          schema:
-            type: string
-            default: a1-trader
       responses:
         '200':
           description: Results and per-query errors from read-only chaincode evaluations
@@ -184,13 +214,7 @@ paths:
           description: Fabric writes are disabled or identities are not configured
   /me:
     get:
-      summary: Get active node identity and role
-      parameters:
-        - in: header
-          name: X-Operator
-          schema:
-            type: string
-            default: a1-trader
+      summary: Get the signed-in operator identity and role
       responses:
         '200':
           description: Active identity profile
@@ -201,7 +225,7 @@ paths:
         '200':
           description: Array of trade composites
     post:
-      summary: Propose a new sample trade in the in-memory demo ledger
+      summary: Propose a new sample trade in the demo workflow
       requestBody:
         required: true
         content:
@@ -230,7 +254,7 @@ paths:
           description: Proposed trade record
   /trades/{id}/accept:
     post:
-      summary: Marks the sample counterparty leg held in the in-memory demo ledger
+      summary: Marks the sample counterparty leg held in the demo workflow
       parameters:
         - in: path
           name: id
