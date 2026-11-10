@@ -40,26 +40,25 @@ async function loadConfig(identityMspId) {
     throw new Error(`Write identity is not supported for MSP ${identityMspId}`);
   }
   const missing = required.filter((name) => !process.env[name]);
-  const identityEnv = prefix
-    ? {
-      certBase64: `${prefix}_CERT_BASE64`,
-      certFile: `${prefix}_CERT_FILE`,
-      keyBase64: `${prefix}_KEY_BASE64`,
-      keyFile: `${prefix}_KEY_FILE`,
+  const identityPrefixesToTry = prefix
+    ? [prefix]
+    : identityPrefixes[mspId]
+      ? [identityPrefixes[mspId], 'FABRIC_USER']
+      : ['FABRIC_USER'];
+  const readIdentityValue = async (suffix) => {
+    for (const candidate of identityPrefixesToTry) {
+      const value = await envBytes(`${candidate}_${suffix}_BASE64`, `${candidate}_${suffix}_FILE`);
+      if (value) return value;
     }
-    : {
-      certBase64: 'FABRIC_USER_CERT_BASE64',
-      certFile: 'FABRIC_USER_CERT_FILE',
-      keyBase64: 'FABRIC_USER_KEY_BASE64',
-      keyFile: 'FABRIC_USER_KEY_FILE',
-    };
+    return null;
+  };
   const [certificate, privateKeyPem, tlsRootCert] = await Promise.all([
-    envBytes(identityEnv.certBase64, identityEnv.certFile),
-    envBytes(identityEnv.keyBase64, identityEnv.keyFile),
+    readIdentityValue('CERT'),
+    readIdentityValue('KEY'),
     envBytes('FABRIC_TLS_CA_BASE64', 'FABRIC_TLS_CA_FILE'),
   ]);
-  if (!certificate) missing.push(`${identityEnv.certBase64} or ${identityEnv.certFile}`);
-  if (!privateKeyPem) missing.push(`${identityEnv.keyBase64} or ${identityEnv.keyFile}`);
+  if (!certificate) missing.push(`${identityPrefixesToTry.map((name) => `${name}_CERT_BASE64 or ${name}_CERT_FILE`).join(', ')}`);
+  if (!privateKeyPem) missing.push(`${identityPrefixesToTry.map((name) => `${name}_KEY_BASE64 or ${name}_KEY_FILE`).join(', ')}`);
   if (!tlsRootCert) missing.push('FABRIC_TLS_CA_BASE64 or FABRIC_TLS_CA_FILE');
   if (missing.length) throw new Error(`Fabric Gateway configuration is incomplete: ${missing.join(', ')}`);
 

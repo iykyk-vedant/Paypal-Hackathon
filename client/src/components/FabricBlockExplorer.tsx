@@ -151,14 +151,14 @@ export const FabricBlockExplorer: React.FC = () => {
             <div className="flex items-center gap-2">
               <h2 className="text-xl font-bold text-slate-900 tracking-tight">Hyperledger Fabric 2.5 Block Explorer</h2>
               <span className="bg-sky-100 text-blue-800 border border-sky-200 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">
-                Sample Channel: settlement
+                {status?.gatewayConnected ? `Live Channel: ${status.channelId || 'settlement'}` : 'Sample Channel: settlement'}
               </span>
               <span className="bg-amber-100 text-amber-800 border border-amber-200 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">
                 Demo Fixtures
               </span>
             </div>
             <p className="text-xs text-slate-600 mt-0.5">
-              Seeded sample blocks for exploring the UI; the app is not connected to the Fabric ledger.
+              Block rows remain demo fixtures. Chaincode queries and write readiness below reflect the live ledger when the Gateway is connected.
             </p>
           </div>
         </div>
