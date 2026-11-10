@@ -238,6 +238,10 @@ export class ApiClient {
     return this.request<any[]>('/api/zapier/events');
   }
 
+  async getZapierStatus() {
+    return this.request<{ configured: boolean; mode: string; configurationVariable: string; note: string }>('/api/zapier/status');
+  }
+
   async getReceipt(tradeId: string) {
     return this.request<any>(`/api/receipts/${encodeURIComponent(tradeId)}`);
   }
@@ -259,6 +263,7 @@ export class ApiClient {
     amountB: string;
     fxRate?: string;
     reference?: string;
+    sourceTradeId?: string;
   }, writeToken: string) {
     return this.request<any>('/api/fabric/trades/propose', {
       method: 'POST',

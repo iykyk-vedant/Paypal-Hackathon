@@ -43,6 +43,7 @@ export function App() {
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [trades, setTrades] = useState<TradeComposite[]>([]);
   const [paypalLedger, setPayPalLedger] = useState<PayPalLedgerEntry[]>([]);
+  const [channel3Quote, setChannel3Quote] = useState<Channel3Quote | null>(null);
   const [paypalMode, setPaypalMode] = useState<string>('checking');
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
 
@@ -153,12 +154,29 @@ export function App() {
       type: 'success',
       title: captureData.isSimulation ? 'Simulated demo capture completed' : 'PayPal Sandbox capture completed',
       message: captureData.isSimulation
-        ? 'This flow used simulated data (not a real PayPal transaction) and updated the in-memory demo ledger.'
-        : 'PayPal Sandbox confirmed the capture; the local demo ledger was updated. Fabric was not updated.',
+        ? 'This flow simulated PayPal funding; no provider transaction was made. Continue with explicit Fabric test settlement only if you intend to write the test ledger.'
+        : 'PayPal Sandbox confirmed funding. The linked Fabric trade still needs explicit settlement confirmation and each required value-leg commit.',
       paypalOrderId: captureData.orderId,
       isSimulation: Boolean(captureData.isSimulation),
     });
     await refreshData();
+  };
+
+  const handlePayPalPayout = async (tradeId: string) => {
+    try {
+      const payout = await api.executePayPalPayout(tradeId);
+      addToast({
+        type: 'success',
+        title: payout.isSimulation ? 'Simulated payout recorded' : 'PayPal Sandbox payout initiated',
+        message: payout.isSimulation ? 'No provider payout was made.' : `Sandbox batch ${payout.payoutBatchId || ''} status: ${payout.status}.`,
+        paypalOrderId: payout.payoutBatchId,
+        isSimulation: Boolean(payout.isSimulation),
+      });
+      await refreshData();
+    } catch (err: any) {
+      addToast({ type: 'error', title: 'PayPal payout failed', message: err.message || 'Could not initiate the Sandbox payout.' });
+      await refreshData();
+    }
   };
 
   const selectedTrade = trades.find((t) => t.trade.tradeId === selectedTradeId) || trades[0] || null;
@@ -263,6 +281,7 @@ export function App() {
             <Channel3SourcingModal
               onNavigate={(screen) => setCurrentScreen(screen)}
               onInitiateTradeFromQuote={(quote: Channel3Quote) => {
+                setChannel3Quote(quote);
                 setCurrentScreen('new-trade');
               }}
             />
@@ -272,6 +291,7 @@ export function App() {
 
           {currentScreen === 'new-trade' && (
             <NewTradeProposal
+              initialQuote={channel3Quote}
               onNavigate={(screen) => setCurrentScreen(screen)}
               onTradeCreated={async (trade) => {
                 addToast({
@@ -279,6 +299,7 @@ export function App() {
                   title: 'Demo trade proposed',
                   message: `Trade ${trade.trade.tradeId} added to the in-memory demo ledger.`,
                 });
+                setChannel3Quote(null);
                 await refreshData();
               }}
             />
@@ -289,6 +310,7 @@ export function App() {
               trade={selectedTrade}
               onNavigate={(screen) => setCurrentScreen(screen)}
               onAcceptTrade={handleAcceptTrade}
+              onRequestPayPalPayout={handlePayPalPayout}
               onOpenPayPalModal={(trade) => {
                 setPaypalModalTrade(trade);
                 setIsPayPalModalOpen(true);

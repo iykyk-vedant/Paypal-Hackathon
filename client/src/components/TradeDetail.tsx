@@ -20,6 +20,7 @@ interface TradeDetailProps {
   onNavigate: (screen: ScreenId) => void;
   onAcceptTrade: (tradeId: string) => void;
   onOpenPayPalModal: (trade: TradeComposite) => void;
+  onRequestPayPalPayout?: (tradeId: string) => void;
 }
 
 export const TradeDetail: React.FC<TradeDetailProps> = ({
@@ -27,6 +28,7 @@ export const TradeDetail: React.FC<TradeDetailProps> = ({
   onNavigate,
   onAcceptTrade,
   onOpenPayPalModal,
+  onRequestPayPalPayout,
 }) => {
   if (!trade) {
     return (
@@ -100,7 +102,16 @@ export const TradeDetail: React.FC<TradeDetailProps> = ({
                 onClick={() => onOpenPayPalModal(trade)}
                 className="px-4 py-2 bg-sky-100 hover:bg-sky-200 border border-sky-200 text-slate-900 rounded-xl text-xs font-bold flex items-center gap-2 transition-colors"
               >
-                <Sparkles className="w-4 h-4 text-amber-800" /> Open Settlement Checkout
+                <Sparkles className="w-4 h-4 text-amber-800" /> Capture PayPal Funding
+              </button>
+            )}
+
+            {t.status === 'SETTLED' && t.paypalCaptureId && ['SGD', 'USD'].includes(t.ccyB) && (!t.payoutStatus || t.payoutStatus === 'FAILED') && onRequestPayPalPayout && (
+              <button
+                onClick={() => onRequestPayPalPayout(t.tradeId)}
+                className="px-4 py-2 bg-emerald-100 hover:bg-emerald-200 border border-emerald-200 text-slate-900 rounded-xl text-xs font-bold flex items-center gap-2 transition-colors"
+              >
+                <CreditCard className="w-4 h-4" /> {t.payoutStatus === 'FAILED' ? 'Retry Sandbox Payout' : 'Initiate Sandbox Payout'}
               </button>
             )}
           </div>
@@ -122,10 +133,32 @@ export const TradeDetail: React.FC<TradeDetailProps> = ({
           </div>
           <div>
             <div className="text-slate-600 text-[11px]">Settlement Method:</div>
-            <div className="text-emerald-800 font-bold mt-0.5">In-memory demo workflow</div>
+            <div className="text-emerald-800 font-bold mt-0.5">{t.fabricStatus === 'SETTLED' ? 'PayPal + Fabric test ledger' : t.fabricStatus === 'SETTLED_PENDING_VALUE_LEGS' ? 'Fabric approved; value legs pending' : 'Demo proposal; Fabric pending'}</div>
           </div>
         </div>
       </div>
+
+      {(t.riskAssessment || t.channel3Quote) && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {t.channel3Quote && (
+            <section className="rounded-xl border border-slate-200 bg-white p-4 space-y-2">
+              <h3 className="text-xs font-bold text-slate-800">Supplier quote reference</h3>
+              <p className="text-sm font-semibold text-slate-900">{t.channel3Quote.item?.title || t.channel3Sku}</p>
+              <p className="text-[11px] text-slate-600">Quote {t.channel3Quote.quoteId || '—'} · {t.channel3Quote.quantity || '—'} units · supplier and bank mapping are demo assumptions.</p>
+            </section>
+          )}
+          {t.riskAssessment && (
+            <section className="rounded-xl border border-slate-200 bg-white p-4 space-y-2">
+              <div className="flex items-center justify-between">
+                <h3 className="text-xs font-bold text-slate-800">Pre-trade prototype risk review</h3>
+                <span className={`rounded-full px-2 py-1 text-[10px] font-bold ${t.riskAssessment.verdict === 'APPROVED' ? 'bg-emerald-50 text-emerald-800' : 'bg-rose-50 text-rose-800'}`}>{t.riskAssessment.verdict} · {t.riskAssessment.riskScore}/100</span>
+              </div>
+              <p className="text-[11px] text-slate-600">Deterministic sample rules; not official sanctions screening or regulatory clearance.</p>
+              {t.riskAssessment.aiExplanation && <p className="text-xs text-slate-700">Gemini explanation: {t.riskAssessment.aiExplanation}</p>}
+            </section>
+          )}
+        </div>
+      )}
 
       {/* Illustrative Currency Legs */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -196,7 +229,7 @@ export const TradeDetail: React.FC<TradeDetailProps> = ({
         <div className="glass-panel rounded-2xl p-5 border border-slate-200 space-y-3">
           <div className="flex items-center gap-2 text-xs font-bold text-sky-800">
             <CreditCard className="w-4 h-4" />
-            <span>PayPal / Demo Settlement Details</span>
+            <span>PayPal Funding Details</span>
           </div>
 
           <div className="bg-white p-4 rounded-xl border border-slate-200 space-y-2 font-mono text-xs">
@@ -207,6 +240,10 @@ export const TradeDetail: React.FC<TradeDetailProps> = ({
             <div className="flex justify-between">
               <span className="text-slate-600">Capture Status:</span>
               <span className="text-slate-900">{t.paypalStatus || 'AWAITING_APPROVAL'}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-slate-600">Fabric Status:</span>
+              <span className="text-slate-900">{t.fabricStatus || 'NOT_LINKED'}</span>
             </div>
             {t.paypalMode && (
               <div className="flex justify-between">
@@ -245,14 +282,14 @@ export const TradeDetail: React.FC<TradeDetailProps> = ({
             </div>
             <div className="flex justify-between">
               <span className="text-slate-600">Fabric commit:</span>
-              <span className="text-amber-800 font-bold">Not connected</span>
+              <span className="text-amber-800 font-bold">{t.fabricTransactionId || 'Not yet linked'}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-slate-600">Receipt scope:</span>
-              <span className="text-cyan-800 font-bold">Local demo payload only</span>
+              <span className="text-cyan-800 font-bold">{t.receiptHash ? 'PayPal + Fabric demo references' : 'No final receipt yet'}</span>
             </div>
             <p className="pt-1 font-sans text-[11px] leading-relaxed text-slate-600">
-              Not a Fabric endorsement, regulator approval, or proof of an external payment.
+              Local receipt digest only. Review the transaction IDs and live ledger directly; this digest is not a provider attestation or regulator approval.
             </p>
           </div>
         </div>

@@ -51,7 +51,7 @@ export const PayPalCheckoutModal: React.FC<PayPalCheckoutModalProps> = ({
       // 1. Create order
       const order = await api.createPayPalOrder({
         tradeId: tradeData.tradeId,
-        description: `Settlement for trade ${tradeData.tradeId} (${payerCcy}/${payeeCcy})`,
+        description: `PayBridge Sandbox funding for trade ${tradeData.tradeId} (${payerCcy}/${payeeCcy})`,
       });
 
       // 2. Capture order
@@ -88,7 +88,7 @@ export const PayPalCheckoutModal: React.FC<PayPalCheckoutModalProps> = ({
           <div>
             <div className="flex items-center gap-2">
               <h3 className="text-lg font-bold text-slate-900">
-                {fundingQuote?.providerMode === 'simulation' ? 'Simulated Demo Settlement' : 'PayPal Sandbox Settlement'}
+                {fundingQuote?.providerMode === 'simulation' ? 'Simulated Demo Funding' : 'PayPal Sandbox Funding'}
               </h3>
               <span className={`text-[10px] font-bold px-2 py-0.5 rounded font-mono ${
                 fundingQuote?.providerMode === 'simulation'
@@ -144,7 +144,7 @@ export const PayPalCheckoutModal: React.FC<PayPalCheckoutModalProps> = ({
         </div>
 
         <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-[11px] leading-relaxed text-amber-900">
-          Prototype disclosure: a successful capture updates this app’s in-memory demo ledger. The app does not submit this settlement to Hyperledger Fabric or atomically move both real currency legs.
+          A successful capture verifies PayPal Sandbox funding and records its reference. It does not settle the Fabric trade. After capture, open Fabric Explorer, link this accepted trade, submit the explicit Fabric settlement, then commit each required test-ledger value leg.
         </div>
 
         {/* Error Alert */}
@@ -177,7 +177,7 @@ export const PayPalCheckoutModal: React.FC<PayPalCheckoutModalProps> = ({
                 <div>Payout status: <span className="font-semibold text-slate-900">{successCapture.payoutStatus}{successCapture.payoutMode ? ` · ${successCapture.payoutMode}` : ''}{successCapture.payoutBatchId ? ` (${successCapture.payoutBatchId})` : ''}</span></div>
               )}
               <div className="text-[10px] text-slate-600 mt-2">
-                The prototype recorded the result in its in-memory demo ledger. Fabric was not updated.
+                Funding was captured; the linked Fabric trade still needs explicit settlement confirmation and all four value-leg transactions.
               </div>
             </div>
             <button
@@ -204,7 +204,7 @@ export const PayPalCheckoutModal: React.FC<PayPalCheckoutModalProps> = ({
                   createOrder={async () => {
                     const order = await api.createPayPalOrder({
                       tradeId: tradeData.tradeId,
-                      description: `PayBridge Settlement ${tradeData.tradeId}`,
+                      description: `PayBridge Sandbox funding ${tradeData.tradeId}`,
                     });
                     return order.orderId;
                   }}

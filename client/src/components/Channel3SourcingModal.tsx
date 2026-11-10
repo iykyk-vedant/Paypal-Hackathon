@@ -17,12 +17,14 @@ export const Channel3SourcingModal: React.FC<Channel3SourcingModalProps> = ({
   const [categoryFilter, setCategoryFilter] = useState<string>('ALL');
   const [loading, setLoading] = useState<boolean>(false);
   const [activeQuote, setActiveQuote] = useState<Channel3Quote | null>(null);
+  const [catalogSource, setCatalogSource] = useState<string>('Loading catalog…');
 
   const fetchCatalog = async () => {
     setLoading(true);
     try {
       const data = await api.getChannel3Catalog(searchQuery, categoryFilter);
       setItems(data.results || []);
+      setCatalogSource(data.poweredBy || 'Curated demo catalog');
     } catch (err) {
       console.warn('Channel3 fetch error:', err);
     } finally {
@@ -36,7 +38,9 @@ export const Channel3SourcingModal: React.FC<Channel3SourcingModalProps> = ({
 
   const handleRequestQuote = async (sku: string) => {
     try {
-      const quote = await api.getChannel3Quote(sku, 250);
+      const selectedItem = items.find((item) => item.sku === sku);
+      const targetCurrency = selectedItem?.currency === 'INR' ? 'SGD' : 'INR';
+      const quote = await api.getChannel3Quote(sku, 250, targetCurrency);
       setActiveQuote(quote);
     } catch (err: any) {
       alert(`Quote error: ${err.message}`);
@@ -54,8 +58,8 @@ export const Channel3SourcingModal: React.FC<Channel3SourcingModalProps> = ({
           <div>
             <div className="flex items-center gap-2">
               <h2 className="text-xl font-bold text-slate-900 tracking-tight">Product Catalog</h2>
-              <span className="bg-amber-100 text-amber-800 border border-amber-200 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">
-                Sample + Optional API
+                <span className="bg-amber-100 text-amber-800 border border-amber-200 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">
+                {catalogSource}
               </span>
             </div>
             <p className="text-xs text-slate-600 mt-0.5">
@@ -179,6 +183,14 @@ export const Channel3SourcingModal: React.FC<Channel3SourcingModalProps> = ({
                 <span className="text-slate-700">Net Settlement:</span>
                 <span className="text-amber-800">{activeQuote.currency} {activeQuote.netSettlementAmount.toLocaleString()}</span>
               </div>
+              {activeQuote.targetCurrency && activeQuote.targetSettlementAmount !== undefined && (
+                <div className="flex justify-between text-emerald-800">
+                  <span>Indicative payer leg ({activeQuote.targetCurrency}):</span>
+                  <span>{activeQuote.targetCurrency} {activeQuote.targetSettlementAmount.toLocaleString()}</span>
+                </div>
+              )}
+              <p className="text-[10px] text-slate-500">Static demo FX: {activeQuote.fxRate || 'not calculated'} {activeQuote.currency} per {activeQuote.targetCurrency || 'target currency'}. Not a live price.</p>
+              <p className="text-[10px] text-slate-500">Supplier identity and supplier-to-bank mapping are not verified by this prototype; the bank counterparty is a demo assumption.</p>
             </div>
 
             <div className="flex items-center gap-3">

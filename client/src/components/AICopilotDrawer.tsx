@@ -22,15 +22,13 @@ export const AICopilotDrawer: React.FC<AICopilotDrawerProps> = ({
   onClose,
   onNavigate,
 }) => {
-  if (!isOpen) return null;
-
   const [inputMessage, setInputMessage] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(false);
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
       id: 'welcome',
       sender: 'assistant',
-      text: 'Hello! I am your **PayBridge AI Copilot**.\n\nI can explain indicative demo trade pricing, run sample corridor and blocklist checks, and help explore the prototype ledger. PayPal actions use Sandbox credentials when configured or clearly labeled simulation. This app does not submit ledger changes to Fabric or perform atomic real-world settlement.\n\nTry a quick prompt or ask a question.',
+      text: 'Hello! I am your **PayBridge AI Copilot**.\n\nI can explain indicative demo pricing, prototype risk checks, and the trade workflow. PayPal Sandbox capture is a funding step; linked Fabric writes require explicit operator confirmation and separate test-ledger commits. The integrations are not atomic or production financial services.\n\nTry a quick prompt or ask a question.',
     },
   ]);
 
@@ -40,6 +38,8 @@ export const AICopilotDrawer: React.FC<AICopilotDrawerProps> = ({
     'Check PayPal Sandbox settlement status',
     'Rebalance INR and SGD treasury liquidity',
   ];
+
+  if (!isOpen) return null;
 
   const handleSendMessage = async (textToSend?: string) => {
     const text = textToSend || inputMessage;

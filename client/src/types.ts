@@ -76,13 +76,19 @@ export interface Trade {
   reference?: string;
   status: 'PROPOSED' | 'ACCEPTED' | 'SETTLED' | 'EXPIRED' | 'CANCELLED' | 'REFUSED';
   paypalOrderId?: string;
+  paypalCaptureId?: string;
   paypalStatus?: string;
   paypalMode?: string;
   payoutBatchId?: string;
   payoutStatus?: string;
   payoutError?: string;
   receiptHash?: string;
+  fabricTradeId?: string;
+  fabricStatus?: string;
+  fabricTransactionId?: string;
+  riskAssessment?: { verdict: string; riskScore: number; riskTier: string; aiExplanation?: string };
   channel3Sku?: string;
+  channel3Quote?: { quoteId?: string; quantity?: number; item?: { title?: string; supplierName?: string } };
   createdAt?: string | number;
   proposedAt?: string | number;
   acceptedAt?: string | number;
@@ -183,6 +189,7 @@ export interface Channel3Item {
   availableStock: number;
   specifications: string;
   leadTimeDays: number;
+  settlementMappingIsDemo?: boolean;
 }
 
 export interface Channel3Quote {
@@ -191,9 +198,12 @@ export interface Channel3Quote {
   quantity: number;
   baseUnitPrice: number;
   currency: string;
+  targetCurrency?: string;
   grossAmount: number;
   volumeDiscountPct: string;
   netSettlementAmount: number;
+  targetSettlementAmount?: number;
+  fxRate?: string;
   recommendedPayerOrg: string;
   recommendedPayeeOrg: string;
   timestamp: string;

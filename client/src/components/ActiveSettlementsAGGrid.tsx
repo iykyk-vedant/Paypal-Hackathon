@@ -211,9 +211,9 @@ export const ActiveSettlementsAGGrid: React.FC<ActiveSettlementsAGGridProps> = (
                 <button
                   onClick={() => onOpenPayPalModal(tradeComposite)}
                   className="px-2.5 py-1 rounded bg-sky-100 hover:bg-sky-200 border border-sky-200 text-sky-900 font-semibold text-xs flex items-center gap-1 transition-colors"
-                  title="Open PayPal / Demo Settlement Checkout"
+                  title="Capture PayPal Sandbox funding"
                 >
-                  <Play className="w-3 h-3" /> {paypalMode === 'simulation' ? 'Simulate Settle' : 'Settle PayPal'}
+                  <Play className="w-3 h-3" /> {paypalMode === 'simulation' ? 'Simulate Funding' : 'Capture Funding'}
                 </button>
               )}
               {isSettled && (

@@ -8,12 +8,10 @@ interface ZapierConfigModalProps {
 }
 
 export const ZapierConfigModal: React.FC<ZapierConfigModalProps> = ({ isOpen, onClose }) => {
-  if (!isOpen) return null;
-
-  const [webhookUrl, setWebhookUrl] = useState<string>('');
   const [events, setEvents] = useState<any[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
   const [dispatchedSuccess, setDispatchedSuccess] = useState<boolean>(false);
+  const [configured, setConfigured] = useState<boolean>(false);
 
   const fetchEvents = async () => {
     try {
@@ -25,19 +23,16 @@ export const ZapierConfigModal: React.FC<ZapierConfigModalProps> = ({ isOpen, on
   };
 
   useEffect(() => {
+    if (!isOpen) return;
     fetchEvents();
+    api.getZapierStatus().then((status) => setConfigured(status.configured)).catch(() => setConfigured(false));
   }, [isOpen]);
 
   const handleTestDispatch = async () => {
     setLoading(true);
     setDispatchedSuccess(false);
     try {
-      await api.triggerZapier('MANUAL_TEST_TRIGGER', {
-        protocol: 'PayBridge AI Settlement',
-        timestamp: new Date().toISOString(),
-        testPayload: 'Triggered from PayBridge Dashboard',
-        action: 'Notify Slack Channel #fintech-settlements',
-      });
+      await api.triggerZapier('MANUAL_TEST_TRIGGER', {});
       setDispatchedSuccess(true);
       await fetchEvents();
     } catch (err: any) {
@@ -46,6 +41,8 @@ export const ZapierConfigModal: React.FC<ZapierConfigModalProps> = ({ isOpen, on
       setLoading(false);
     }
   };
+
+  if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
@@ -66,24 +63,12 @@ export const ZapierConfigModal: React.FC<ZapierConfigModalProps> = ({ isOpen, on
               <h3 className="text-base font-bold text-slate-900">Workflow notification settings</h3>
 
             </div>
-            <p className="text-xs text-slate-600">
-              Send optional outbound webhook notifications or log simulated demo events locally.
-            </p>
+            <p className="text-xs text-slate-600">{configured ? 'Outbound Zapier Catch webhook is configured on the API.' : 'Zapier is currently running in local simulation mode.'}</p>
           </div>
         </div>
 
-        <div className="space-y-2">
-          <label className="text-xs text-slate-700 font-medium">Webhook URL</label>
-          <input
-            type="text"
-            placeholder="https://hooks.zapier.com/hooks/catch/12345/abcdef/"
-            value={webhookUrl}
-            onChange={(e) => setWebhookUrl(e.target.value)}
-            className="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2 text-xs text-slate-900 placeholder-slate-500 focus:outline-none focus:border-orange-200"
-          />
-          <p className="text-[11px] text-slate-600">
-            Leave empty to run in built-in automated simulation mode.
-          </p>
+        <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 text-[11px] text-slate-700">
+          Configure <code>ZAPIER_WEBHOOK_URL</code> in the backend secret settings. An MCP server URL is not a Catch webhook. The endpoint is intentionally not editable from this public dashboard.
         </div>
 
         <button
@@ -103,7 +88,7 @@ export const ZapierConfigModal: React.FC<ZapierConfigModalProps> = ({ isOpen, on
         {dispatchedSuccess && (
           <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-emerald-800 text-xs flex items-center gap-2">
             <CheckCircle2 className="w-4 h-4 shrink-0" />
-            <span>Test event sent to the configured workflow.</span>
+          <span>{configured ? 'Test event dispatched to the configured webhook.' : 'Test event recorded as a local simulation; no external webhook was called.'}</span>
           </div>
         )}
 

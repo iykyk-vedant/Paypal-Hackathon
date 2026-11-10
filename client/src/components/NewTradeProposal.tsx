@@ -1,16 +1,18 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { api, formatMinorUnits } from '../api';
-import { ScreenId } from '../types';
+import { Channel3Quote, ScreenId } from '../types';
 import { PlusCircle, Sparkles, ArrowRight, ShieldCheck, CheckCircle2 } from 'lucide-react';
 
 interface NewTradeProposalProps {
   onNavigate: (screen: ScreenId) => void;
   onTradeCreated: (trade: any) => void;
+  initialQuote?: Channel3Quote | null;
 }
 
 export const NewTradeProposal: React.FC<NewTradeProposalProps> = ({
   onNavigate,
   onTradeCreated,
+  initialQuote,
 }) => {
   const [proposerMsp, setProposerMsp] = useState<string>('BankA1MSP');
   const [counterpartyMsp, setCounterpartyMsp] = useState<string>('BankB1MSP');
@@ -22,6 +24,24 @@ export const NewTradeProposal: React.FC<NewTradeProposalProps> = ({
   const [reference, setReference] = useState<string>('B2B Medical Diagnostics Sourcing Batch');
   const [loading, setLoading] = useState<boolean>(false);
   const [negotiationNotice, setNegotiationNotice] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!initialQuote) return;
+    if (!['INR', 'SGD'].includes(initialQuote.currency) || !['INR', 'SGD'].includes(initialQuote.targetCurrency || '')) {
+      setNegotiationNotice(`Quote ${initialQuote.quoteId} is attached, but ${initialQuote.currency} is outside the Fabric INR/SGD corridor. Choose a supported catalog item to link it to Fabric.`);
+      setReference(`${initialQuote.item.title} · Channel3 ${initialQuote.quoteId}`);
+      return;
+    }
+    setProposerMsp(initialQuote.recommendedPayerOrg === 'BankA1' ? 'BankA1MSP' : 'BankB1MSP');
+    setCounterpartyMsp(initialQuote.recommendedPayeeOrg === 'BankA1' ? 'BankA1MSP' : 'BankB1MSP');
+    setCcyA(initialQuote.targetCurrency);
+    setCcyB(initialQuote.currency);
+    setAmountA(initialQuote.targetSettlementAmount || initialQuote.netSettlementAmount);
+    setAmountB(initialQuote.netSettlementAmount);
+    setFxRate(initialQuote.fxRate || '1.0000000');
+    setReference(`${initialQuote.item.title} · ${initialQuote.quantity} units · Channel3 ${initialQuote.quoteId}`);
+    setNegotiationNotice(`Channel3 quote ${initialQuote.quoteId} prefilled. The target leg uses an illustrative static FX benchmark; review all amounts before proposing.`);
+  }, [initialQuote]);
 
   // Auto-negotiate using AI Agent
   const handleAutoNegotiate = async () => {
@@ -55,11 +75,13 @@ export const NewTradeProposal: React.FC<NewTradeProposalProps> = ({
         cparty: counterpartyMsp.includes('A1') ? 'a1-trader' : 'b1-trader',
         counterpartyMsp,
         ccyA,
-        amountA: amountA * 100, // into minor units
+        amountA: Math.round(amountA * 100), // into minor units
         ccyB,
-        amountB: amountB * 100, // into minor units
+        amountB: Math.round(amountB * 100), // into minor units
         fxRate,
         reference,
+        channel3Sku: initialQuote?.item.sku,
+        channel3Quote: initialQuote || undefined,
       });
 
       onTradeCreated(newTrade);
