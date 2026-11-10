@@ -1,30 +1,62 @@
-# Render Infrastructure as Code (Prototype Blueprint - Not Production)
+# Render Blueprint: PayBridge API plus Vite frontend
 services:
-  # PayBridge AI Express API Backend
   - type: web
     name: paybridge-api
-    env: node
-    plan: free
-    buildCommand: npm install && cd server && npm install
-    startCommand: cd server && npm start
+    runtime: node
+    plan: 0.5c-512mb
+    region: virginia
+    rootDir: server
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /health
     envVars:
-      - key: PORT
-        value: 10000
       - key: NODE_ENV
         value: production
       - key: PAYPAL_MODE
         value: sandbox
+      - key: FABRIC_GATEWAY_ENABLED
+        value: "false"
+      - key: FABRIC_GATEWAY_WRITE_ENABLED
+        value: "false"
+      - key: FABRIC_HOST
+        sync: false
+      - key: FABRIC_TLS_SERVER_NAME
+        value: peer0.banka1.consortium.local
+      - key: FABRIC_MSP_ID
+        value: BankA1MSP
+      - key: FABRIC_CHANNEL
+        value: settlement
+      - key: FABRIC_CHAINCODE
+        value: settlement-cc
+      - key: FABRIC_PEER_PORT
+        value: "9051"
+      - key: FABRIC_USER_CERT_BASE64
+        sync: false
+      - key: FABRIC_USER_KEY_BASE64
+        sync: false
+      - key: FABRIC_BANKA1_CERT_BASE64
+        sync: false
+      - key: FABRIC_BANKA1_KEY_BASE64
+        sync: false
+      - key: FABRIC_BANKB1_CERT_BASE64
+        sync: false
+      - key: FABRIC_BANKB1_KEY_BASE64
+        sync: false
+      - key: FABRIC_TLS_CA_BASE64
+        sync: false
+      - key: FABRIC_WRITE_API_TOKEN
+        sync: false
       - key: PAYPAL_CLIENT_ID
         sync: false
       - key: PAYPAL_CLIENT_SECRET
         sync: false
 
-  # PayBridge AI React + Vite Frontend
   - type: web
     name: paybridge-client
-    env: static
-    buildCommand: cd client && npm install && npm run build
-    staticPublishPath: client/dist
+    runtime: static
+    rootDir: client
+    buildCommand: npm install && npm run build
+    staticPublishPath: dist
     routes:
       - type: rewrite
         source: /*
@@ -35,11 +67,3 @@ services:
           type: web
           name: paybridge-api
           property: host
-
-  # Autonomous Settlement Background Daemon
-  - type: worker
-    name: paybridge-settlement-worker
-    env: node
-    plan: free
-    buildCommand: cd server && npm install
-    startCommand: node -e "console.log('PayBridge Autonomous Settlement Worker active'); setInterval(() => {}, 60000);"
