@@ -4,24 +4,24 @@
 
 **Show:** Dashboard and the visible demo-mode notice.
 
-**Say:** “PayBridge AI is a hackathon prototype for cross-border trade workflows. It uses sample corridor rules, optional Gemini explanations, and PayPal Sandbox. Its normal trade workflow uses an in-memory demo ledger. An optional Fabric Gateway panel can query the test network and submit explicitly confirmed test transactions when configured.”
+**Say:** “PayBridge AI is a hackathon prototype for cross-border trade. It connects supplier quote prefill, prototype risk review, PayPal Sandbox funding, and explicitly confirmed Hyperledger Fabric test-ledger steps. The systems remain separate and non-atomic.”
 
-### 0:20–0:50 — Indicative proposal and risk explanation
+### 0:20–0:55 — Channel3 sourcing, proposal, and risk explanation
 
-**Show:** Generate a proposal on **New Trade** (or **AI Multi-Agent Swarm**), then run **Sample Risk Check** and view the **Agent decision trace**.
+**Show:** Search the Channel3 catalog, request a quote, use **Prefill Demo Trade Proposal**, review its currency pair and static FX disclosure, submit it, then accept it as the counterparty.
 
-**Say:** “The quote uses a static benchmark and an illustrative volume rule, so it is not a market quote or hedge. The risk checks use prototype rules and a small sample blocklist, not official sanctions sources. When Gemini is configured, it explains those results without making the decision.”
+**Say:** “The Channel3 quote prefills the proposal. Its supplier-to-bank mapping and FX benchmark are demo assumptions. The API runs deterministic corridor and sample-blocklist checks before creating the proposal; Gemini can explain the result but does not decide it.”
 
-### 0:50–1:35 — PayPal Sandbox flow
+### 0:55–1:25 — PayPal Sandbox funding
 
-**Show:** Open an accepted trade (e.g., `T-1048`) and click **Open Settlement Checkout** (or **Settle PayPal**), review the USD funding quote and its static demo FX disclosure, approve the PayPal Sandbox order, and show the capture result.
+**Show:** Open the accepted trade, choose **Capture PayPal Funding**, review the USD funding quote, approve the Sandbox order, and show the capture result.
 
-**Say:** “The server converts the trade amount to a USD Sandbox funding quote and checks the captured amount against that quote. After capture, PayBridge records the event in its local demo ledger. That does not move both currency legs atomically or write to Fabric.”
+**Say:** “The server checks the captured amount against the funding quote. Capture records funding only. It does not settle the Fabric ledger or automatically trigger a payout.”
 
-If credentials are absent, show **Run simulated demo capture** and say: “This run uses simulation instead of PayPal.”
+### 1:25–2:00 — Explicit Fabric confirmation and audit trail
 
-### 1:35–2:00 — Audit trail and close
+**Show (only when funded test accounts and rules allow):** In **Fabric Block Explorer**, link the accepted demo trade, submit and accept the matching Fabric proposal, capture PayPal first if not already captured, then explicitly confirm Fabric settlement. Show that each of the four value-leg transactions commits separately and the linked trade is marked settled only after all four succeed. Finish with the Elastic event search and Zapier event history.
 
-**Show:** **PayPal Ledger**, the **Local Demo Receipt** SHA-256 digest on **Trade Detail**, and the **Demo Fixtures** badge on **Fabric Block Explorer**.
+**Say:** “PayPal and Fabric are separate systems. Fabric settlement requires an operator confirmation and regulator endorsement, then four distinct test-ledger value-leg transactions. This is not atomic, and a partial sequence needs reconciliation. The explorer table still uses fixtures; live block decoding is not implemented.”
 
-**Say:** “The block table and auditor use fixtures. The optional live Gateway panel can query and submit to the test ledger, but it is not connected to PayPal and does not decode real Fabric blocks. PayBridge AI demonstrates how an AI-assisted review and an explicit payment approval can fit into a trade workflow.”
+If test balances or operating rules are not ready, show the Fabric **read-only ledger snapshot** and say the live ledger is connected but currently cannot settle this sample. If PayPal credentials are absent, show **Run simulated demo capture** and say: “This run uses simulation instead of PayPal.”

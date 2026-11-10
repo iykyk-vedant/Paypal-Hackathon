@@ -10,20 +10,24 @@ Cross-border business payments can involve multiple approvals, currencies, and o
 
 ## What the demo does
 
-1. Creates an indicative proposal from static demo FX benchmarks and an illustrative volume heuristic.
-2. Runs sample corridor checks and a small built-in blocklist. Gemini may explain the result; it does not make or authorize the decision.
-3. Calculates a USD PayPal funding quote from the trade's source amount using the static demo benchmark.
-4. Creates a PayPal Sandbox order, lets the user approve it in the PayPal UI, and verifies the captured USD amount against the quote.
-5. Records the result in the prototype's in-memory ledger with a local SHA-256 digest of the demo payload (not a Fabric endorsement or external payment proof) and shows the event for review.
+1. Sources an item through the Channel3 connector or curated fallback and turns its quote into a reviewable trade proposal using illustrative static FX.
+2. Runs deterministic prototype corridor and sample-blocklist checks before proposal creation. Gemini can explain the result but does not make or authorize the decision.
+3. Indexes trade, risk, payment, and linked Fabric workflow events in Elasticsearch when configured; emits lifecycle notifications through a configured Zapier Catch webhook.
+4. Creates a PayPal Sandbox order, lets the payer approve it in the PayPal UI, and verifies the captured USD amount against the quote.
+5. Requires a separate operator-confirmed Fabric test settlement and four separate chaincode value-leg commits before marking the linked local workflow settled.
 
 ## What this prototype does not claim
 
-Fabric Gateway is optional and disabled by default. When configured with rotated identities, the backend can query live chaincode state and submit proposal, acceptance, settlement, and per-leg debit/credit transactions. The block explorer and auditor still use sample fixtures, and live block decoding is not implemented. The ordinary web trade workflow remains in-memory. PayPal capture is not linked atomically to Fabric settlement, and these transactions do not verify PayPal payment. The deployed ledger must already have balances funded through authorized regulator operations. The app does not obtain real central-bank approval, use live FX rates, or perform official OFAC/FATF screening. PayPal Sandbox results are not real payments. Simulation mode is labeled in the interface.
+Fabric Gateway is configured for this deployment, but funded test accounts and valid chaincode rules are still prerequisites for a successful linked trade. The regular proposal and acceptance records remain in memory; an accepted trade can be linked to a live Fabric proposal. Fabric settlement and each value-leg transfer are separate permanent test-ledger writes, not atomic with PayPal capture; partial failures require reconciliation. The block explorer and auditor still use sample fixtures, and live block decoding is not implemented. The app does not obtain real central-bank approval, use live FX rates, or perform official sanctions screening. PayPal Sandbox results are not real payments. Kernel storefront audit output is a deterministic scenario, not live DOM evidence. Simulation and fallback modes are labeled.
 
 ## Tools
 
-- PayPal Developer Platform Sandbox: Orders v2 checkout and capture, when configured.
-- Google Gemini: optional explanation of deterministic prototype risk results and demo quotes.
+- PayPal Developer Platform Sandbox: Orders v2 checkout and capture, when configured; capture is followed by separately confirmed Fabric test settlement.
+- Channel3: optional product discovery and quote prefill; supplier-bank mapping remains a demo assumption.
+- Google Gemini: optional explanation of deterministic prototype risk results.
+- Elasticsearch: optional search and workflow event indexing.
+- Zapier Catch: optional webhook notifications. The app expects `ZAPIER_WEBHOOK_URL`; `ZAPIER_MCP_SERVER_URL` is not used as a Catch webhook.
+- Kernel: optional browser-session creation; no live merchant DOM audit is implemented.
 - React, TypeScript, Vite, Node.js, and Express.
 - AG Grid for the settlement and activity tables.
 - Elasticsearch is optional; local in-memory search is used when it is not configured.

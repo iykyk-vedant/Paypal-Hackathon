@@ -33,16 +33,34 @@ flowchart LR
     F --> H[Hyperledger Fabric test network]
 ```
 
-The web app and API are separate services. The normal trade workflow uses an in-memory demo ledger. Fabric Gateway operations use the separate Fabric panel and do not automatically settle PayPal transactions.
+The web app and API are separate services. A Channel3 quote can prefill a trade; the API runs deterministic demo risk checks with an optional Gemini explanation, and records workflow events in Elasticsearch and Zapier when configured. After the counterparty accepts, PayPal Sandbox funding can be captured. The operator then links the accepted trade to Fabric, explicitly confirms Fabric settlement, and submits the chaincode's four separate value-leg transactions. These are sequential demo steps, not one atomic payment.
 
 ## What the demo includes
 
 - **Trade proposals:** Indicative proposals from static demo FX values and an illustrative volume heuristic.
 - **Risk review:** Deterministic prototype corridor checks and a small built-in sample blocklist. Gemini can explain the result, but it does not make the decision.
-- **PayPal Sandbox:** Optional order approval and capture with server-side verification of the captured amount against the demo quote. Without credentials, the app clearly labels the flow as a simulation.
+- **PayPal Sandbox:** Optional order approval and capture with server-side verification against the demo funding quote. Capture records funding only; it does not mark the trade settled or send an automatic payout.
 - **Review trail:** In-memory demo events and a local SHA-256 receipt digest for inspecting the prototype workflow.
 - **Fabric panel:** Optional live chaincode queries and guarded test writes for proposal, acceptance, regulator-endorsed settlement, and separate debit/credit legs.
 - **Operations UI:** Trade and activity views powered by React, TypeScript, and AG Grid.
+
+## What is connected to Fabric?
+
+Fabric is one optional subsystem inside the wider PayBridge demo. The components below do **not** all participate in a Fabric payment:
+
+| Component | Connected to Fabric? | Role in this prototype |
+| --- | --- | --- |
+| Fabric Gateway + settlement chaincode | **Yes, when enabled** | Reads live chaincode state; guarded API actions can propose, accept, settle, and move test-ledger balances. |
+| PayPal Sandbox | **Correlated, sequentially** | A verified Sandbox capture is required before a linked Fabric settlement can be submitted; it is not atomic with Fabric. |
+| Gemini explanations and AI agents | **Pre-trade, advisory** | Deterministic demo rules run before proposal creation; Gemini can explain the result but never signs or submits Fabric transactions. |
+| Channel3 product sourcing | **Quote to proposal** | A quote can prefill the terms of a trade. Live supplier identity and bank membership are not independently verified. |
+| Elasticsearch | **Workflow observability** | Trade, risk, PayPal, and linked Fabric workflow events are indexed when configured; Elastic is not the authoritative ledger. |
+| Kernel | **Limited / scenario only** | Browser sessions may be created through Kernel, but the storefront audit does not navigate to or inspect a live merchant DOM. |
+| Zapier | **Workflow notifications** | Lifecycle events send to `ZAPIER_WEBHOOK_URL` when configured. `ZAPIER_MCP_SERVER_URL` is a different protocol and is not used as a Catch webhook. |
+| AG Grid and settlement timeline | No | UI views for demo data; they are not ledger nodes or transaction processors. |
+| Fabric block table and fixture auditor | No live block connection | These views use sample block fixtures. Live QSCC block retrieval and decoding are not implemented. |
+
+The regular proposal and acceptance records are still held in memory. The Fabric panel can link an accepted trade and require a completed PayPal capture before chaincode settlement. Chaincode settlement and each of the four value-leg writes are separate commits; a partial sequence needs operator reconciliation. This is a sequential hackathon demonstration, not a production payment rail.
 
 ## Important boundaries
 
@@ -87,11 +105,15 @@ Copy `.env.example` to `.env` and set only the server-side integrations you plan
 
 | Integration | Environment variables | Notes |
 | --- | --- | --- |
-| PayPal | `PAYPAL_MODE`, `PAYPAL_CLIENT_ID`, `PAYPAL_CLIENT_SECRET` | Use Sandbox credentials. Missing credentials leave the app in simulation mode. |
+| PayPal | `PAYPAL_MODE`, `PAYPAL_CLIENT_ID`, `PAYPAL_CLIENT_SECRET` | Use Sandbox credentials. Missing credentials leave the app in simulation mode. Capture does not settle Fabric. |
 | Gemini | `GEMINI_API_KEY`, `GEMINI_MODEL` | Explanations only; deterministic demo checks remain the decision source. |
 | Channel3 | `CHANNEL3_API_KEY`, `CHANNEL3_API_URL` | Optional product sourcing. |
 | Elasticsearch | `ELASTIC_ENDPOINT`, `ELASTIC_API_KEY` | Optional search and indexing. |
-| Kernel / Zapier | `KERNEL_API_BASE`, `ZAPIER_MCP_SERVER_URL` | Optional integrations; configure only if used. |
+| Kernel | `KERNEL_API_BASE`, `KERNEL_API_KEY` | Optional browser-session integration. The storefront audit remains a deterministic scenario, not live DOM inspection. |
+| Zapier Catch | `ZAPIER_WEBHOOK_URL` | Optional outbound Catch webhook for lifecycle notifications. Configure it only in backend secrets. The UI cannot change the destination. |
+| Zapier MCP | `ZAPIER_MCP_SERVER_URL` | Not currently used by this app; it is not a substitute for a Zapier Catch webhook. |
+
+Use `GET /api/integrations/status` to inspect which integrations are configured and which are in simulation/fallback mode. “Configured” means environment settings exist; provider operations can still fail.
 
 Never put server credentials in `client/.env`, the frontend build, screenshots, or Git. Use `.env.example` as a template, not as a place to paste real values.
 
@@ -120,7 +142,7 @@ FABRIC_TLS_CA_BASE64=<peer TLS CA certificate>
 
 Also configure `FABRIC_HOST`, `FABRIC_PEER_PORT`, `FABRIC_TLS_SERVER_NAME`, `FABRIC_MSP_ID`, `FABRIC_CHANNEL`, and `FABRIC_CHAINCODE`. Keep private keys and the write token in the hosting provider’s secret manager. Do not reuse identities that were exposed or committed in the past. The browser asks an authorized operator for the write token and keeps it in page memory for that session.
 
-Writes submit permanent test-ledger transactions. Trades need funded accounts and must satisfy the chaincode’s operating rules. Proposal details used by the counterparty are held in backend memory for up to 30 minutes, so keep one API instance running during the proposal/acceptance flow. If it restarts, re-propose the trade. Fabric writes are not linked to PayPal checkout or payout.
+Writes submit permanent test-ledger transactions. For a linked flow, create and accept the Fabric proposal, capture the linked PayPal Sandbox order, then explicitly confirm Fabric settlement. Commit all four value legs afterward; the app only labels the local workflow settled once all four commits have succeeded. Each call is a separate ledger transaction and a failure can leave partial state. Trades need funded accounts and must satisfy chaincode rules. Proposal details used by the counterparty are held in backend memory for up to 30 minutes, so keep one API instance running during the proposal/acceptance flow. If it restarts, re-propose the trade. This sequence is a prototype and does not make PayPal and Fabric atomic.
 
 ## Deploy on Render
 
