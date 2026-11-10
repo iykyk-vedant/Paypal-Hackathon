@@ -53,6 +53,7 @@ const {
 } = await import('./kernelService.js');
 const { CORRIDORS, FX_RATES, getCalculatedFx } = await import('./corridorRules.js');
 const { getFabricBlocks, auditFabricLedger } = await import('./aiChaincodeAuditor.js');
+const { getFabricGatewayStatus, getFabricLedgerSnapshot } = await import('./fabricGatewayService.js');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -84,7 +85,7 @@ app.get('/health', (req, res) => {
     paypalMode: getPayPalMode(),
     geminiConfigured: Boolean(process.env.GEMINI_API_KEY),
     ledgerMode: 'in_memory_demo',
-    fabricGatewayConnected: false,
+    fabricGatewayConfigured: ['1', 'true', 'yes', 'on'].includes(String(process.env.FABRIC_GATEWAY_ENABLED || '').toLowerCase()),
     prototypeNotice: 'Hackathon prototype; demo operator headers are not authentication.',
     timestamp: new Date().toISOString(),
   });
@@ -535,28 +536,35 @@ function checkTcpReachability(host, port, timeoutMs = 1500) {
 }
 
 app.get('/api/fabric/status', async (req, res) => {
+  const status = await getFabricGatewayStatus();
   const peerConfigured = Boolean(process.env.FABRIC_HOST);
-  const peerReachable = await checkTcpReachability(
+  const peerReachable = peerConfigured ? await checkTcpReachability(
     process.env.FABRIC_HOST,
     process.env.FABRIC_PEER_PORT || 9051,
-  );
+  ) : false;
   res.json({
-    connected: false,
-    gatewayConnected: false,
-    mode: 'DEMO_FIXTURES',
-    ledgerSource: 'SEEDED_SAMPLE_DATA',
+    ...status,
     peerConfigured,
     peerReachable,
-    endpoint: peerConfigured ? `${process.env.FABRIC_HOST}:${process.env.FABRIC_PEER_PORT || 9051}` : null,
-    connectionNote: 'Peer TCP reachability does not mean this app is connected to Fabric; no Gateway client or identity is configured.',
-    channelId: 'settlement',
-    chaincodeId: 'settlement-cc',
+    endpoint: status.endpoint || (peerConfigured ? `${process.env.FABRIC_HOST}:${process.env.FABRIC_PEER_PORT || 9051}` : null),
     organizations: ['RegAMSP (RBI)', 'RegBMSP (MAS)', 'BankA1MSP', 'BankB1MSP', 'AuditorMSP'],
     activeEndorsementPolicy: "AND('RegAMSP.peer', 'RegBMSP.peer')",
-    consensus: '3-Node Raft Consensus (Sample Topology)',
-    sampleTopology: true,
+    consensus: 'Raft (configured network; topology claims require live verification)',
+    sampleTopology: status.mode !== 'LIVE_READ_ONLY',
     dualEngineReady: false,
   });
+});
+
+app.get('/api/fabric/ledger', async (req, res) => {
+  try {
+    const status = await getFabricGatewayStatus();
+    if (!status.gatewayConnected) {
+      return res.status(503).json({ error: status.connectionNote, status });
+    }
+    res.json(await getFabricLedgerSnapshot(req.operator));
+  } catch (err) {
+    res.status(503).json({ error: err.message });
+  }
 });
 
 app.get('/api/fabric/blocks', (req, res) => {
