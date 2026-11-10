@@ -9,7 +9,6 @@ import { ulid } from 'ulid';
 import { CORRIDORS, FX_RATES, getCalculatedFx } from './corridorRules.js';
 
 const GEMINI_KEY = process.env.GEMINI_API_KEY || '';
-const OPENAI_KEY = process.env.OPENAI_API_KEY || '';
 const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
 
 /**
@@ -20,7 +19,7 @@ async function callGeminiFlash(userPrompt, systemInstruction = '') {
   const model = process.env.GEMINI_MODEL || GEMINI_MODEL;
   if (!apiKey) return null;
   try {
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`;
     const payload = {
       contents: [{ parts: [{ text: userPrompt }] }],
     };
@@ -29,8 +28,12 @@ async function callGeminiFlash(userPrompt, systemInstruction = '') {
     }
     const response = await fetch(url, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'x-goog-api-key': apiKey,
+      },
       body: JSON.stringify(payload),
+      signal: AbortSignal.timeout(8000),
     });
     if (response.ok) {
       const data = await response.json();
@@ -62,12 +65,17 @@ export async function agentNegotiateTrade({
 
   const proposalId = `PROP-${ulid().slice(0, 10)}`;
 
+  const aiExplanation = await callGeminiFlash(
+    JSON.stringify({ currencyFrom, currencyTo, baseFx, indicativeRate: hedgedFx, volumeRulePct: volumeDiscount * 100, amountFrom, amountTo }),
+    'Explain this prototype quote in at most 2 sentences. Do not invent current market data or call it a hedge, locked rate, or firm offer. State that the FX benchmark and volume rule are illustrative demo values.'
+  );
   const deliberationLog = [
-    `[Negotiator] Evaluated corridor ${currencyFrom} -> ${currencyTo}. Benchmark FX: ${baseFx}.`,
-    `[Negotiator] Applied institutional volume discount: ${(volumeDiscount * 100).toFixed(2)}% based on size (${amountFrom} minor units).`,
-    `[Negotiator] Synthesized locked forward rate of ${hedgedFx} ${currencyTo} per ${currencyFrom}.`,
-    `[Negotiator] Computed target settlement amount: ${amountTo} minor units (${currencyTo}).`,
-    `[Negotiator] Generated bilateral contract proposal ${proposalId} with atomic settlement guarantee.`,
+    `[Negotiator] Applied static demo FX benchmark for ${currencyFrom} -> ${currencyTo}: ${baseFx}.`,
+    `[Negotiator] Applied illustrative volume heuristic: ${(volumeDiscount * 100).toFixed(2)}% for ${amountFrom} source minor units.`,
+    `[Negotiator] Calculated an indicative demo rate of ${hedgedFx} ${currencyTo} per ${currencyFrom}; this is not a market quote or hedge.`,
+    `[Negotiator] Calculated indicative target amount: ${amountTo} minor units (${currencyTo}).`,
+    `[Negotiator] Created demo proposal ${proposalId}; it has not been committed to Fabric.`,
+    ...(aiExplanation ? [`[Gemini] ${aiExplanation}`] : ['[Gemini] Not configured; deterministic demo quote only.']),
   ];
 
   return {
@@ -82,7 +90,10 @@ export async function agentNegotiateTrade({
     agreedFx: String(hedgedFx),
     discountAppliedPct: (volumeDiscount * 100).toFixed(2),
     deliberationLog,
-    confidenceScore: 0.96,
+    confidenceScore: null,
+    quoteSource: 'Static demo benchmark and illustrative volume heuristic',
+    aiExplanation,
+    reasoningSource: aiExplanation ? 'Gemini explanation of demo quote' : 'Deterministic demo pricing; Gemini unavailable',
     recommendedAction: 'SUBMIT_FOR_APPROVAL',
     suggestedCutoffMin: 30,
     timestamp: new Date().toISOString(),
@@ -137,27 +148,40 @@ export async function agentScreenCompliance({
   const sanctionedBlacklist = ['SANCTIONED_CORP', 'DARK_NODE_9', 'EVIL_CORP'];
   if (sanctionedBlacklist.includes(counterpartyOrg?.toUpperCase())) {
     isRefused = true;
-    refusalReason = `Counterparty ${counterpartyOrg} matches global sanctions watch-list`;
+    refusalReason = `Counterparty ${counterpartyOrg} matches the built-in demo blocklist`;
     riskScore = 99;
-    checks.push({ check: 'AML_SANCTIONS_SCREENING', passed: false, detail: refusalReason });
+    checks.push({ check: 'DEMO_BLOCKLIST_MATCH', passed: false, detail: refusalReason });
   } else {
-    checks.push({ check: 'AML_SANCTIONS_SCREENING', passed: true, detail: 'Zero sanctions match detected across OFAC/FATF' });
+    checks.push({ check: 'DEMO_BLOCKLIST_MATCH', passed: true, detail: 'No match in the small built-in sample blocklist; no official sanctions lists were queried.' });
   }
 
   // 4. PayPal Velocity & High Value Threshold
   if (BigInt(amountA || 0) > 200000000n) {
     riskScore += 18;
-    checks.push({ check: 'VELOCITY_TIER', passed: true, detail: 'Flagged for Senior Dual-Approver sign-off due to size' });
+    checks.push({ check: 'DEMO_AMOUNT_TIER', passed: true, detail: 'Large demo amount; production use would require a separately enforced approval policy.' });
   } else {
-    checks.push({ check: 'VELOCITY_TIER', passed: true, detail: 'Standard automated clearance tier' });
+    checks.push({ check: 'DEMO_AMOUNT_TIER', passed: true, detail: 'Below the illustrative high-amount threshold; not an official compliance check.' });
   }
 
+  const deterministicSummary = {
+    tradeId,
+    verdict: isRefused ? 'REFUSED' : 'APPROVED',
+    riskScore,
+    refusalReason,
+    checks,
+  };
+  const aiExplanation = await callGeminiFlash(
+    JSON.stringify(deterministicSummary),
+    'Explain this prototype risk result in 2 short sentences. Only describe the supplied deterministic checks. Do not claim live sanctions, OFAC, FATF, identity, or regulatory screening. State that the sample blocklist is not an official sanctions source.'
+  );
+
   const deliberationLog = [
-    `[Sentinel] Initiated multi-jurisdiction AML & Corridor compliance inspection for ${tradeId || 'NEW_TRADE'}.`,
-    `[Sentinel] Verified rules for ${jurA} (${rulesA?.country}) and ${jurB} (${rulesB?.country}).`,
+    `[Sentinel] Ran illustrative corridor and sample-blocklist checks for ${tradeId || 'NEW_TRADE'}.`,
+    `[Sentinel] Loaded sample corridor rules for ${jurA} (${rulesA?.country}) and ${jurB} (${rulesB?.country}).`,
     ...checks.map(c => `[Sentinel] Check [${c.check}]: ${c.passed ? 'PASSED' : 'REFUSED'} - ${c.detail}`),
     `[Sentinel] Computed composite financial risk score: ${riskScore}/100 (${riskScore > 50 ? 'HIGH' : riskScore > 25 ? 'MEDIUM' : 'LOW'}).`,
-    `[Sentinel] Final Verdict: ${isRefused ? 'REFUSED - TRANSACTION BLOCKED' : 'APPROVED - SAFE TO SETTLE'}.`,
+    `[Sentinel] Demo rule result: ${isRefused ? 'REFUSED' : 'APPROVED'}; this is not regulatory clearance.`,
+    ...(aiExplanation ? [`[Gemini] ${aiExplanation}`] : ['[Gemini] Not configured; explanation omitted.']),
   ];
 
   return {
@@ -167,6 +191,8 @@ export async function agentScreenCompliance({
     riskTier: riskScore > 50 ? 'HIGH' : riskScore > 25 ? 'MEDIUM' : 'LOW',
     refusalReason,
     checks,
+    aiExplanation,
+    reasoningSource: aiExplanation ? 'Gemini explanation of demo checks' : 'Deterministic demo checks; Gemini unavailable',
     deliberationLog,
     timestamp: new Date().toISOString(),
   };
@@ -200,8 +226,8 @@ export async function agentOrchestrateTreasury({ accounts, trades }) {
   if (inrCoverage < 150) {
     recommendations.push({
       action: 'REBALANCE_INR_LIQUIDITY',
-      reason: `Committed INR settlements (${totalCommittedINR}) approaching available reserves.`,
-      suggestedPayout: 'Execute PayPal Batch Payout from USD Treasury reserves.',
+      reason: `Demo pending INR amounts (${totalCommittedINR}) are high relative to seeded INR balance.`,
+      suggestedPayout: 'Illustrative suggestion only; no PayPal payout is queued automatically.',
       priority: 'HIGH',
     });
   }
@@ -209,16 +235,16 @@ export async function agentOrchestrateTreasury({ accounts, trades }) {
   if (sgdCoverage < 150) {
     recommendations.push({
       action: 'REBALANCE_SGD_LIQUIDITY',
-      reason: `SGD available float (${sgdAvail}) low relative to pending trades.`,
-      suggestedPayout: 'Schedule automated PayPal top-up from Singapore corridor account.',
+      reason: `Seeded SGD demo balance (${sgdAvail}) is low relative to pending demo trades.`,
+      suggestedPayout: 'Illustrative suggestion only; no transfer is initiated automatically.',
       priority: 'MEDIUM',
     });
   }
 
   if (recommendations.length === 0) {
     recommendations.push({
-      action: 'MAINTAIN_OPTIMAL_FLOAT',
-      reason: 'All currency reserves exceed 200% headroom coverage requirement.',
+      action: 'MAINTAIN_DEMO_BALANCES',
+      reason: 'Seeded in-memory demo balances exceed the illustrative 150% threshold.',
       priority: 'LOW',
     });
   }
@@ -243,7 +269,6 @@ export async function agentChatCopilot(userPrompt, context = {}) {
 
   // 1. If user asks to create / propose trade
   if (lower.includes('propose') || lower.includes('create trade') || lower.includes('buy') || lower.includes('sell')) {
-    const isSgd = lower.includes('sgd') || lower.includes('singapore');
     const amountMatch = lower.match(/\d+([,\.]\d+)?/);
     const amountVal = amountMatch ? parseFloat(amountMatch[0].replace(/,/g, '')) : 50000;
     
@@ -256,12 +281,12 @@ export async function agentChatCopilot(userPrompt, context = {}) {
     });
 
     return {
-      reply: `I have activated the **Trade Negotiation Agent** for your request.\n\n` +
+      reply: `**Indicative demo quote** (static benchmark & illustrative volume rule — not a market quote or hedge):\n\n` +
         `• **Corridor**: INR -> SGD\n` +
-        `• **Agreed FX Rate**: ${negotiation.agreedFx} (with ${negotiation.discountAppliedPct}% volume hedge discount)\n` +
-        `• **Proposed Settlement**: ₹${(negotiation.amountFrom / 100).toLocaleString()} <-> S$${(negotiation.amountTo / 100).toLocaleString()}\n` +
-        `• **PayPal Status**: Ready to link with PayPal Sandbox Order.\n\n` +
-        `Would you like me to commit this proposal to the ledger?`,
+        `• **Indicative FX Rate**: ${negotiation.agreedFx} (illustrative ${negotiation.discountAppliedPct}% volume heuristic)\n` +
+        `• **Indicative Amounts**: ₹${(negotiation.amountFrom / 100).toLocaleString()} <-> S$${(negotiation.amountTo / 100).toLocaleString()}\n` +
+        `• **Next Step**: Create a proposal in the in-memory demo ledger (no Fabric commit).\n\n` +
+        `${negotiation.aiExplanation || 'Gemini explanation is unavailable; values come from deterministic demo rules.'}`,
       actionType: 'PROPOSAL_GENERATED',
       data: negotiation,
     };
@@ -280,12 +305,12 @@ export async function agentChatCopilot(userPrompt, context = {}) {
     });
 
     return {
-      reply: `**Compliance & AML Sentinel Report**:\n\n` +
+      reply: `**Prototype risk check**:\n\n` +
         `• **Verdict**: ${screenRes.verdict === 'APPROVED' ? '✅ APPROVED' : '❌ REFUSED'}\n` +
         `• **Risk Score**: ${screenRes.riskScore}/100 (${screenRes.riskTier})\n` +
-        `• **Sanctions Match**: None (Clean across global watchlists)\n` +
-        `• **Corridor Rule**: Single-tx limit & window check passed.\n\n` +
-        `The transaction meets dual-regulator sovereign standards.`,
+        `• **Blocklist**: ${screenRes.checks.find((c) => c.check === 'DEMO_BLOCKLIST_MATCH')?.detail || 'Sample blocklist only'}\n` +
+        `• **Scope**: Demo corridor rules; no official sanctions or regulator systems were queried.\n\n` +
+        `${screenRes.aiExplanation || 'Gemini explanation is unavailable; this result comes from deterministic demo checks.'}`,
       actionType: 'COMPLIANCE_SCREENED',
       data: screenRes,
     };
@@ -294,17 +319,17 @@ export async function agentChatCopilot(userPrompt, context = {}) {
   // 3. If user asks to settle or execute PayPal payment
   if (lower.includes('settle') || lower.includes('paypal') || lower.includes('payout') || lower.includes('execute')) {
     return {
-      reply: `**Autonomous Settlement & PayPal Engine Ready**:\n\n` +
-        `• Connected to: **PayPal Sandbox Developer API**\n` +
-        `• Capability: Atomic leg execution with PayPal Orders v2 capture & Batch Payouts v1.\n` +
-        `• You can click **"Settle via PayPal"** on any accepted trade to trigger immediate atomic disbursement!`,
+      reply: `**PayPal prototype flow**:\n\n` +
+        `• PayPal Orders v2 uses Sandbox credentials when configured; otherwise the app labels the action as simulation.\n` +
+        `• A successful capture updates the in-memory demo ledger and may attempt a Sandbox payout.\n` +
+        `• This app is not connected to a Fabric Gateway and does not atomically move real currency legs.`,
       actionType: 'PAYPAL_INFO',
     };
   }
 
   // Live Gemini 2.5 Flash AI reasoning
-  if (GEMINI_KEY) {
-    const systemPrompt = `You are PayBridge AI Copilot, the intelligent treasury and autonomous commerce assistant. You orchestrate cross-border settlement between India (RBI, BankA1) and Singapore (MAS, BankB1), backed by Hyperledger Fabric 2.5 atomic PvP and PayPal Developer Platform Sandbox orders and payouts. Answer concisely with bullet points and bold technical highlights. Keep responses under 4 sentences.`;
+  if (process.env.GEMINI_API_KEY || GEMINI_KEY) {
+    const systemPrompt = `You are PayBridge AI, an assistant for a hackathon prototype. The running app uses an in-memory demo ledger and Fabric fixtures; it is not connected to a live Fabric Gateway and does not perform atomic real-world PvP settlement. PayPal may be Sandbox or simulated. Do not claim central-bank approval, official sanctions screening, live FX quotes, or completed transfers unless the supplied context explicitly proves it. Answer concisely, under 4 sentences.`;
     const geminiReply = await callGeminiFlash(userPrompt, systemPrompt);
     if (geminiReply) {
       return {
@@ -317,10 +342,10 @@ export async function agentChatCopilot(userPrompt, context = {}) {
 
   // General assistant response fallback
   return {
-    reply: `Hello! I am your **PayBridge AI Copilot**, orchestrating autonomous agentic commerce, cross-border treasury settlements, and PayPal Sandbox payouts.\n\n` +
+    reply: `Hello! I am your **PayBridge AI Copilot** for an in-memory hackathon prototype.\n\n` +
       `Here is what you can ask me to do:\n` +
       `• *"Negotiate a 50,000 SGD trade with Bank B1 with hedge discount"*\n` +
-      `• *"Screen trade T-1048 for AML and sanctions compliance"*\n` +
+      `• *"Run sample risk checks for trade T-1048"*\n` +
       `• *"Orchestrate treasury float and calculate PayPal payout requirements"*\n` +
       `• *"Source electronics inventory from Singapore via Channel3 catalog"*`,
     actionType: 'HELP',

@@ -14,7 +14,7 @@ export const fabricBlocksStore = [
     committedAt: new Date(Date.now() - 3600000).toISOString(),
     transactions: [
       {
-        txId: 'tx-payfabric-01j9x874',
+        txId: 'tx-fixture-01j9x874',
         type: 'ENDORSER_TRANSACTION',
         chaincodeId: 'settlement-cc',
         function: 'SettleTrade',
@@ -42,7 +42,7 @@ export const fabricBlocksStore = [
     committedAt: new Date(Date.now() - 5400000).toISOString(),
     transactions: [
       {
-        txId: 'tx-payfabric-01j9x661',
+        txId: 'tx-fixture-01j9x661',
         type: 'ENDORSER_TRANSACTION',
         chaincodeId: 'settlement-cc',
         function: 'AcceptTrade',
@@ -62,7 +62,7 @@ export const fabricBlocksStore = [
     committedAt: new Date(Date.now() - 7200000).toISOString(),
     transactions: [
       {
-        txId: 'tx-payfabric-01j9x510',
+        txId: 'tx-fixture-01j9x510',
         type: 'ENDORSER_TRANSACTION',
         chaincodeId: 'settlement-cc',
         function: 'ProposeTrade',
@@ -124,7 +124,7 @@ export async function auditFabricLedger() {
     if (tx.paypalLinkage?.orderId) {
       findings.push({
         txId: tx.txId,
-        type: 'PAYPAL_ATOMIC_BRIDGE',
+        type: 'SAMPLE_PAYPAL_REFERENCE',
         severity: 'INFO',
         message: `Fixture contains PayPal Order ${tx.paypalLinkage.orderId} and payout ${tx.paypalLinkage.payoutBatchId}; no external verification was performed.`,
       });

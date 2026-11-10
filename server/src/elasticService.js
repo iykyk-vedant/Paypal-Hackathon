@@ -1,7 +1,7 @@
 // Elastic Observability & Financial Crime Search Service
-// Provides real-time indexing, fuzzy search, and audit trail retrieval
+// Provides demo event indexing, search, and audit trail retrieval
 // for cross-border transactions, AI sentinel logs, and regulatory refusals.
-// Connected to Elastic Cloud Serverless (GCP us-east4) with high-fidelity fallback.
+// Uses Elastic Cloud when configured, with a local in-memory fallback.
 
 import { ulid } from 'ulid';
 
@@ -47,14 +47,14 @@ const SEED_THREAT_INTEL = [
   },
   {
     incidentId: 'SAFE-1001',
-    title: 'Verified Legitimate Cross-Border Settlement',
+    title: 'Sample illustrative cross-border settlement',
     category: 'Legitimate Treasury Settlement',
     targetItem: 'Industrial Medical Diagnostic Sensors',
     riskScore: 1.2,
     description: 'Dual-regulator signed wholesale procurement matching bilateral corridor limits, valid LEI, and clean KYC.',
-    indicators: ['Verified Central Bank Endorsement', 'Clean KYC/AML', 'Valid LEI Code', 'Within Window Limit'],
+    indicators: ['Example regulator fields', 'Sample screening result', 'Illustrative corridor values'],
     recommendedAction: 'APPROVE',
-    resolution: 'Auto-Approved and atomic PvP settlement executed on Hyperledger Fabric',
+    resolution: 'Demo fixture only; no external verification or Fabric settlement was performed',
     esqlSignature: 'FROM paybridge_threat_intel | WHERE riskScore < 2.0',
   },
 ];
@@ -180,7 +180,7 @@ class ElasticObservabilityEngine {
       took_ms: Math.floor(Math.random() * 8) + 2,
       total: hits.length,
       hits,
-      poweredBy: 'PayBridge Elastic Observability Engine',
+      poweredBy: 'Local in-memory demo search',
     };
   }
 
@@ -223,11 +223,11 @@ class ElasticObservabilityEngine {
     }
 
     return {
-      cluster_name: 'paybridge-elastic-observability',
-      status: 'green',
-      number_of_nodes: 3,
+      cluster_name: 'local-in-memory-demo',
+      status: 'local_fallback',
+      number_of_nodes: 1,
       indices: stats,
-      poweredBy: 'Elasticsearch 8.x / Elastic Cloud',
+      poweredBy: 'Local in-memory demo search (Elastic not connected)',
       liveConnected: false,
     };
   }
