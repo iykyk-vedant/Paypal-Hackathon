@@ -4,6 +4,8 @@ import { formatMinorUnits } from '../api';
 import { CalendarDays, Clock, CheckCircle2, ArrowRight, ShieldCheck, Play, Sparkles } from 'lucide-react';
 
 interface BryntumSettlementTimelineProps {
+  canCapture?: boolean;
+  currentMsp?: string;
   trades: TradeComposite[];
   onSelectTrade: (tradeId: string) => void;
   onNavigate: (screen: ScreenId) => void;
@@ -11,6 +13,8 @@ interface BryntumSettlementTimelineProps {
 }
 
 export const BryntumSettlementTimeline: React.FC<BryntumSettlementTimelineProps> = ({
+  canCapture = false,
+  currentMsp,
   trades,
   onSelectTrade,
   onNavigate,
@@ -166,7 +170,7 @@ export const BryntumSettlementTimeline: React.FC<BryntumSettlementTimelineProps>
                           </div>
                         )}
 
-                        {t.trade.status === 'ACCEPTED' && (
+                        {canCapture && t.trade.status === 'ACCEPTED' && t.trade.proposerMsp === currentMsp && (
                           <div className="mt-3 pt-2 border-t border-slate-200/80 flex items-center justify-between">
                             <span className="text-[10px] text-amber-800 font-mono flex items-center gap-1">
                               <span className="w-1.5 h-1.5 rounded-full bg-paypal-gold"></span>

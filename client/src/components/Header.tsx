@@ -1,11 +1,11 @@
 import React from 'react';
 import { ScreenId, MeResponse } from '../types';
-import { Bot, PlusCircle, RefreshCw, ShieldCheck, Zap } from 'lucide-react';
+import { Bot, PlusCircle, RefreshCw, ShieldCheck, Zap, LogOut } from 'lucide-react';
+import { ROLE_SCREENS } from '../roles';
 
 interface HeaderProps {
   me: MeResponse | null;
-  activeOperator: string;
-  onOperatorChange: (op: string) => void;
+  onSignOut: () => void;
   onNavigate: (screen: ScreenId) => void;
   onToggleCopilot: () => void;
   onRefresh: () => void;
@@ -14,8 +14,7 @@ interface HeaderProps {
 
 export const Header: React.FC<HeaderProps> = ({
   me,
-  activeOperator,
-  onOperatorChange,
+  onSignOut,
   onNavigate,
   onToggleCopilot,
   onRefresh,
@@ -65,28 +64,16 @@ export const Header: React.FC<HeaderProps> = ({
             className="min-h-11 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm text-slate-900 focus:outline-none"
             aria-label="Go to section"
           >
-            {sections.map((section) => <option key={section.id} value={section.id}>{section.label}</option>)}
+            {sections.filter((section) => me && ROLE_SCREENS[me.role].includes(section.id)).map((section) => <option key={section.id} value={section.id}>{section.label}</option>)}
           </select>
         </label>
 
         {/* Right: Actions, Operator Selector, AI Copilot */}
         <div className="flex flex-wrap items-center justify-end gap-2 sm:gap-3">
-          {/* Operator Switcher */}
+          {/* Signed-in identity */}
           <div className="flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs">
             <ShieldCheck className="w-4 h-4 text-slate-600" />
-            <span className="hidden text-slate-600 sm:inline">Operator:</span>
-            <select
-              value={activeOperator}
-              onChange={(e) => onOperatorChange(e.target.value)}
-              aria-label="Active operator"
-              className="min-h-10 cursor-pointer bg-transparent font-mono text-xs font-medium text-slate-800 focus:outline-none"
-            >
-              {(me?.identities || ['a1-trader', 'a1-approver', 'b1-trader', 'b1-approver', 'rega-operator', 'regb-operator', 'aud-reader']).map((op) => (
-                <option key={op} value={op} className="bg-white text-slate-900">
-                  {op}
-                </option>
-              ))}
-            </select>
+            <span className="font-semibold text-slate-800">{me?.label}</span>
           </div>
 
           {/* Refresh Button */}
@@ -100,22 +87,23 @@ export const Header: React.FC<HeaderProps> = ({
           </button>
 
           {/* AI Copilot Toggle Button */}
-          <button
+          {me?.orgType === 'bank' && <button
             onClick={onToggleCopilot}
             className="flex min-h-10 items-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-3.5 py-2 text-sm font-semibold text-emerald-900 transition-colors hover:bg-emerald-100"
           >
             <Bot className="w-4 h-4 text-cyan-800" aria-hidden="true" />
             <span>AI Copilot</span>
-          </button>
+          </button>}
 
           {/* New Trade Proposal Button */}
-          <button
+          {me?.role === 'trader' && <button
             onClick={() => onNavigate('new-trade')}
             className="flex min-h-10 items-center gap-2 rounded-lg border border-sky-200 bg-sky-100 px-3.5 py-2 text-sm font-semibold text-sky-900 transition-colors hover:bg-sky-200"
           >
             <PlusCircle className="w-4 h-4" />
             <span>New Trade</span>
-          </button>
+          </button>}
+          <button onClick={onSignOut} title="Sign out" aria-label="Sign out" className="flex min-h-10 items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 hover:bg-slate-50"><LogOut className="h-4 w-4" /><span className="hidden sm:inline">Sign out</span></button>
         </div>
       </div>
     </header>

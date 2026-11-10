@@ -7,7 +7,7 @@ import { FabricBlock } from '../types';
 import { Blocks, Search, Download, CheckCircle2, Cloud, Server, ShieldCheck, ExternalLink } from 'lucide-react';
 import { FabricLedgerActions } from './FabricLedgerActions';
 
-export const FabricBlockExplorer: React.FC = () => {
+export const FabricBlockExplorer: React.FC<{ canWrite?: boolean; currentMsp?: string }> = ({ canWrite = false, currentMsp }) => {
   const gridRef = useRef<AgGridReact>(null);
   const [blocks, setBlocks] = useState<FabricBlock[]>([]);
   const [status, setStatus] = useState<any | null>(null);
@@ -201,10 +201,11 @@ export const FabricBlockExplorer: React.FC = () => {
         </section>
       )}
 
-      <FabricLedgerActions
+      {canWrite && <FabricLedgerActions
+        currentMsp={currentMsp || 'BankA1MSP'}
         enabled={Boolean(status?.gatewayConnected && status?.writeReady)}
         onChanged={fetchData}
-      />
+      />}
 
       {/* Consortium Architecture & Consensus Meta */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">

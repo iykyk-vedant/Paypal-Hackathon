@@ -4,12 +4,14 @@ import { Channel3Quote, ScreenId } from '../types';
 import { PlusCircle, Sparkles, ArrowRight, ShieldCheck, CheckCircle2 } from 'lucide-react';
 
 interface NewTradeProposalProps {
+  currentMsp: string;
   onNavigate: (screen: ScreenId) => void;
   onTradeCreated: (trade: any) => void;
   initialQuote?: Channel3Quote | null;
 }
 
 export const NewTradeProposal: React.FC<NewTradeProposalProps> = ({
+  currentMsp,
   onNavigate,
   onTradeCreated,
   initialQuote,
@@ -26,14 +28,24 @@ export const NewTradeProposal: React.FC<NewTradeProposalProps> = ({
   const [negotiationNotice, setNegotiationNotice] = useState<string | null>(null);
 
   useEffect(() => {
+    setProposerMsp(currentMsp);
+    setCounterpartyMsp(currentMsp === 'BankA1MSP' ? 'BankB1MSP' : 'BankA1MSP');
+    setCcyA(currentMsp === 'BankA1MSP' ? 'INR' : 'SGD');
+    setCcyB(currentMsp === 'BankA1MSP' ? 'SGD' : 'INR');
+  }, [currentMsp]);
+
+  useEffect(() => {
     if (!initialQuote) return;
     if (!['INR', 'SGD'].includes(initialQuote.currency) || !['INR', 'SGD'].includes(initialQuote.targetCurrency || '')) {
       setNegotiationNotice(`Quote ${initialQuote.quoteId} is attached, but ${initialQuote.currency} is outside the Fabric INR/SGD corridor. Choose a supported catalog item to link it to Fabric.`);
       setReference(`${initialQuote.item.title} · Channel3 ${initialQuote.quoteId}`);
       return;
     }
-    setProposerMsp(initialQuote.recommendedPayerOrg === 'BankA1' ? 'BankA1MSP' : 'BankB1MSP');
-    setCounterpartyMsp(initialQuote.recommendedPayeeOrg === 'BankA1' ? 'BankA1MSP' : 'BankB1MSP');
+    const quotePayer = initialQuote.recommendedPayerOrg === 'BankA1' ? 'BankA1MSP' : 'BankB1MSP';
+    if (quotePayer !== currentMsp) {
+      setNegotiationNotice('This quote names the other bank as payer. Your bank can only propose trades for itself; review the corridor and amounts before proceeding.');
+      return;
+    }
     setCcyA(initialQuote.targetCurrency);
     setCcyB(initialQuote.currency);
     setAmountA(initialQuote.targetSettlementAmount || initialQuote.netSettlementAmount);
@@ -41,7 +53,7 @@ export const NewTradeProposal: React.FC<NewTradeProposalProps> = ({
     setFxRate(initialQuote.fxRate || '1.0000000');
     setReference(`${initialQuote.item.title} · ${initialQuote.quantity} units · Channel3 ${initialQuote.quoteId}`);
     setNegotiationNotice(`Channel3 quote ${initialQuote.quoteId} prefilled. The target leg uses an illustrative static FX benchmark; review all amounts before proposing.`);
-  }, [initialQuote]);
+  }, [initialQuote, currentMsp]);
 
   // Auto-negotiate using AI Agent
   const handleAutoNegotiate = async () => {
@@ -70,8 +82,8 @@ export const NewTradeProposal: React.FC<NewTradeProposalProps> = ({
     setLoading(true);
     try {
       const newTrade = await api.proposeTrade({
-        proposer: proposerMsp.includes('A1') ? 'a1-trader' : 'b1-trader',
-        proposerMsp,
+        proposer: currentMsp.includes('A1') ? 'a1-trader' : 'b1-trader',
+        proposerMsp: currentMsp,
         cparty: counterpartyMsp.includes('A1') ? 'a1-trader' : 'b1-trader',
         counterpartyMsp,
         ccyA,
@@ -134,11 +146,10 @@ export const NewTradeProposal: React.FC<NewTradeProposalProps> = ({
               <label className="text-xs font-semibold text-slate-700">Proposer Institution (Buyer)</label>
               <select
                 value={proposerMsp}
-                onChange={(e) => setProposerMsp(e.target.value)}
+                disabled
                 className="w-full mt-1.5 bg-white border border-slate-300 rounded-xl px-3.5 py-2.5 text-xs text-slate-900 focus:outline-none focus:border-sky-200"
               >
-                <option value="BankA1MSP">Bank A1 (India / Mumbai Desk)</option>
-                <option value="BankB1MSP">Bank B1 (Singapore Desk)</option>
+                <option value={currentMsp}>{currentMsp === 'BankA1MSP' ? 'Bank A1 (India / Mumbai Desk)' : 'Bank B1 (Singapore Desk)'}</option>
               </select>
             </div>
 
@@ -146,11 +157,10 @@ export const NewTradeProposal: React.FC<NewTradeProposalProps> = ({
               <label className="text-xs font-semibold text-slate-700">Counterparty Institution (Seller)</label>
               <select
                 value={counterpartyMsp}
-                onChange={(e) => setCounterpartyMsp(e.target.value)}
+                disabled
                 className="w-full mt-1.5 bg-white border border-slate-300 rounded-xl px-3.5 py-2.5 text-xs text-slate-900 focus:outline-none focus:border-sky-200"
               >
-                <option value="BankB1MSP">Bank B1 (Singapore Desk)</option>
-                <option value="BankA1MSP">Bank A1 (India / Mumbai Desk)</option>
+                <option value={counterpartyMsp}>{counterpartyMsp === 'BankB1MSP' ? 'Bank B1 (Singapore Desk)' : 'Bank A1 (India / Mumbai Desk)'}</option>
               </select>
             </div>
           </div>

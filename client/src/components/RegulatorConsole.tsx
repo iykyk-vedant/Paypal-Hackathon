@@ -3,8 +3,8 @@ import { api, formatMinorUnits } from '../api';
 import { CorridorRules, ReserveBalance, Refusal } from '../types';
 import { Scale, ShieldAlert, CheckCircle2, AlertOctagon, RefreshCw, Lock, Unlock } from 'lucide-react';
 
-export const RegulatorConsole: React.FC = () => {
-  const [activeJur, setActiveJur] = useState<'JUR-A' | 'JUR-B'>('JUR-A');
+export const RegulatorConsole: React.FC<{ jurisdiction: 'JUR-A' | 'JUR-B' }> = ({ jurisdiction }) => {
+  const activeJur = jurisdiction;
   const [rules, setRules] = useState<CorridorRules | null>(null);
   const [reserve, setReserve] = useState<ReserveBalance | null>(null);
   const [refusals, setRefusals] = useState<Refusal[]>([]);
@@ -53,25 +53,7 @@ export const RegulatorConsole: React.FC = () => {
           </div>
         </div>
 
-        {/* Corridor Switcher */}
-        <div className="flex items-center bg-white border border-slate-200 rounded-lg p-0.5 text-xs">
-          <button
-            onClick={() => setActiveJur('JUR-A')}
-            className={`px-3 py-1.5 rounded-md font-semibold transition-all ${
-              activeJur === 'JUR-A' ? 'bg-amber-100 text-slate-900 shadow-md' : 'text-slate-600 hover:text-slate-900'
-            }`}
-          >
-            JUR-A (India / INR)
-          </button>
-          <button
-            onClick={() => setActiveJur('JUR-B')}
-            className={`px-3 py-1.5 rounded-md font-semibold transition-all ${
-              activeJur === 'JUR-B' ? 'bg-accent-cyan text-slate-900 shadow-md' : 'text-slate-600 hover:text-slate-900'
-            }`}
-          >
-            JUR-B (Singapore / SGD)
-          </button>
-        </div>
+        <div className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700">{activeJur === 'JUR-A' ? 'JUR-A · India / INR' : 'JUR-B · Singapore / SGD'}</div>
       </div>
 
       {/* Reserve Backing & Regulatory Controls */}

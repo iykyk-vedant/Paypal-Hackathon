@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 
 interface TraderDeskProps {
+  canCapture?: boolean;
   accounts: Account[];
   trades: TradeComposite[];
   onNavigate: (screen: ScreenId) => void;
@@ -24,6 +25,7 @@ interface TraderDeskProps {
 }
 
 export const TraderDesk: React.FC<TraderDeskProps> = ({
+  canCapture = false,
   accounts,
   trades,
   onNavigate,
@@ -50,7 +52,7 @@ export const TraderDesk: React.FC<TraderDeskProps> = ({
           </div>
           <p className="text-xs text-slate-700 mt-1 max-w-2xl leading-relaxed">
             Explore an AI-assisted trade workflow across INR, SGD, and USD sample corridors.
-            Values and ledger state are illustrative demo data; this app is not connected to a live Fabric Gateway.
+            Values in this desk are demo workflow data. The separate Fabric explorer shows live test-ledger data when the Gateway is configured.
           </p>
         </div>
 
@@ -203,7 +205,7 @@ export const TraderDesk: React.FC<TraderDeskProps> = ({
                 </div>
 
                 <div className="flex items-center gap-2">
-                  {t.trade.status === 'ACCEPTED' && (
+                  {canCapture && t.trade.status === 'ACCEPTED' && (
                     <button
                       onClick={() => onOpenPayPalModal(t)}
                       className="px-3 py-1.5 bg-sky-100 hover:bg-sky-200 border border-sky-200 text-slate-900 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-colors"
@@ -275,7 +277,7 @@ export const TraderDesk: React.FC<TraderDeskProps> = ({
 
           <div className="pt-4 border-t border-slate-200 text-[11px] text-slate-600 flex items-center justify-between font-mono">
             <span>Ledger source:</span>
-            <span className="text-slate-800 font-bold">In-memory demo</span>
+            <span className="text-slate-800 font-bold">Demo workflow</span>
           </div>
         </div>
       </div>

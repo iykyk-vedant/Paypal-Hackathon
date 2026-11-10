@@ -7,6 +7,8 @@ import { api, formatMinorUnits } from '../api';
 import { Table, Download, Search, Play, Eye, ShieldCheck, CheckCircle2, Clock, Sparkles } from 'lucide-react';
 
 interface ActiveSettlementsAGGridProps {
+  canCapture?: boolean;
+  currentMsp?: string;
   trades: TradeComposite[];
   onSelectTrade: (tradeId: string) => void;
   onNavigate: (screen: ScreenId) => void;
@@ -15,6 +17,8 @@ interface ActiveSettlementsAGGridProps {
 }
 
 export const ActiveSettlementsAGGrid: React.FC<ActiveSettlementsAGGridProps> = ({
+  canCapture = false,
+  currentMsp,
   trades,
   onSelectTrade,
   onNavigate,
@@ -207,7 +211,7 @@ export const ActiveSettlementsAGGrid: React.FC<ActiveSettlementsAGGridProps> = (
 
           return (
             <div className="flex items-center gap-2 h-full">
-              {isAccepted && (
+              {canCapture && isAccepted && tradeComposite.trade.proposerMsp === currentMsp && (
                 <button
                   onClick={() => onOpenPayPalModal(tradeComposite)}
                   className="px-2.5 py-1 rounded bg-sky-100 hover:bg-sky-200 border border-sky-200 text-sky-900 font-semibold text-xs flex items-center gap-1 transition-colors"
@@ -236,7 +240,7 @@ export const ActiveSettlementsAGGrid: React.FC<ActiveSettlementsAGGridProps> = (
         },
       },
     ];
-  }, [onOpenPayPalModal, onSelectTrade, onNavigate, paypalMode]);
+  }, [onOpenPayPalModal, onSelectTrade, onNavigate, paypalMode, canCapture, currentMsp]);
 
   const defaultColDef = useMemo<ColDef>(() => {
     return {

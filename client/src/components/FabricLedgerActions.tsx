@@ -4,6 +4,7 @@ import { TradeComposite } from '../types';
 import { AlertTriangle, ArrowRightLeft, CheckCircle2, LoaderCircle } from 'lucide-react';
 
 interface FabricLedgerActionsProps {
+  currentMsp: string;
   enabled: boolean;
   onChanged: () => void;
 }
@@ -21,8 +22,8 @@ function fromMinorUnits(value: string | number | undefined): string {
   return `${minor / 100n}.${(minor % 100n).toString().padStart(2, '0')}`;
 }
 
-export const FabricLedgerActions: React.FC<FabricLedgerActionsProps> = ({ enabled, onChanged }) => {
-  const [proposerMsp, setProposerMsp] = useState<'BankA1MSP' | 'BankB1MSP'>('BankA1MSP');
+export const FabricLedgerActions: React.FC<FabricLedgerActionsProps> = ({ currentMsp, enabled, onChanged }) => {
+  const proposerMsp = currentMsp as 'BankA1MSP' | 'BankB1MSP';
   const [amountA, setAmountA] = useState('1000.00');
   const [amountB, setAmountB] = useState('16.00');
   const ccyA: 'INR' | 'SGD' = proposerMsp === 'BankA1MSP' ? 'INR' : 'SGD';
@@ -120,7 +121,6 @@ export const FabricLedgerActions: React.FC<FabricLedgerActionsProps> = ({ enable
                   setSelectedSourceTrade(selected || null);
                   setTradeId(selected?.trade.fabricTradeId || '');
                   if (!selected) return;
-                  setProposerMsp(selected.trade.proposerMsp === 'BankB1MSP' ? 'BankB1MSP' : 'BankA1MSP');
                   setAmountA(fromMinorUnits(selected.trade.amountA));
                   setAmountB(fromMinorUnits(selected.trade.amountB));
                   setReference(selected.trade.reference || `PayBridge linked trade ${selected.trade.tradeId}`);
@@ -130,10 +130,7 @@ export const FabricLedgerActions: React.FC<FabricLedgerActionsProps> = ({ enable
                 </select>
               </label>
               <label className="block text-xs text-slate-700">Signing bank
-                <select value={proposerMsp} onChange={(event) => setProposerMsp(event.target.value as 'BankA1MSP' | 'BankB1MSP')} className="mt-1 w-full rounded-lg border border-slate-300 p-2 text-slate-900">
-                  <option value="BankA1MSP">Bank A1 (INR payer)</option>
-                  <option value="BankB1MSP">Bank B1 (SGD payer)</option>
-                </select>
+                <div className="mt-1 rounded-lg border border-slate-300 bg-slate-50 p-2 text-slate-900">{proposerMsp === 'BankA1MSP' ? 'Bank A1 (INR payer)' : 'Bank B1 (SGD payer)'}</div>
               </label>
               <p className="text-xs text-slate-600">Trade corridor: {ccyA} → {ccyA === 'INR' ? 'SGD' : 'INR'}</p>
               <div className="grid grid-cols-2 gap-2">
@@ -141,25 +138,26 @@ export const FabricLedgerActions: React.FC<FabricLedgerActionsProps> = ({ enable
                 <label className="text-xs text-slate-700">Amount B ({ccyA === 'INR' ? 'SGD' : 'INR'})<input value={amountB} onChange={(event) => setAmountB(event.target.value)} inputMode="decimal" className="mt-1 w-full rounded-lg border border-slate-300 p-2 text-slate-900" /></label>
               </div>
               <label className="block text-xs text-slate-700">Reference<input value={reference} onChange={(event) => setReference(event.target.value)} maxLength={160} className="mt-1 w-full rounded-lg border border-slate-300 p-2 text-slate-900" /></label>
-              <button onClick={handlePropose} disabled={busy || writeToken.length < 32} className="w-full rounded-lg bg-blue-700 hover:bg-blue-800 text-white font-semibold text-xs p-2.5 disabled:opacity-50">{busy ? 'Submitting…' : 'Submit proposal to Fabric'}</button>
+              <button onClick={handlePropose} disabled={busy || writeToken.length < 32 || Boolean(selectedSourceTrade && selectedSourceTrade.trade.proposerMsp !== currentMsp)} className="w-full rounded-lg bg-blue-700 hover:bg-blue-800 text-white font-semibold text-xs p-2.5 disabled:opacity-50">{busy ? 'Submitting…' : 'Submit proposal to Fabric'}</button>
+              {selectedSourceTrade?.trade.proposerMsp !== currentMsp && selectedSourceTrade && <p className="text-xs text-amber-800">This proposal belongs to the other bank. You may review or accept it as counterparty.</p>}
             </div>
 
             <div className="rounded-xl border border-slate-200 bg-white p-4 space-y-3">
               <h4 className="text-sm font-bold text-slate-900">Accept or settle a live trade</h4>
               <label className="block text-xs text-slate-700">Trade ID<input value={tradeId} onChange={(event) => setTradeId(event.target.value)} placeholder="T-…" className="mt-1 w-full rounded-lg border border-slate-300 p-2 font-mono text-slate-900" /></label>
-              <button onClick={() => run(() => api.acceptFabricTrade(tradeId, writeToken))} disabled={busy || !tradeId || writeToken.length < 32 || (Boolean(sourceTradeId) && (selectedSourceTrade?.trade.fabricStatus === 'ACCEPTED' || selectedSourceTrade?.trade.fabricStatus?.startsWith('SETTLED')))} className="w-full rounded-lg bg-emerald-700 hover:bg-emerald-800 text-white font-semibold text-xs p-2.5 disabled:opacity-50">{busy ? 'Submitting…' : selectedSourceTrade?.trade.fabricStatus === 'ACCEPTED' || selectedSourceTrade?.trade.fabricStatus?.startsWith('SETTLED') ? 'Fabric proposal already accepted' : 'Accept as counterparty bank'}</button>
+              {(!selectedSourceTrade || selectedSourceTrade.trade.counterpartyMsp === currentMsp) && <button onClick={() => run(() => api.acceptFabricTrade(tradeId, writeToken))} disabled={busy || !tradeId || writeToken.length < 32 || (Boolean(sourceTradeId) && (selectedSourceTrade?.trade.fabricStatus === 'ACCEPTED' || selectedSourceTrade?.trade.fabricStatus?.startsWith('SETTLED')))} className="w-full rounded-lg bg-emerald-700 hover:bg-emerald-800 text-white font-semibold text-xs p-2.5 disabled:opacity-50">{busy ? 'Submitting…' : selectedSourceTrade?.trade.fabricStatus === 'ACCEPTED' || selectedSourceTrade?.trade.fabricStatus?.startsWith('SETTLED') ? 'Fabric proposal already accepted' : 'Accept as counterparty bank'}</button>}
               <label className="flex items-start gap-2 text-xs text-slate-700 rounded-lg bg-amber-50 border border-amber-200 p-3">
                 <input type="checkbox" checked={confirmSettlement} onChange={(event) => setConfirmSettlement(event.target.checked)} className="mt-0.5" />
                 I understand this writes permanently to the test ledger. For a linked trade, PayPal capture must complete first; this confirmation submits Fabric settlement, then each of the four value-leg actions is a separate commit.
               </label>
-              <button onClick={() => run(() => api.settleFabricTrade(tradeId, writeToken))} disabled={busy || !tradeId || !confirmSettlement || writeToken.length < 32 || selectedSourceTrade?.trade.fabricStatus === 'SETTLED_PENDING_VALUE_LEGS' || selectedSourceTrade?.trade.fabricStatus === 'SETTLED'} className="w-full rounded-lg bg-amber-700 hover:bg-amber-800 text-white font-semibold text-xs p-2.5 disabled:opacity-50">{busy ? 'Submitting…' : selectedSourceTrade?.trade.fabricStatus?.startsWith('SETTLED') ? 'Fabric settlement already committed' : 'Settle on Fabric'}</button>
+              {(!selectedSourceTrade || selectedSourceTrade.trade.proposerMsp === currentMsp) && <button onClick={() => run(() => api.settleFabricTrade(tradeId, writeToken))} disabled={busy || !tradeId || !confirmSettlement || writeToken.length < 32 || selectedSourceTrade?.trade.fabricStatus === 'SETTLED_PENDING_VALUE_LEGS' || selectedSourceTrade?.trade.fabricStatus === 'SETTLED'} className="w-full rounded-lg bg-amber-700 hover:bg-amber-800 text-white font-semibold text-xs p-2.5 disabled:opacity-50">{busy ? 'Submitting…' : selectedSourceTrade?.trade.fabricStatus?.startsWith('SETTLED') ? 'Fabric settlement already committed' : 'Settle on Fabric'}</button>}
               <div className="border-t border-slate-200 pt-3">
                 <p className="text-[11px] text-slate-600 mb-2">After dual-regulator Settle, the network round-trip uses this order. Each is a separate committed ledger write, and chaincode validates current state.</p>
                 <div className="grid grid-cols-2 gap-2">
-                  <button onClick={() => run(() => api.performFabricLegAction(tradeId, 'B', 'credit', writeToken))} disabled={busy || !tradeId || !confirmSettlement || writeToken.length < 32 || (Boolean(sourceTradeId) && selectedSourceTrade?.trade.fabricStatus !== 'SETTLED_PENDING_VALUE_LEGS')} className="rounded-lg border border-slate-300 bg-slate-50 hover:bg-slate-100 text-slate-800 text-xs p-2 disabled:opacity-50">1 · Credit payee B</button>
-                  <button onClick={() => run(() => api.performFabricLegAction(tradeId, 'A', 'debit', writeToken))} disabled={busy || !tradeId || !confirmSettlement || writeToken.length < 32 || (Boolean(sourceTradeId) && selectedSourceTrade?.trade.fabricStatus !== 'SETTLED_PENDING_VALUE_LEGS')} className="rounded-lg border border-slate-300 bg-slate-50 hover:bg-slate-100 text-slate-800 text-xs p-2 disabled:opacity-50">2 · Settle debit A</button>
-                  <button onClick={() => run(() => api.performFabricLegAction(tradeId, 'B', 'debit', writeToken))} disabled={busy || !tradeId || !confirmSettlement || writeToken.length < 32 || (Boolean(sourceTradeId) && selectedSourceTrade?.trade.fabricStatus !== 'SETTLED_PENDING_VALUE_LEGS')} className="rounded-lg border border-slate-300 bg-slate-50 hover:bg-slate-100 text-slate-800 text-xs p-2 disabled:opacity-50">3 · Settle debit B</button>
-                  <button onClick={() => run(() => api.performFabricLegAction(tradeId, 'A', 'credit', writeToken))} disabled={busy || !tradeId || !confirmSettlement || writeToken.length < 32 || (Boolean(sourceTradeId) && selectedSourceTrade?.trade.fabricStatus !== 'SETTLED_PENDING_VALUE_LEGS')} className="rounded-lg border border-slate-300 bg-slate-50 hover:bg-slate-100 text-slate-800 text-xs p-2 disabled:opacity-50">4 · Credit payee A</button>
+                  {(!selectedSourceTrade || selectedSourceTrade.trade.proposerMsp === currentMsp) && <button onClick={() => run(() => api.performFabricLegAction(tradeId, 'B', 'credit', writeToken))} disabled={busy || !tradeId || !confirmSettlement || writeToken.length < 32 || (Boolean(sourceTradeId) && selectedSourceTrade?.trade.fabricStatus !== 'SETTLED_PENDING_VALUE_LEGS')} className="rounded-lg border border-slate-300 bg-slate-50 hover:bg-slate-100 text-slate-800 text-xs p-2 disabled:opacity-50">1 · Credit payee B</button>}
+                  {(!selectedSourceTrade || selectedSourceTrade.trade.proposerMsp === currentMsp) && <button onClick={() => run(() => api.performFabricLegAction(tradeId, 'A', 'debit', writeToken))} disabled={busy || !tradeId || !confirmSettlement || writeToken.length < 32 || (Boolean(sourceTradeId) && selectedSourceTrade?.trade.fabricStatus !== 'SETTLED_PENDING_VALUE_LEGS')} className="rounded-lg border border-slate-300 bg-slate-50 hover:bg-slate-100 text-slate-800 text-xs p-2 disabled:opacity-50">2 · Settle debit A</button>}
+                  {(!selectedSourceTrade || selectedSourceTrade.trade.counterpartyMsp === currentMsp) && <button onClick={() => run(() => api.performFabricLegAction(tradeId, 'B', 'debit', writeToken))} disabled={busy || !tradeId || !confirmSettlement || writeToken.length < 32 || (Boolean(sourceTradeId) && selectedSourceTrade?.trade.fabricStatus !== 'SETTLED_PENDING_VALUE_LEGS')} className="rounded-lg border border-slate-300 bg-slate-50 hover:bg-slate-100 text-slate-800 text-xs p-2 disabled:opacity-50">3 · Settle debit B</button>}
+                  {(!selectedSourceTrade || selectedSourceTrade.trade.counterpartyMsp === currentMsp) && <button onClick={() => run(() => api.performFabricLegAction(tradeId, 'A', 'credit', writeToken))} disabled={busy || !tradeId || !confirmSettlement || writeToken.length < 32 || (Boolean(sourceTradeId) && selectedSourceTrade?.trade.fabricStatus !== 'SETTLED_PENDING_VALUE_LEGS')} className="rounded-lg border border-slate-300 bg-slate-50 hover:bg-slate-100 text-slate-800 text-xs p-2 disabled:opacity-50">4 · Credit payee A</button>}
                 </div>
               </div>
             </div>

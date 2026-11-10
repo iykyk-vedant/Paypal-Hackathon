@@ -45,12 +45,13 @@ export interface FabricAuditReport {
 }
 
 export interface MeResponse {
+  label: string;
+  role: 'trader' | 'approver' | 'regulator' | 'auditor';
   org: string;
   msp: string;
   operator: string;
   orgType: 'bank' | 'regulator' | 'auditor';
   jurisdiction: string | null;
-  identities: string[];
   ready: boolean;
 }
 

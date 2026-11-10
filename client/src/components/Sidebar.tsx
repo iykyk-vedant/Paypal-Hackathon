@@ -14,6 +14,7 @@ import {
   Blocks,
   Bot,
 } from 'lucide-react';
+import { ROLE_SCREENS } from '../roles';
 
 interface SidebarProps {
   currentScreen: ScreenId;
@@ -108,7 +109,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             Banking
           </div>
           <nav className="space-y-1">
-            {navItems.map((item) => {
+            {navItems.filter((item) => me && ROLE_SCREENS[me.role].includes(item.id)).map((item) => {
               const Icon = item.icon;
               const isActive = currentScreen === item.id;
 
@@ -145,7 +146,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </div>
 
         {/* Automation settings */}
-        {onOpenZapierModal && (
+        {me?.role === 'approver' && onOpenZapierModal && (
           <div className="px-1">
             <button
               onClick={onOpenZapierModal}
@@ -173,11 +174,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </div>
         <div className="flex items-center justify-between text-slate-600">
           <span>Ledger:</span>
-          <span className="font-mono font-semibold text-slate-700">In-memory demo</span>
+          <span className="font-mono font-semibold text-slate-700">Demo workflow</span>
         </div>
         <div className="flex items-center justify-between text-slate-600">
           <span>Fabric:</span>
-          <span className="font-mono font-semibold text-slate-700">Fixtures</span>
+          <span className="font-mono font-semibold text-slate-700">Test ledger</span>
         </div>
       </div>
     </aside>

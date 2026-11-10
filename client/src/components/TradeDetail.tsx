@@ -16,6 +16,9 @@ import {
 } from 'lucide-react';
 
 interface TradeDetailProps {
+  canAccept?: boolean;
+  canCapture?: boolean;
+  currentMsp?: string;
   trade: TradeComposite | null;
   onNavigate: (screen: ScreenId) => void;
   onAcceptTrade: (tradeId: string) => void;
@@ -24,6 +27,9 @@ interface TradeDetailProps {
 }
 
 export const TradeDetail: React.FC<TradeDetailProps> = ({
+  canAccept = false,
+  canCapture = false,
+  currentMsp,
   trade,
   onNavigate,
   onAcceptTrade,
@@ -88,7 +94,7 @@ export const TradeDetail: React.FC<TradeDetailProps> = ({
           </div>
 
           <div className="flex items-center gap-3">
-            {t.status === 'PROPOSED' && (
+            {canAccept && t.status === 'PROPOSED' && (
               <button
                 onClick={() => onAcceptTrade(t.tradeId)}
                 className="px-4 py-2 bg-emerald-100 hover:bg-emerald-200 border border-emerald-200 text-slate-900 rounded-xl text-xs font-bold flex items-center gap-2 transition-colors"
@@ -97,7 +103,7 @@ export const TradeDetail: React.FC<TradeDetailProps> = ({
               </button>
             )}
 
-            {t.status === 'ACCEPTED' && (
+            {canCapture && t.status === 'ACCEPTED' && t.proposerMsp === currentMsp && (
               <button
                 onClick={() => onOpenPayPalModal(trade)}
                 className="px-4 py-2 bg-sky-100 hover:bg-sky-200 border border-sky-200 text-slate-900 rounded-xl text-xs font-bold flex items-center gap-2 transition-colors"
@@ -106,7 +112,7 @@ export const TradeDetail: React.FC<TradeDetailProps> = ({
               </button>
             )}
 
-            {t.status === 'SETTLED' && t.paypalCaptureId && ['SGD', 'USD'].includes(t.ccyB) && (!t.payoutStatus || t.payoutStatus === 'FAILED') && onRequestPayPalPayout && (
+            {t.status === 'SETTLED' && t.proposerMsp === currentMsp && t.paypalCaptureId && ['SGD', 'USD'].includes(t.ccyB) && (!t.payoutStatus || t.payoutStatus === 'FAILED') && onRequestPayPalPayout && (
               <button
                 onClick={() => onRequestPayPalPayout(t.tradeId)}
                 className="px-4 py-2 bg-emerald-100 hover:bg-emerald-200 border border-emerald-200 text-slate-900 rounded-xl text-xs font-bold flex items-center gap-2 transition-colors"

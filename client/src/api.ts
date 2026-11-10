@@ -50,20 +50,22 @@ export function formatMinorUnitsPlain(minorStr: string | number | bigint | undef
 }
 
 export class ApiClient {
-  private operator: string = 'a1-trader';
+  private token: string | null = sessionStorage.getItem('paybridge_session');
 
-  setOperator(operator: string) {
-    this.operator = operator;
+  setSession(token: string | null) {
+    this.token = token;
+    if (token) sessionStorage.setItem('paybridge_session', token);
+    else sessionStorage.removeItem('paybridge_session');
   }
 
-  getOperator(): string {
-    return this.operator;
+  hasSession(): boolean {
+    return Boolean(this.token);
   }
 
   private async request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
     const headers = {
       'Content-Type': 'application/json',
-      'X-Operator': this.operator,
+      ...(this.token ? { Authorization: `Bearer ${this.token}` } : {}),
       ...(options.headers || {}),
     };
 
@@ -71,6 +73,10 @@ export class ApiClient {
     if (apiBase && !/^https?:\/\//i.test(apiBase)) apiBase = `https://${apiBase}`;
     const url = endpoint.startsWith('http') ? endpoint : `${apiBase}${endpoint}`;
     const res = await fetch(url, { ...options, headers });
+    if (res.status === 401 && endpoint !== '/auth/login' && this.token) {
+      this.setSession(null);
+      window.dispatchEvent(new Event('paybridge-session-expired'));
+    }
     if (!res.ok) {
       let errBody;
       try {
@@ -92,6 +98,17 @@ export class ApiClient {
   }
 
   // --- CORE ROUTES ---
+  async login(operator: string, password: string) {
+    return this.request<{ token: string; profile: MeResponse; expiresAt: number }>('/auth/login', {
+      method: 'POST', body: JSON.stringify({ operator, password }),
+    });
+  }
+
+  async logout() {
+    try { await this.request('/auth/logout', { method: 'POST' }); }
+    finally { this.setSession(null); }
+  }
+
   async getHealth() {
     return this.request<{
       status: string;

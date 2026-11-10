@@ -11,9 +11,10 @@ import {
 } from './types';
 
 import { Header } from './components/Header';
-import { ConsortiumBar } from './components/ConsortiumBar';
 import { Sidebar } from './components/Sidebar';
 import { Toast } from './components/Toast';
+import { PublicEntry } from './components/PublicEntry';
+import { canOpen, HOME_SCREEN } from './roles';
 
 
 const TraderDesk = lazy(() => import('./components/TraderDesk').then((m) => ({ default: m.TraderDesk })));
@@ -34,9 +35,8 @@ const FabricBlockExplorer = lazy(() => import('./components/FabricBlockExplorer'
 const AIChaincodeAuditorView = lazy(() => import('./components/AIChaincodeAuditorView').then((m) => ({ default: m.AIChaincodeAuditorView })));
 
 export function App() {
-  const [currentNodeId, setCurrentNodeId] = useState<string>('banka1');
-  const [activeOperator, setActiveOperator] = useState<string>('a1-trader');
   const [me, setMe] = useState<MeResponse | null>(null);
+  const [checkingSession, setCheckingSession] = useState(api.hasSession());
   const [currentScreen, setCurrentScreen] = useState<ScreenId>('desk');
   const [selectedTradeId, setSelectedTradeId] = useState<string>('T-1048');
 
@@ -67,17 +67,6 @@ export function App() {
     setToasts((prev) => prev.filter((t) => t.id !== id));
   }, []);
 
-  // Fetch /me & setup node identity
-  const setupNode = useCallback(async (operator: string) => {
-    api.setOperator(operator);
-    try {
-      const meData = await api.getMe();
-      setMe(meData);
-    } catch (err) {
-      console.warn('Failed to fetch /me:', err);
-    }
-  }, []);
-
   // Refresh Accounts, Trades, and PayPal Ledger
   const refreshData = useCallback(async () => {
     try {
@@ -103,21 +92,38 @@ export function App() {
   }, [selectedTradeId]);
 
   useEffect(() => {
-    setupNode(activeOperator);
-    refreshData();
-  }, [activeOperator, setupNode, refreshData]);
+    if (!api.hasSession()) return;
+    api.getMe().then((profile) => {
+      setMe(profile);
+      setCurrentScreen(HOME_SCREEN[profile.role]);
+      setCheckingSession(false);
+    }).catch(() => {
+      api.setSession(null);
+      setCheckingSession(false);
+    });
+  }, []);
 
-  // Node Switcher Handler
-  const handleSelectNode = (nodeId: string, operator: string) => {
-    setCurrentNodeId(nodeId);
-    setActiveOperator(operator);
-    if (nodeId === 'rega' || nodeId === 'regb') {
-      setCurrentScreen('regulator');
-    } else if (nodeId === 'auditor') {
-      setCurrentScreen('auditor');
-    } else {
-      setCurrentScreen('desk');
-    }
+  useEffect(() => {
+    const onExpired = () => { setMe(null); setCheckingSession(false); };
+    window.addEventListener('paybridge-session-expired', onExpired);
+    return () => window.removeEventListener('paybridge-session-expired', onExpired);
+  }, []);
+
+  useEffect(() => { if (me) refreshData(); }, [me, refreshData]);
+  useEffect(() => { if (me && !canOpen(me, currentScreen)) setCurrentScreen(HOME_SCREEN[me.role]); }, [me, currentScreen]);
+
+  const navigate = (screen: ScreenId) => {
+    if (canOpen(me, screen)) setCurrentScreen(screen);
+  };
+
+  const signOut = async () => {
+    try { await api.logout(); } catch { api.setSession(null); }
+    setMe(null);
+    setAccounts([]);
+    setTrades([]);
+    setPayPalLedger([]);
+    setIsCopilotOpen(false);
+    setIsPayPalModalOpen(false);
   };
 
   // Accept Trade Handler
@@ -127,7 +133,7 @@ export function App() {
       addToast({
         type: 'success',
         title: 'Trade accepted',
-        message: 'Counterparty leg marked as held in the in-memory demo ledger.',
+        message: 'Counterparty leg marked as held in the demo workflow.',
       });
       await refreshData();
     } catch (err: any) {
@@ -181,6 +187,12 @@ export function App() {
 
   const selectedTrade = trades.find((t) => t.trade.tradeId === selectedTradeId) || trades[0] || null;
 
+  if (checkingSession) return <div className="flex min-h-screen items-center justify-center bg-slate-50 text-sm text-slate-600" role="status">Checking your session…</div>;
+  if (!me) return <PublicEntry onSignedIn={(profile) => {
+    setMe(profile);
+    setCurrentScreen(HOME_SCREEN[profile.role]);
+  }} />;
+
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 flex flex-col font-sans">
       <a href="#main-content" className="sr-only z-[100] rounded-md bg-white px-4 py-3 text-sm text-slate-900 focus:not-sr-only focus:fixed focus:left-4 focus:top-4">
@@ -189,18 +201,11 @@ export function App() {
       {/* Header with branding and demo operator selector */}
       <Header
         me={me}
-        activeOperator={activeOperator}
-        onOperatorChange={(op) => setActiveOperator(op)}
-        onNavigate={(screen) => setCurrentScreen(screen)}
+        onSignOut={signOut}
+        onNavigate={navigate}
         onToggleCopilot={() => setIsCopilotOpen((prev) => !prev)}
         onRefresh={refreshData}
         currentScreen={currentScreen}
-      />
-
-      {/* 2. Consortium Bar for Node Switching */}
-      <ConsortiumBar
-        currentNodeId={currentNodeId}
-        onSelectNode={handleSelectNode}
       />
 
       {/* 3. Main Workspace Layout */}
@@ -208,7 +213,7 @@ export function App() {
         {/* Navigation Sidebar */}
         <Sidebar
           currentScreen={currentScreen}
-          onNavigate={(screen) => setCurrentScreen(screen)}
+          onNavigate={navigate}
           me={me}
           paypalMode={paypalMode}
           onOpenZapierModal={() => setIsZapierModalOpen(true)}
@@ -226,11 +231,12 @@ export function App() {
               <div className="mt-4 h-64 animate-pulse rounded-xl border border-slate-200 bg-white/70" />
             </div>
           }>
-          {currentScreen === 'desk' && (
+          {canOpen(me, currentScreen) && currentScreen === 'desk' && (
             <TraderDesk
               accounts={accounts}
               trades={trades}
-              onNavigate={(screen) => setCurrentScreen(screen)}
+              onNavigate={navigate}
+              canCapture={me.role === 'approver'}
               onSelectTrade={(id) => setSelectedTradeId(id)}
               onOpenPayPalModal={(trade) => {
                 setPaypalModalTrade(trade);
@@ -239,11 +245,13 @@ export function App() {
             />
           )}
 
-          {currentScreen === 'active-settlements' && (
+          {canOpen(me, currentScreen) && currentScreen === 'active-settlements' && (
             <ActiveSettlementsAGGrid
+              currentMsp={me.msp}
               trades={trades}
               onSelectTrade={(id) => setSelectedTradeId(id)}
-              onNavigate={(screen) => setCurrentScreen(screen)}
+              onNavigate={navigate}
+              canCapture={me.role === 'approver'}
               onSettleTrade={handleSettleTrade}
               onOpenPayPalModal={(trade) => {
                 setPaypalModalTrade(trade);
@@ -252,18 +260,20 @@ export function App() {
             />
           )}
 
-          {currentScreen === 'paypal-ledger' && (
+          {canOpen(me, currentScreen) && currentScreen === 'paypal-ledger' && (
             <PayPalLedgerAGGrid
               ledger={paypalLedger}
               onRefresh={refreshData}
             />
           )}
 
-          {currentScreen === 'bryntum-timeline' && (
+          {canOpen(me, currentScreen) && currentScreen === 'bryntum-timeline' && (
             <BryntumSettlementTimeline
+              currentMsp={me.msp}
               trades={trades}
               onSelectTrade={(id) => setSelectedTradeId(id)}
-              onNavigate={(screen) => setCurrentScreen(screen)}
+              onNavigate={navigate}
+              canCapture={me.role === 'approver'}
               onOpenPayPalModal={(trade) => {
                 setPaypalModalTrade(trade);
                 setIsPayPalModalOpen(true);
@@ -271,15 +281,15 @@ export function App() {
             />
           )}
 
-          {currentScreen === 'fabric-explorer' && <FabricBlockExplorer />}
+          {canOpen(me, currentScreen) && currentScreen === 'fabric-explorer' && <FabricBlockExplorer canWrite={me.role === 'approver'} currentMsp={me.msp} />}
 
-          {currentScreen === 'ai-auditor' && <AIChaincodeAuditorView />}
+          {canOpen(me, currentScreen) && currentScreen === 'ai-auditor' && <AIChaincodeAuditorView />}
 
-          {currentScreen === 'ai-swarm' && <AIAgentSwarmView />}
+          {canOpen(me, currentScreen) && currentScreen === 'ai-swarm' && <AIAgentSwarmView />}
 
-          {currentScreen === 'channel3-sourcing' && (
+          {canOpen(me, currentScreen) && currentScreen === 'channel3-sourcing' && (
             <Channel3SourcingModal
-              onNavigate={(screen) => setCurrentScreen(screen)}
+              onNavigate={navigate}
               onInitiateTradeFromQuote={(quote: Channel3Quote) => {
                 setChannel3Quote(quote);
                 setCurrentScreen('new-trade');
@@ -287,17 +297,18 @@ export function App() {
             />
           )}
 
-          {currentScreen === 'elastic-audit' && <ElasticSearchPanel />}
+          {canOpen(me, currentScreen) && currentScreen === 'elastic-audit' && <ElasticSearchPanel />}
 
-          {currentScreen === 'new-trade' && (
+          {canOpen(me, currentScreen) && currentScreen === 'new-trade' && (
             <NewTradeProposal
+              currentMsp={me.msp}
               initialQuote={channel3Quote}
-              onNavigate={(screen) => setCurrentScreen(screen)}
+              onNavigate={navigate}
               onTradeCreated={async (trade) => {
                 addToast({
                   type: 'success',
                   title: 'Demo trade proposed',
-                  message: `Trade ${trade.trade.tradeId} added to the in-memory demo ledger.`,
+                  message: `Trade ${trade.trade.tradeId} added to the demo workflow.`,
                 });
                 setChannel3Quote(null);
                 await refreshData();
@@ -305,12 +316,15 @@ export function App() {
             />
           )}
 
-          {currentScreen === 'trade-detail' && (
+          {canOpen(me, currentScreen) && currentScreen === 'trade-detail' && (
             <TradeDetail
+              currentMsp={me.msp}
               trade={selectedTrade}
-              onNavigate={(screen) => setCurrentScreen(screen)}
+              onNavigate={navigate}
+              canAccept={me.role === 'approver' && selectedTrade?.trade.counterpartyMsp === me.msp}
+              canCapture={me.role === 'approver'}
               onAcceptTrade={handleAcceptTrade}
-              onRequestPayPalPayout={handlePayPalPayout}
+              onRequestPayPalPayout={me.role === 'approver' ? handlePayPalPayout : undefined}
               onOpenPayPalModal={(trade) => {
                 setPaypalModalTrade(trade);
                 setIsPayPalModalOpen(true);
@@ -318,13 +332,13 @@ export function App() {
             />
           )}
 
-          {currentScreen === 'regulator' && <RegulatorConsole />}
+          {canOpen(me, currentScreen) && currentScreen === 'regulator' && <RegulatorConsole jurisdiction={me.jurisdiction as 'JUR-A' | 'JUR-B'} />}
 
-          {currentScreen === 'auditor' && (
+          {canOpen(me, currentScreen) && currentScreen === 'auditor' && (
             <AuditorPortal
               trades={trades}
               onSelectTrade={(id) => setSelectedTradeId(id)}
-              onNavigate={(screen) => setCurrentScreen(screen)}
+              onNavigate={navigate}
             />
           )}
           </Suspense>
@@ -335,7 +349,7 @@ export function App() {
       <Suspense fallback={null}><AICopilotDrawer
         isOpen={isCopilotOpen}
         onClose={() => setIsCopilotOpen(false)}
-        onNavigate={(screen) => setCurrentScreen(screen)}
+        onNavigate={navigate}
       />
 
       <PayPalCheckoutModal
