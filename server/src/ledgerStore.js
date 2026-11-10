@@ -179,9 +179,10 @@ export const paypalLedgerStore = [
   },
 ];
 
-// Seed Elastic with initial documents
-tradesStore.forEach(t => indexTradeEvent(t.trade));
-paypalLedgerStore.forEach(p => indexPayPalTransaction(p));
+export function seedElasticFromStores() {
+  tradesStore.forEach((item) => indexTradeEvent(item.trade));
+  paypalLedgerStore.forEach((item) => indexPayPalTransaction(item));
+}
 
 /**
  * Propose a new trade

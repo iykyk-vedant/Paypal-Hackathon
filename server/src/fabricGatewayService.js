@@ -5,6 +5,7 @@ import { fileURLToPath } from 'node:url';
 import { ulid } from 'ulid';
 import * as grpc from '@grpc/grpc-js';
 import { connect, hash, signers } from '@hyperledger/fabric-gateway';
+import { saveRecord, getRecord, deleteRecord } from './storage.js';
 
 const utf8Decoder = new TextDecoder();
 const projectRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
@@ -236,16 +237,19 @@ export async function proposeFabricTrade(input) {
     (contract) => submitAndConfirm(contract, 'ProposeTrade', { arguments: args, transientData }),
     proposerMsp,
   );
-  pendingTradeDetails.set(tradeId, { detail, createdAt: Date.now() });
+  const pending = { detail, createdAt: Date.now() };
+  pendingTradeDetails.set(tradeId, pending);
+  await saveRecord('fabric_pending', tradeId, pending);
   return { ...outcome, tradeId, proposerMsp, counterpartyMsp, acceptBy, cutoff, status: 'PROPOSED' };
 }
 
 export async function acceptFabricTrade(tradeId) {
   requireWrites();
   if (!validTradeId(tradeId)) throw new Error('Invalid Fabric trade ID');
-  const pending = pendingTradeDetails.get(tradeId);
+  const pending = pendingTradeDetails.get(tradeId) || await getRecord('fabric_pending', tradeId);
   if (!pending || Date.now() - pending.createdAt > 30 * 60 * 1000) {
     pendingTradeDetails.delete(tradeId);
+    await deleteRecord('fabric_pending', tradeId);
     throw new Error('Transient trade details are unavailable. Propose a new trade from this running app session before accepting.');
   }
   const trade = await withContract((contract) => evaluate(contract, 'GetTrade', tradeId), pending.detail.cparty);
@@ -261,7 +265,17 @@ export async function acceptFabricTrade(tradeId) {
     counterpartyMsp,
   );
   pendingTradeDetails.delete(tradeId);
+  await deleteRecord('fabric_pending', tradeId);
   return { ...outcome, tradeId, status: 'ACCEPTED', acceptedAs: counterpartyMsp };
+}
+
+export async function getFabricTradeParties(tradeId) {
+  if (!validTradeId(tradeId)) throw new Error('Invalid Fabric trade ID');
+  const trade = await withContract((contract) => evaluate(contract, 'GetTrade', tradeId), process.env.FABRIC_MSP_ID);
+  return {
+    proposerMsp: extractTradeValue(trade, 'proposer') || extractTradeValue(trade, 'proposerMsp'),
+    counterpartyMsp: extractTradeValue(trade, 'cparty') || extractTradeValue(trade, 'counterpartyMsp'),
+  };
 }
 
 export async function settleFabricTrade(tradeId, confirmed) {
