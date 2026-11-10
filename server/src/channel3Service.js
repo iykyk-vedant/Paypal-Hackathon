@@ -1,8 +1,9 @@
 // Channel3 E-Commerce & Product Sourcing API Service
 // Enables Autonomous AI Agents to discover global inventory, compare wholesale prices,
-// and trigger agentic procurement with atomic PayPal settlement.
+// and prepare a quoted order for an explicitly approved PayPal/Fabric demo flow.
 
 import { ulid } from 'ulid';
+import { FX_RATES } from './corridorRules.js';
 
 const CHANNEL3_API_KEY = process.env.CHANNEL3_API_KEY || '';
 
@@ -65,6 +66,7 @@ const GLOBAL_CATALOG = [
     leadTimeDays: 10,
   },
 ];
+const liveCatalogBySku = new Map();
 
 const CHANNEL3_API_URL = process.env.CHANNEL3_API_URL || 'https://api.trychannel3.com/v1/search';
 
@@ -90,21 +92,29 @@ export async function searchChannel3Catalog(query = '', category = '') {
       if (response.ok) {
         const data = await response.json();
         if (Array.isArray(data.products)) {
-          liveProducts = data.products.map((p) => ({
+          liveProducts = data.products.map((p) => {
+            const priceValue = typeof p.price === 'object' && p.price !== null ? p.price.value : p.price;
+            const unitPrice = Number(priceValue);
+            if (!p.id || !Number.isFinite(unitPrice) || unitPrice <= 0) return null;
+            const currency = String(p.currency || p.price?.currency || 'USD').toUpperCase();
+            return ({
             sku: p.id || `CH3-${ulid().slice(0, 6)}`,
             title: p.title || 'Enterprise Verified Sourcing Item',
             category: p.category || 'Global B2B Wholesale',
             supplierOrg: 'BankB1',
-            supplierName: p.brand ? `${p.brand} Sourcing Partner` : 'SingaMed Global Tech Pte Ltd',
-            country: 'Singapore',
-            unitPrice: p.price || 150.0,
-            currency: 'USD',
+            supplierName: p.supplier_name || p.supplier?.name || p.brand || 'Channel3 seller (identity not verified)',
+            country: p.country || p.origin_country || 'Not provided',
+            unitPrice,
+            currency,
             minOrderQty: 25,
             availableStock: 2500,
-            specifications: p.description ? p.description.slice(0, 120) + '...' : 'ISO-9001 certified global procurement',
+            specifications: p.description ? String(p.description).slice(0, 120) : 'No product specifications provided',
             leadTimeDays: 4,
             isLiveChannel3: true,
-          }));
+            settlementMappingIsDemo: true,
+          });
+          }).filter(Boolean);
+          liveProducts.forEach((product) => liveCatalogBySku.set(product.sku, product));
         }
       }
     } catch (err) {
@@ -142,16 +152,22 @@ export async function searchChannel3Catalog(query = '', category = '') {
  * Autonomous Sourcing Request
  * Calculates wholesale order total and prepares trade proposal terms
  */
-export function generateProcurementQuote(sku, quantity, targetCurrency = 'SGD') {
-  const item = GLOBAL_CATALOG.find((p) => p.sku === sku);
+export function generateProcurementQuote(sku, quantity, targetCurrency) {
+  const item = liveCatalogBySku.get(sku) || GLOBAL_CATALOG.find((p) => p.sku === sku);
   if (!item) {
     throw new Error(`SKU ${sku} not found in Channel3 catalog`);
   }
 
-  const qty = Math.max(quantity, item.minOrderQty);
+  const requestedQty = Number(quantity);
+  if (!Number.isSafeInteger(requestedQty) || requestedQty <= 0) throw new Error('Quantity must be a positive whole number');
+  const qty = Math.max(requestedQty, item.minOrderQty);
+  if (qty > item.availableStock) throw new Error(`Requested quantity exceeds available stock (${item.availableStock})`);
+  const target = String(targetCurrency || (item.currency === 'INR' ? 'SGD' : item.currency === 'SGD' ? 'INR' : 'USD')).toUpperCase();
+  if (!FX_RATES[item.currency] || !FX_RATES[target]) throw new Error(`Cannot calculate an illustrative quote for ${item.currency} to ${target}`);
   const totalItemCost = item.unitPrice * qty;
   const volumeDiscount = qty >= item.minOrderQty * 2 ? 0.05 : 0.02;
   const discountedTotal = totalItemCost * (1 - volumeDiscount);
+  const targetSettlementAmount = Math.round((discountedTotal / FX_RATES[item.currency] * FX_RATES[target]) * 100) / 100;
 
   return {
     quoteId: `QTE-${ulid().slice(0, 8)}`,
@@ -159,9 +175,12 @@ export function generateProcurementQuote(sku, quantity, targetCurrency = 'SGD') 
     quantity: qty,
     baseUnitPrice: item.unitPrice,
     currency: item.currency,
+    targetCurrency: target,
     grossAmount: totalItemCost,
     volumeDiscountPct: (volumeDiscount * 100).toFixed(1),
     netSettlementAmount: discountedTotal,
+    targetSettlementAmount,
+    fxRate: (FX_RATES[item.currency] / FX_RATES[target]).toPrecision(8),
     recommendedPayerOrg: item.supplierOrg === 'BankA1' ? 'BankB1' : 'BankA1',
     recommendedPayeeOrg: item.supplierOrg,
     timestamp: new Date().toISOString(),

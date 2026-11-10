@@ -321,15 +321,15 @@ export async function agentChatCopilot(userPrompt, context = {}) {
     return {
       reply: `**PayPal prototype flow**:\n\n` +
         `• PayPal Orders v2 uses Sandbox credentials when configured; otherwise the app labels the action as simulation.\n` +
-        `• A successful capture updates the in-memory demo ledger and may attempt a Sandbox payout.\n` +
-        `• This app is not connected to a Fabric Gateway and does not atomically move real currency legs.`,
+          `• A successful capture records PayPal funding only; Fabric settlement requires a separate explicit confirmation and four distinct test-ledger value-leg commits.\n` +
+        `• PayPal and Fabric operations are sequential and non-atomic. This is a prototype, not a real-money payment service.`,
       actionType: 'PAYPAL_INFO',
     };
   }
 
   // Live Gemini 2.5 Flash AI reasoning
   if (process.env.GEMINI_API_KEY || GEMINI_KEY) {
-    const systemPrompt = `You are PayBridge AI, an assistant for a hackathon prototype. The running app uses an in-memory demo ledger and Fabric fixtures; it is not connected to a live Fabric Gateway and does not perform atomic real-world PvP settlement. PayPal may be Sandbox or simulated. Do not claim central-bank approval, official sanctions screening, live FX quotes, or completed transfers unless the supplied context explicitly proves it. Answer concisely, under 4 sentences.`;
+    const systemPrompt = `You are PayBridge AI, an assistant for a hackathon prototype. The app uses an in-memory workflow ledger and may have a live Fabric Gateway for explicitly confirmed test-ledger operations. A PayPal Sandbox capture does not itself settle Fabric; Fabric settlement and four value-leg writes are separate commits, never atomic with PayPal. PayPal may be Sandbox or simulated. Do not claim central-bank approval, official sanctions screening, live FX quotes, or completed transfers unless the supplied context explicitly proves it. Answer concisely, under 4 sentences.`;
     const geminiReply = await callGeminiFlash(userPrompt, systemPrompt);
     if (geminiReply) {
       return {

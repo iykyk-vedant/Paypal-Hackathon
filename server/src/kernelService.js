@@ -40,14 +40,11 @@ export async function getKernelHealth() {
     mode: liveConnected ? 'LIVE_CLOUD_UNIKERNEL' : 'HIGH_FIDELITY_SIMULATION',
     provider: 'Kernel (kernel.sh)',
     liveConnected,
-    coldStartLatencyMs: latencyMs || 28.4,
+    coldStartLatencyMs: liveConnected ? latencyMs : null,
     capabilities: [
-      'Unikernel Sandboxed Chromium (<30ms cold start)',
-      'Stealth Anti-Bot & Residential Proxy Egress',
-      '24fps Live Session Streaming',
-      'Full Video Session Replay',
-      'Durable Auth & Profile Persistence',
-      'DOM Storefront Integrity Auditing',
+      'Browser session creation when the Kernel API is configured',
+      'Live merchant navigation and DOM inspection are not implemented',
+      'Carrier evidence verification is a labeled scenario only',
     ],
     baseUrl: base,
   };
@@ -85,9 +82,9 @@ export async function createKernelBrowserSession(options = {}) {
           status: 'running',
           coldStartMs: latency,
           stealthActive: true,
-          baseUrl: data.base_url || `${base}/browser/kernel`,
-          browserLiveViewUrl: data.browser_live_view_url || `https://live.onkernel.com/view/${sessionId}`,
-          sessionReplayUrl: `https://app.onkernel.com/sessions/${sessionId}`,
+          baseUrl: data.base_url || null,
+          browserLiveViewUrl: data.browser_live_view_url || null,
+          sessionReplayUrl: data.session_replay_url || null,
           live: true,
           createdAt: new Date().toISOString(),
         };
@@ -103,17 +100,17 @@ export async function createKernelBrowserSession(options = {}) {
     status: 'running',
     coldStartMs: 26.8,
     stealthActive: true,
-    baseUrl: `${base}/browser/kernel`,
-    browserLiveViewUrl: `https://live.onkernel.com/view/${sessionId}`,
-    sessionReplayUrl: `https://app.onkernel.com/sessions/${sessionId}`,
+    baseUrl: null,
+    browserLiveViewUrl: null,
+    sessionReplayUrl: null,
     live: false,
     createdAt: new Date().toISOString(),
   };
 }
 
 /**
- * Mystery Shopper DOM Storefront Auditing
- * Verifies live store price against captured PayPal order amount
+ * Deterministic storefront-audit scenario. This prototype does not navigate a
+ * merchant or inspect its DOM; only browser-session creation may reach Kernel.
  */
 export async function auditMerchantStorefrontDOM({ storeUrl, productName, checkoutAmount, channel3Fmv }) {
   const session = await createKernelBrowserSession({ stealth: true });
@@ -124,24 +121,24 @@ export async function auditMerchantStorefrontDOM({ storeUrl, productName, checko
 
   return {
     auditId: `AUD-DOM-${ulid().slice(0, 8)}`,
+    mode: 'DETERMINISTIC_SCENARIO',
+    liveDomInspected: false,
     productName: productName || 'Enterprise Goods',
     storeUrl: storeUrl || 'https://store.merchant-commerce.com/checkout',
     checkoutAmount: Number(checkoutAmount),
-    verifiedDomPrice: Number(nominalFmv),
+    referencePrice: Number(nominalFmv),
     variancePct: Number(variancePct.toFixed(2)),
     domTamperingDetected: isTampered,
     riskScore: isTampered ? 9.8 : 1.2,
-    recommendedAction: isTampered ? 'REFUND_CAPTURE' : 'APPROVE',
+    recommendedAction: isTampered ? 'MANUAL_REVIEW_REQUIRED' : 'NO_SCENARIO_VARIANCE',
     kernelSession: session,
     inspectedAt: new Date().toISOString(),
     evidenceLog: [
-      `[Kernel Unikernel] Spun up Chromium headful sandbox in ${session.coldStartMs}ms`,
-      `[Kernel Mystery Shopper] Navigated to ${storeUrl || 'store checkout'}`,
-      `[Kernel DOM Inspector] Located price element '#cart-subtotal' = $${nominalFmv}`,
-      `[Kernel Risk Assessor] Checkout amount $${checkoutAmount} vs DOM $${nominalFmv} -> Variance ${variancePct.toFixed(1)}%`,
+      `[Kernel Browser] ${session.live ? 'Live browser session created' : 'Browser session simulated'}; no merchant navigation was executed.`,
+      `[Scenario] Supplied checkout amount $${checkoutAmount} vs supplied reference amount $${nominalFmv} -> Variance ${variancePct.toFixed(1)}%`,
       isTampered
-        ? `[ALERT] Severe DOM price manipulation (-95%+ slashing). Autonomous PayPal refund advised.`
-        : `[PASS] Storefront DOM matches transaction amount within sovereign tolerance.`,
+        ? `[SCENARIO ALERT] Large modeled price variance; manual review is required. No refund was submitted.`
+        : `[SCENARIO PASS] Supplied values are within the prototype threshold; no live DOM was checked.`,
     ],
   };
 }
@@ -155,18 +152,20 @@ export async function verifyCarrierDisputeEvidence({ carrier = 'FedEx', tracking
 
   return {
     verificationId: `EVD-${ulid().slice(0, 8)}`,
+    mode: 'DETERMINISTIC_SCENARIO',
+    liveCarrierQueried: false,
     carrier,
     trackingNumber,
-    deliveryStatus: 'DELIVERED',
-    deliveredAt: new Date(Date.now() - 86400000 * 2).toISOString(),
-    signedBy: 'J. DOE (Front Door / Reception)',
-    gpsCoordinates: '1.290270, 103.851959',
-    photoProofUrl: 'https://images.unsplash.com/photo-1549465220-1a8b9238cd48?auto=format&fit=crop&w=600&q=80',
+    deliveryStatus: 'NOT_VERIFIED',
+    deliveredAt: null,
+    signedBy: null,
+    gpsCoordinates: null,
+    photoProofUrl: null,
     disputeEvidencePackage: {
       caseId: `DISP-${ulid().slice(0, 6)}`,
-      proofType: 'PROOF_OF_DELIVERY_SIGNATURE',
-      sellerProtectionEligible: true,
-      recommendation: 'SUBMIT_EVIDENCE_TO_PAYPAL_DISPUTES',
+      proofType: 'SAMPLE_ONLY',
+      sellerProtectionEligible: false,
+      recommendation: 'MANUAL_CARRIER_VERIFICATION_REQUIRED',
     },
     kernelSession: session,
     timestamp: new Date().toISOString(),

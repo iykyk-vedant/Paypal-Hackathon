@@ -4,18 +4,16 @@
 
 import { ulid } from 'ulid';
 
-let ZAPIER_WEBHOOK_URL = process.env.ZAPIER_WEBHOOK_URL || '';
+const ZAPIER_WEBHOOK_URL = process.env.ZAPIER_WEBHOOK_URL || '';
 const dispatchedEvents = [];
 
-/**
- * Update Zapier Webhook URL at runtime
- */
-export function setZapierWebhookUrl(url) {
-  ZAPIER_WEBHOOK_URL = url;
-}
-
-export function getZapierWebhookUrl() {
-  return ZAPIER_WEBHOOK_URL;
+export function getZapierStatus() {
+  return {
+    configured: Boolean(ZAPIER_WEBHOOK_URL),
+    mode: ZAPIER_WEBHOOK_URL ? 'outbound_catch_webhook' : 'local_simulation',
+    configurationVariable: 'ZAPIER_WEBHOOK_URL',
+    note: 'ZAPIER_MCP_SERVER_URL is an MCP endpoint and is not treated as a Catch webhook.',
+  };
 }
 
 /**
@@ -31,7 +29,7 @@ export async function triggerZapierWebhook(eventType, payload) {
     eventId,
     eventType,
     timestamp,
-    webhookUrl: ZAPIER_WEBHOOK_URL || 'https://hooks.zapier.com/hooks/catch/simulated_paybridge_hook/',
+    deliveryTarget: ZAPIER_WEBHOOK_URL ? 'configured Zapier Catch webhook' : 'local simulation',
     status: 'QUEUED',
     payload,
   };
