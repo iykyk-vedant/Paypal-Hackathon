@@ -19,6 +19,28 @@ paths:
       responses:
         '200':
           description: System operational status
+  /api/fabric/status:
+    get:
+      summary: Check Fabric Gateway query connectivity
+      description: Reports a live read-only chaincode query probe when Gateway mode is enabled; TCP reachability alone is not treated as a Fabric connection.
+      responses:
+        '200':
+          description: Gateway status and demo or live ledger source
+  /api/fabric/ledger:
+    get:
+      summary: Read a live Fabric chaincode snapshot
+      description: Requires a configured Fabric Gateway identity. Evaluates chaincode queries only and never submits a transaction. Private account queries may be denied by chaincode access rules.
+      parameters:
+        - in: header
+          name: X-Operator
+          schema:
+            type: string
+            default: a1-trader
+      responses:
+        '200':
+          description: Results and per-query errors from read-only chaincode evaluations
+        '503':
+          description: Gateway disabled, unavailable, or misconfigured
   /me:
     get:
       summary: Get active node identity and role
