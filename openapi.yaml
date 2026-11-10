@@ -41,6 +41,147 @@ paths:
           description: Results and per-query errors from read-only chaincode evaluations
         '503':
           description: Gateway disabled, unavailable, or misconfigured
+  /api/fabric/trades/propose:
+    post:
+      summary: Submit a new INR/SGD trade proposal to Fabric
+      description: Requires the Fabric write feature flag and a rotated signing identity. Private trade details and salt are sent as transient proposal data; this writes to the permanent test ledger.
+      parameters:
+        - in: header
+          name: X-Fabric-Write-Token
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [proposerMsp, ccyA, amountA, ccyB, amountB]
+              properties:
+                proposerMsp:
+                  type: string
+                  enum: [BankA1MSP, BankB1MSP]
+                ccyA:
+                  type: string
+                  enum: [INR, SGD]
+                amountA:
+                  type: string
+                  description: Positive currency minor units
+                ccyB:
+                  type: string
+                  enum: [INR, SGD]
+                amountB:
+                  type: string
+                  description: Positive currency minor units
+                reference:
+                  type: string
+      responses:
+        '201':
+          description: Fabric transaction committed and validated
+        '400':
+          description: Invalid proposal or chaincode rejected it
+        '503':
+          description: Fabric writes are disabled or identities are not configured
+  /api/fabric/trades/{tradeId}/accept:
+    post:
+      summary: Accept a Fabric trade proposal as the counterparty bank
+      parameters:
+        - in: header
+          name: X-Fabric-Write-Token
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: tradeId
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Fabric transaction committed and validated
+        '400':
+          description: Trade state or transient details are invalid
+        '503':
+          description: Fabric writes are disabled or identities are not configured
+  /api/fabric/trades/{tradeId}/settle:
+    post:
+      summary: Settle an accepted Fabric trade
+      description: Requires explicit confirmation in the request and RegAMSP plus RegBMSP peer endorsements. It does not verify PayPal capture.
+      parameters:
+        - in: header
+          name: X-Fabric-Write-Token
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: tradeId
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [confirmSettlement]
+              properties:
+                confirmSettlement:
+                  type: boolean
+                  const: true
+      responses:
+        '200':
+          description: Fabric transaction committed and validated
+        '400':
+          description: Trade is not accepted or explicit confirmation is missing
+        '503':
+          description: Fabric writes are disabled or identities are not configured
+  /api/fabric/trades/{tradeId}/legs/{leg}/{operation}:
+    post:
+      summary: Commit one Fabric settlement-leg debit or payee credit
+      description: Requires explicit settlement confirmation, a settled trade, and the signing identity for the payer or payee bank. Each call commits a separate ledger transaction.
+      parameters:
+        - in: header
+          name: X-Fabric-Write-Token
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: tradeId
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: leg
+          required: true
+          schema:
+            type: string
+            enum: [A, B]
+        - in: path
+          name: operation
+          required: true
+          schema:
+            type: string
+            enum: [debit, credit]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [confirmSettlement]
+              properties:
+                confirmSettlement:
+                  type: boolean
+                  const: true
+      responses:
+        '200':
+          description: Fabric transaction committed and validated
+        '400':
+          description: Trade state, settlement confirmation, or chaincode validation failed
+        '503':
+          description: Fabric writes are disabled or identities are not configured
   /me:
     get:
       summary: Get active node identity and role

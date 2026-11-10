@@ -4,7 +4,7 @@
 
 **Show:** Dashboard and the visible demo-mode notice.
 
-**Say:** “PayBridge AI is a hackathon prototype for cross-border trade workflows. It uses sample corridor rules, optional Gemini explanations, and PayPal Sandbox. Trade state stays in this app’s in-memory demo ledger; the web app is not connected to a Fabric Gateway.”
+**Say:** “PayBridge AI is a hackathon prototype for cross-border trade workflows. It uses sample corridor rules, optional Gemini explanations, and PayPal Sandbox. Its normal trade workflow uses an in-memory demo ledger. An optional Fabric Gateway panel can query the test network and submit explicitly confirmed test transactions when configured.”
 
 ### 0:20–0:50 — Indicative proposal and risk explanation
 
@@ -24,4 +24,4 @@ If credentials are absent, show **Run simulated demo capture** and say: “This 
 
 **Show:** **PayPal Ledger**, the **Local Demo Receipt** SHA-256 digest on **Trade Detail**, and the **Demo Fixtures** badge on **Fabric Block Explorer**.
 
-**Say:** “The tables make the workflow and its evidence easy to inspect. Fabric is included as a separate Go chaincode proof of concept; these screens show fixtures rather than a live network. PayBridge AI demonstrates how an AI-assisted review and an explicit payment approval can fit into a trade workflow.”
+**Say:** “The block table and auditor use fixtures. The optional live Gateway panel can query and submit to the test ledger, but it is not connected to PayPal and does not decode real Fabric blocks. PayBridge AI demonstrates how an AI-assisted review and an explicit payment approval can fit into a trade workflow.”

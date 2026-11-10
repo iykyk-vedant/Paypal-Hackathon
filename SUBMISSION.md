@@ -18,7 +18,7 @@ Cross-border business payments can involve multiple approvals, currencies, and o
 
 ## What this prototype does not claim
 
-The running web app does not connect to a Fabric Gateway. Fabric screens use sample fixtures; the Go chaincode is a separate proof of concept. The app does not atomically transfer two real currency legs, obtain central-bank approval, use live FX rates, or perform official OFAC/FATF screening. PayPal Sandbox results are not real payments. Simulation mode is labeled in the interface.
+Fabric Gateway is optional and disabled by default. When configured with rotated identities, the backend can query live chaincode state and submit proposal, acceptance, settlement, and per-leg debit/credit transactions. The block explorer and auditor still use sample fixtures, and live block decoding is not implemented. The ordinary web trade workflow remains in-memory. PayPal capture is not linked atomically to Fabric settlement, and these transactions do not verify PayPal payment. The deployed ledger must already have balances funded through authorized regulator operations. The app does not obtain real central-bank approval, use live FX rates, or perform official OFAC/FATF screening. PayPal Sandbox results are not real payments. Simulation mode is labeled in the interface.
 
 ## Tools
 
@@ -27,7 +27,7 @@ The running web app does not connect to a Fabric Gateway. Fabric screens use sam
 - React, TypeScript, Vite, Node.js, and Express.
 - AG Grid for the settlement and activity tables.
 - Elasticsearch is optional; local in-memory search is used when it is not configured.
-- Go and Hyperledger Fabric source are included as a separate proof of concept, not connected to the web workflow.
+- Go chaincode (`chaincode/`), Fabric deployment artifacts, and network scripts are included; they are separate from the ordinary in-memory trade workflow unless the optional Fabric Gateway panel is explicitly enabled.
 
 ## Run the project
 
@@ -35,4 +35,4 @@ See [`README.md`](./README.md) for setup and environment configuration. Without 
 
 ## Repository
 
-Public source code and setup instructions are provided in this repository. The project is released under the MIT License.
+Source code and setup instructions are provided in this repository. The project is released under the MIT License.
