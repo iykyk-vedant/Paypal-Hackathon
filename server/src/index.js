@@ -12,7 +12,7 @@ dotenv.config({ path: path.resolve(serverSourceDir, '../.env') });
 import express from 'express';
 import cors from 'cors';
 import net from 'node:net';
-import { createHash } from 'node:crypto';
+import { createHash, timingSafeEqual } from 'node:crypto';
 
 const {
   accountsStore,
@@ -53,7 +53,15 @@ const {
 } = await import('./kernelService.js');
 const { CORRIDORS, FX_RATES, getCalculatedFx } = await import('./corridorRules.js');
 const { getFabricBlocks, auditFabricLedger } = await import('./aiChaincodeAuditor.js');
-const { getFabricGatewayStatus, getFabricLedgerSnapshot } = await import('./fabricGatewayService.js');
+const {
+  getFabricGatewayStatus,
+  getFabricLedgerSnapshot,
+  proposeFabricTrade,
+  acceptFabricTrade,
+  settleFabricTrade,
+  performFabricLegAction,
+  getFabricWriteStatus,
+} = await import('./fabricGatewayService.js');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -564,6 +572,69 @@ app.get('/api/fabric/ledger', async (req, res) => {
     res.json(await getFabricLedgerSnapshot(req.operator));
   } catch (err) {
     res.status(503).json({ error: err.message });
+  }
+});
+
+function authorizeFabricWrite(req, res, next) {
+  const expectedToken = process.env.FABRIC_WRITE_API_TOKEN || '';
+  const providedToken = req.get('X-Fabric-Write-Token') || '';
+  if (expectedToken.length < 32) {
+    return res.status(503).json({ error: 'Fabric write authorization is not configured on the backend.' });
+  }
+  const expectedBytes = Buffer.from(expectedToken);
+  const providedBytes = Buffer.from(providedToken);
+  if (expectedBytes.length !== providedBytes.length || !timingSafeEqual(expectedBytes, providedBytes)) {
+    return res.status(401).json({ error: 'Valid X-Fabric-Write-Token is required.' });
+  }
+  next();
+}
+
+app.post('/api/fabric/trades/propose', authorizeFabricWrite, async (req, res) => {
+  try {
+    const writeStatus = await getFabricWriteStatus();
+    if (!writeStatus.writeReady) {
+      return res.status(503).json({ error: 'Fabric trade writes are not ready. Configure rotated BankA1 and BankB1 identities and enable writes.' });
+    }
+    res.status(201).json(await proposeFabricTrade(req.body));
+  } catch (err) {
+    res.status(400).json({ error: err.message, transactionId: err.transactionId, validationCode: err.validationCode, commitStatusUnknown: err.commitStatusUnknown });
+  }
+});
+
+app.post('/api/fabric/trades/:tradeId/accept', authorizeFabricWrite, async (req, res) => {
+  try {
+    const writeStatus = await getFabricWriteStatus();
+    if (!writeStatus.writeReady) {
+      return res.status(503).json({ error: 'Fabric trade writes are not ready. Configure rotated BankA1 and BankB1 identities and enable writes.' });
+    }
+    res.json(await acceptFabricTrade(req.params.tradeId));
+  } catch (err) {
+    res.status(400).json({ error: err.message, transactionId: err.transactionId, validationCode: err.validationCode, commitStatusUnknown: err.commitStatusUnknown });
+  }
+});
+
+app.post('/api/fabric/trades/:tradeId/settle', authorizeFabricWrite, async (req, res) => {
+  try {
+    const writeStatus = await getFabricWriteStatus();
+    if (!writeStatus.writeReady) {
+      return res.status(503).json({ error: 'Fabric trade writes are not ready. Configure rotated BankA1 and BankB1 identities and enable writes.' });
+    }
+    res.json(await settleFabricTrade(req.params.tradeId, req.body?.confirmSettlement === true));
+  } catch (err) {
+    res.status(400).json({ error: err.message, transactionId: err.transactionId, validationCode: err.validationCode, commitStatusUnknown: err.commitStatusUnknown });
+  }
+});
+
+app.post('/api/fabric/trades/:tradeId/legs/:leg/:operation', authorizeFabricWrite, async (req, res) => {
+  try {
+    const writeStatus = await getFabricWriteStatus();
+    if (!writeStatus.writeReady) {
+      return res.status(503).json({ error: 'Fabric trade writes are not ready. Configure rotated BankA1 and BankB1 identities and enable writes.' });
+    }
+    const { tradeId, leg, operation } = req.params;
+    res.json(await performFabricLegAction(tradeId, leg.toUpperCase(), operation.toLowerCase(), req.body?.confirmSettlement === true));
+  } catch (err) {
+    res.status(400).json({ error: err.message, transactionId: err.transactionId, validationCode: err.validationCode, commitStatusUnknown: err.commitStatusUnknown });
   }
 });
 
