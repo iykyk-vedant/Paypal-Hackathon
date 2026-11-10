@@ -2,15 +2,19 @@
 // Autonomous Agentic Commerce & Cross-Border Treasury Protocol
 // Integrates PayPal Sandbox, Multi-Agent AI Swarm, AG Grid APIs, Elastic, Channel3, and Zapier
 
-import 'dotenv/config';
 import dotenv from 'dotenv';
-dotenv.config({ path: '../.env' });
-dotenv.config({ path: './server/.env' });
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+const serverSourceDir = path.dirname(fileURLToPath(import.meta.url));
+// Load root .env as the canonical local config, independent of the launch cwd.
+dotenv.config({ path: path.resolve(serverSourceDir, '../../.env') });
+dotenv.config({ path: path.resolve(serverSourceDir, '../.env') });
 import express from 'express';
 import cors from 'cors';
 import net from 'node:net';
+import { createHash } from 'node:crypto';
 
-import {
+const {
   accountsStore,
   tradesStore,
   refusalsStore,
@@ -21,32 +25,34 @@ import {
   settleTrade,
   recordRefusal,
   linkPayPalOrder,
-} from './ledgerStore.js';
+} = await import('./ledgerStore.js');
 
-import {
+const {
   createPayPalOrder,
   capturePayPalOrder,
   executePayPalPayout,
-} from './paypalService.js';
+  getPayPalFundingQuote,
+  getPayPalMode,
+} = await import('./paypalService.js');
 
-import {
+const {
   agentNegotiateTrade,
   agentScreenCompliance,
   agentOrchestrateTreasury,
   agentChatCopilot,
-} from './aiAgentService.js';
+} = await import('./aiAgentService.js');
 
-import { searchChannel3Catalog, generateProcurementQuote } from './channel3Service.js';
-import { queryElasticSearch, getElasticClusterStats } from './elasticService.js';
-import { triggerZapierWebhook, getZapierDispatchedHistory, setZapierWebhookUrl } from './zapierService.js';
-import {
+const { searchChannel3Catalog, generateProcurementQuote } = await import('./channel3Service.js');
+const { queryElasticSearch, getElasticClusterStats } = await import('./elasticService.js');
+const { triggerZapierWebhook, getZapierDispatchedHistory, setZapierWebhookUrl } = await import('./zapierService.js');
+const {
   getKernelHealth,
   createKernelBrowserSession,
   auditMerchantStorefrontDOM,
   verifyCarrierDisputeEvidence,
-} from './kernelService.js';
-import { CORRIDORS, FX_RATES, getCalculatedFx } from './corridorRules.js';
-import { getFabricBlocks, auditFabricLedger } from './aiChaincodeAuditor.js';
+} = await import('./kernelService.js');
+const { CORRIDORS, FX_RATES, getCalculatedFx } = await import('./corridorRules.js');
+const { getFabricBlocks, auditFabricLedger } = await import('./aiChaincodeAuditor.js');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -73,9 +79,13 @@ app.use((req, res, next) => {
 app.get('/health', (req, res) => {
   res.json({
     status: 'online',
-    system: 'PayBridge AI Settlement Protocol',
+    system: 'PayBridge AI Prototype',
     version: '1.0.0-hackathon',
-    paypalMode: !process.env.PAYPAL_CLIENT_ID ? 'sandbox_simulation' : 'live_sandbox',
+    paypalMode: getPayPalMode(),
+    geminiConfigured: Boolean(process.env.GEMINI_API_KEY),
+    ledgerMode: 'in_memory_demo',
+    fabricGatewayConnected: false,
+    prototypeNotice: 'Hackathon prototype; demo operator headers are not authentication.',
     timestamp: new Date().toISOString(),
   });
 });
@@ -166,12 +176,9 @@ app.post('/trades/:id/accept', (req, res) => {
 });
 
 app.post('/trades/:id/settle', async (req, res) => {
-  try {
-    const trade = await settleTrade(req.params.id, req.body.paypalCapture);
-    res.json(trade);
-  } catch (err) {
-    res.status(400).json({ error: err.message });
-  }
+  res.status(409).json({
+    error: 'Settlement requires capturing the linked PayPal order via POST /api/paypal/orders/:id/capture',
+  });
 });
 
 // --- REGULATORY & RESERVES ---
@@ -200,23 +207,58 @@ app.get('/supply/:ccy', (req, res) => {
 
 app.post('/api/paypal/orders/create', async (req, res) => {
   try {
-    const { tradeId, amount, currency, description, counterparty } = req.body;
+    const { tradeId, description, counterparty } = req.body;
     const trade = tradesStore.find((item) => item.trade.tradeId === tradeId);
     if (!trade) return res.status(404).json({ error: 'Trade not found' });
     if (trade.trade.status !== 'ACCEPTED') {
       return res.status(409).json({ error: 'Trade must be accepted before creating a payment order' });
     }
-    if (!Number.isFinite(Number(amount)) || Number(amount) <= 0 || Number(amount) !== Number(trade.trade.amountA)) {
-      return res.status(400).json({ error: 'Payment amount must match the accepted trade amount' });
+    const fundingQuote = getPayPalFundingQuote({
+      amountMinor: trade.trade.amountA,
+      currency: trade.trade.ccyA,
+    });
+    if (trade.trade.paypalOrderId) {
+      if (trade.trade.paypalFundingQuote?.paymentAmountMinor !== fundingQuote.paymentAmountMinor) {
+        return res.status(409).json({ error: 'A different funding quote is already linked to this trade' });
+      }
+      return res.json({
+        orderId: trade.trade.paypalOrderId,
+        status: trade.trade.paypalStatus || 'CREATED',
+        tradeId,
+        amount: fundingQuote.paymentAmountMinor,
+        currency: fundingQuote.paymentCurrency,
+        fundingQuote,
+        providerMode: trade.trade.paypalMode || getPayPalMode(),
+        isSimulation: (trade.trade.paypalMode || getPayPalMode()) === 'SIMULATION',
+      });
     }
-    if (currency && currency !== 'USD') {
-      return res.status(400).json({ error: 'PayPal checkout currently supports USD only' });
-    }
-    const order = await createPayPalOrder({ tradeId, amount, currency, description, counterparty });
+    const order = await createPayPalOrder({
+      tradeId,
+      amountMinor: fundingQuote.paymentAmountMinor,
+      currency: fundingQuote.paymentCurrency,
+      description,
+      counterparty,
+      fundingQuote,
+    });
+    trade.trade.paypalFundingQuote = fundingQuote;
+    trade.trade.paypalMode = order.providerMode === 'simulation' ? 'SIMULATION' : 'PAYPAL_SANDBOX';
     linkPayPalOrder(tradeId, order.orderId, 'CREATED');
     res.json(order);
   } catch (err) {
     res.status(500).json({ error: err.message });
+  }
+});
+
+app.get('/api/paypal/orders/quote/:tradeId', (req, res) => {
+  const trade = tradesStore.find((item) => item.trade.tradeId === req.params.tradeId);
+  if (!trade) return res.status(404).json({ error: 'Trade not found' });
+  if (trade.trade.status !== 'ACCEPTED') {
+    return res.status(409).json({ error: 'Trade must be accepted before quoting PayPal funding' });
+  }
+  try {
+    res.json(getPayPalFundingQuote({ amountMinor: trade.trade.amountA, currency: trade.trade.ccyA }));
+  } catch (err) {
+    res.status(400).json({ error: err.message });
   }
 });
 
@@ -228,12 +270,48 @@ app.post('/api/paypal/orders/:id/capture', async (req, res) => {
     if (!trade.trade.paypalOrderId || trade.trade.paypalOrderId !== req.params.id) {
       return res.status(409).json({ error: 'Order is not linked to this trade' });
     }
+    if (trade.trade.status === 'SETTLED' && trade.trade.paypalCaptureId) {
+      const fundingAmountMinor = trade.trade.paypalFundingQuote.paymentAmountMinor;
+      const isSimulation = trade.trade.paypalMode === 'SIMULATION';
+      return res.json({
+        captureId: trade.trade.paypalCaptureId,
+        orderId: req.params.id,
+        status: 'COMPLETED',
+        tradeId,
+        amount: { currency_code: 'USD', value: (Number(fundingAmountMinor) / 100).toFixed(2) },
+        fundingAmountMinor,
+        isSimulation,
+        providerMode: isSimulation ? 'simulation' : 'sandbox',
+        fundingQuote: trade.trade.paypalFundingQuote,
+        payoutStatus: trade.trade.payoutStatus || null,
+        payoutMode: trade.trade.payoutMode || null,
+        payoutBatchId: trade.trade.payoutBatchId || null,
+        payoutError: trade.trade.payoutError || null,
+        receiptHash: trade.trade.receiptHash || null,
+      });
+    }
     if (trade.trade.status !== 'ACCEPTED') {
       return res.status(409).json({ error: 'Trade must be accepted before capture' });
     }
-    const capture = await capturePayPalOrder(req.params.id, tradeId);
-    await settleTrade(tradeId, capture);
-    res.json(capture);
+    const expectedAmount = trade.trade.paypalFundingQuote?.paymentAmountMinor;
+    if (!expectedAmount) return res.status(409).json({ error: 'Create a PayPal order before capturing it' });
+    const capture = await capturePayPalOrder(req.params.id, tradeId, expectedAmount);
+    if (capture.status !== 'COMPLETED') {
+      return res.status(409).json({ error: `PayPal capture is ${capture.status}, not COMPLETED` });
+    }
+    if (capture.fundingAmountMinor !== String(expectedAmount)) {
+      return res.status(409).json({ error: 'Captured PayPal amount did not match the approved USD funding quote' });
+    }
+    const settled = await settleTrade(tradeId, capture);
+    res.json({
+      ...capture,
+      fundingQuote: trade.trade.paypalFundingQuote,
+      payoutStatus: settled.trade.payoutStatus || null,
+      payoutMode: settled.trade.payoutMode || null,
+      payoutBatchId: settled.trade.payoutBatchId || null,
+      payoutError: settled.trade.payoutError || null,
+      receiptHash: settled.trade.receiptHash || null,
+    });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -261,10 +339,12 @@ app.post('/api/paypal/payouts/batch', async (req, res) => {
       });
     } catch (err) {
       trade.trade.payoutStatus = 'FAILED';
+      trade.trade.payoutMode = 'sandbox';
       throw err;
     }
     trade.trade.payoutBatchId = payout.payoutBatchId;
     trade.trade.payoutStatus = payout.status;
+    trade.trade.payoutMode = payout.providerMode || (payout.isSimulation ? 'simulation' : 'sandbox');
     res.json(payout);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -385,7 +465,7 @@ app.post('/api/zapier/config', (req, res) => {
   res.json({ ok: true, webhookUrl: url });
 });
 
-// KERNEL Cloud Browser Infrastructure (kernel.sh)
+// Optional browser audit integration
 app.get('/api/kernel/health', async (req, res) => {
   const health = await getKernelHealth();
   res.json(health);
@@ -418,16 +498,23 @@ app.post('/api/kernel/verify-tracking', async (req, res) => {
   }
 });
 
-// KERNEL Cryptographic Receipt
-app.get('/api/kernel/receipt/:tradeId', (req, res) => {
+// Local demo receipt; this is not a Fabric or provider attestation.
+app.get('/api/receipts/:tradeId', (req, res) => {
   const trade = tradesStore.find((t) => t.trade.tradeId === req.params.tradeId);
   if (!trade) return res.status(404).json({ error: 'Trade not found' });
+  const receiptPayload = trade.trade.receiptPayload || null;
+  const computedHash = receiptPayload
+    ? `0x${createHash('sha256').update(JSON.stringify(receiptPayload)).digest('hex')}`
+    : null;
   res.json({
     tradeId: req.params.tradeId,
-    kernelReceiptHash: trade.trade.kernelReceiptHash || '0x0000000000000000000000000000000000000000',
-    verificationProof: 'KERNEL_DUAL_REGULATOR_ED25519_VERIFIED',
+    receiptHash: trade.trade.receiptHash || null,
+    receiptType: 'LOCAL_DEMO_SHA256',
+    verified: Boolean(receiptPayload && computedHash === trade.trade.receiptHash),
+    fabricCommitVerified: false,
+    disclaimer: 'Local SHA-256 digest of the in-memory demo payload only. Not a Fabric endorsement, regulator approval, or proof of external payment.',
+    receiptPayload,
     settledAt: trade.trade.settledAt,
-    merkleRoot: '0x7f83b1657ff1fc53b92dc18148a1d65dfc2d4b1fa3d677284addd200126d9069',
   });
 });
 
@@ -466,8 +553,9 @@ app.get('/api/fabric/status', async (req, res) => {
     chaincodeId: 'settlement-cc',
     organizations: ['RegAMSP (RBI)', 'RegBMSP (MAS)', 'BankA1MSP', 'BankB1MSP', 'AuditorMSP'],
     activeEndorsementPolicy: "AND('RegAMSP.peer', 'RegBMSP.peer')",
-    consensus: '3-Node Raft Consensus',
-    dualEngineReady: true,
+    consensus: '3-Node Raft Consensus (Sample Topology)',
+    sampleTopology: true,
+    dualEngineReady: false,
   });
 });
 
@@ -496,9 +584,9 @@ app.post('/api/fabric/audit/run', async (req, res) => {
 app.listen(PORT, () => {
   console.log(`================================================================`);
   console.log(`  PayBridge AI Backend Server running on http://localhost:${PORT}`);
-  console.log(`  PayPal Developer Platform Integration: ACTIVE`);
-  console.log(`  Multi-Agent AI Swarm & Copilot Engine: ACTIVE`);
-  console.log(`  AG Grid Financial Data Feeds: ACTIVE`);
-  console.log(`  Channel3, Elastic, Zapier, KERNEL Connectors: ACTIVE`);
+  console.log(`  PayPal mode: ${getPayPalMode()}`);
+  console.log(`  Gemini explanation: ${process.env.GEMINI_API_KEY ? 'configured' : 'not configured'}`);
+  console.log(`  Ledger mode: in-memory prototype`);
+  console.log(`  Optional integrations: configured per environment`);
   console.log(`================================================================`);
 });

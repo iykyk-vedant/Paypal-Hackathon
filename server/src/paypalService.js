@@ -2,11 +2,43 @@
 // Integrates PayPal Orders v2 API, Payouts v1 API, and Webhooks
 
 import { ulid } from 'ulid';
+import { FX_RATES } from './corridorRules.js';
 
 const PAYPAL_API_BASE = process.env.PAYPAL_API_BASE || 'https://api-m.sandbox.paypal.com';
 const CLIENT_ID = process.env.PAYPAL_CLIENT_ID || '';
 const CLIENT_SECRET = process.env.PAYPAL_CLIENT_SECRET || '';
 const IS_SIMULATION_MODE = !CLIENT_ID || !CLIENT_SECRET || process.env.PAYPAL_MODE === 'mock';
+
+export function getPayPalMode() {
+  return IS_SIMULATION_MODE ? 'simulation' : 'sandbox';
+}
+
+/** Convert the trade's source leg into an explicitly disclosed USD demo quote. */
+export function getPayPalFundingQuote({ amountMinor, currency }) {
+  const sourceRate = FX_RATES[currency];
+  if (!sourceRate || !Number.isSafeInteger(Number(amountMinor)) || Number(amountMinor) <= 0) {
+    throw new Error('A positive trade amount in a supported currency is required');
+  }
+  const amountUsdMinor = Math.round(Number(amountMinor) / sourceRate);
+  if (!Number.isSafeInteger(amountUsdMinor) || amountUsdMinor <= 0) {
+    throw new Error('Converted USD funding amount must be at least $0.01');
+  }
+  return {
+    sourceCurrency: currency,
+    sourceAmountMinor: String(amountMinor),
+    paymentCurrency: 'USD',
+    paymentAmountMinor: String(amountUsdMinor),
+    usdPerSourceUnit: (1 / sourceRate).toFixed(6),
+    rateType: 'Static demo FX rate; illustrative only, not a live FX quote',
+    providerMode: getPayPalMode(),
+  };
+}
+
+const minorToMajor = (minor) => (Number(minor) / 100).toFixed(2);
+const majorToMinor = (major) => {
+  const [whole = '0', fraction = ''] = String(major || '0').split('.');
+  return String(BigInt(whole) * 100n + BigInt(fraction.padEnd(2, '0').slice(0, 2)));
+};
 
 let cachedAccessToken = null;
 let tokenExpiresAt = 0;
@@ -55,7 +87,7 @@ export async function getPayPalAccessToken() {
  * Create a PayPal Order (v2/checkout/orders)
  * @param {Object} orderData { tradeId, amount, currency, description, counterparty }
  */
-export async function createPayPalOrder({ tradeId, amount, currency = 'USD', description, counterparty }) {
+export async function createPayPalOrder({ tradeId, amountMinor, currency = 'USD', description, counterparty, fundingQuote }) {
   const token = await getPayPalAccessToken();
 
   // If live credentials active
@@ -66,7 +98,7 @@ export async function createPayPalOrder({ tradeId, amount, currency = 'USD', des
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
-          'PayPal-Request-Id': `order_${tradeId}_${Date.now()}`,
+          'PayPal-Request-Id': `paybridge-order-${tradeId}`,
         },
         body: JSON.stringify({
           intent: 'CAPTURE',
@@ -77,7 +109,7 @@ export async function createPayPalOrder({ tradeId, amount, currency = 'USD', des
               custom_id: tradeId,
               amount: {
                 currency_code: currency,
-                value: (Number(amount) / 100).toFixed(2),
+                value: minorToMajor(amountMinor),
               },
             },
           ],
@@ -98,10 +130,12 @@ export async function createPayPalOrder({ tradeId, amount, currency = 'USD', des
           orderId: liveOrder.id,
           status: liveOrder.status,
           tradeId,
-          amount,
+          amount: amountMinor,
           currency,
+          fundingQuote,
           links: liveOrder.links,
           isSimulation: false,
+          providerMode: 'sandbox',
           createdAt: new Date().toISOString(),
         };
       }
@@ -120,8 +154,9 @@ export async function createPayPalOrder({ tradeId, amount, currency = 'USD', des
     orderId: simulatedId,
     status: 'CREATED',
     tradeId,
-    amount,
+    amount: amountMinor,
     currency,
+    fundingQuote,
     description: description || `PayBridge Settlement for ${tradeId}`,
     counterparty,
     links: [
@@ -137,6 +172,7 @@ export async function createPayPalOrder({ tradeId, amount, currency = 'USD', des
       },
     ],
     isSimulation: true,
+    providerMode: 'simulation',
     createdAt: new Date().toISOString(),
   };
 }
@@ -144,7 +180,7 @@ export async function createPayPalOrder({ tradeId, amount, currency = 'USD', des
 /**
  * Capture an approved PayPal Order (v2/checkout/orders/{id}/capture)
  */
-export async function capturePayPalOrder(orderId, tradeId) {
+export async function capturePayPalOrder(orderId, tradeId, expectedAmountMinor) {
   const token = await getPayPalAccessToken();
 
   if (!IS_SIMULATION_MODE && !token.startsWith('simulated_')) {
@@ -154,21 +190,25 @@ export async function capturePayPalOrder(orderId, tradeId) {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
-          'PayPal-Request-Id': `capture_${orderId}_${Date.now()}`,
+          'PayPal-Request-Id': `paybridge-capture-${orderId}`,
         },
       });
 
       if (response.ok) {
         const liveCapture = await response.json();
         const captureUnit = liveCapture.purchase_units?.[0]?.payments?.captures?.[0];
-        console.log(`[PayPal Capture] Captured live Sandbox Order: ${orderId}`);
+        const captureStatus = captureUnit?.status || liveCapture.status || 'UNKNOWN';
+        console.log(`[PayPal Capture] Sandbox capture status (${captureStatus}) for order: ${orderId}`);
         return {
           captureId: captureUnit?.id || `CAP-${ulid().slice(0, 12)}`,
           orderId,
-          status: liveCapture.status || 'COMPLETED',
+          status: captureStatus,
           tradeId,
+          amount: captureUnit?.amount || null,
+          fundingAmountMinor: captureUnit?.amount?.currency_code === 'USD' ? majorToMinor(captureUnit.amount.value) : null,
           capturedAt: new Date().toISOString(),
           isSimulation: false,
+          providerMode: 'sandbox',
           details: liveCapture,
         };
       }
@@ -187,16 +227,18 @@ export async function capturePayPalOrder(orderId, tradeId) {
     orderId,
     status: 'COMPLETED',
     tradeId,
-    capturedAt: new Date().toISOString(),
-    isSimulation: true,
     amount: {
       currency_code: 'USD',
-      value: '1000.00',
+      value: minorToMajor(expectedAmountMinor),
     },
+    fundingAmountMinor: String(expectedAmountMinor),
+    capturedAt: new Date().toISOString(),
+    isSimulation: true,
+    providerMode: 'simulation',
     seller_receivable_breakdown: {
-      gross_amount: { value: '1000.00', currency_code: 'USD' },
-      paypal_fee: { value: '29.30', currency_code: 'USD' },
-      net_amount: { value: '970.70', currency_code: 'USD' },
+      gross_amount: { value: minorToMajor(expectedAmountMinor), currency_code: 'USD' },
+      paypal_fee: { value: '0.00', currency_code: 'USD' },
+      net_amount: { value: minorToMajor(expectedAmountMinor), currency_code: 'USD' },
     },
   };
 }
@@ -221,8 +263,8 @@ export async function executePayPalPayout({ tradeId, recipientEmail, amount, cur
         body: JSON.stringify({
           sender_batch_header: {
             sender_batch_id: batchId,
-            email_subject: 'PayBridge Cross-Border Treasury Payout',
-            email_message: note || `Disbursement for atomic trade ${tradeId}`,
+            email_subject: 'PayBridge AI Demo Treasury Payout',
+            email_message: note || `Sandbox payout for demo trade ${tradeId}`,
           },
           items: [
             {
@@ -231,7 +273,7 @@ export async function executePayPalPayout({ tradeId, recipientEmail, amount, cur
                 value: (Number(amount) / 100).toFixed(2),
                 currency,
               },
-              note: note || `Atomic settlement payout ${tradeId}`,
+              note: note || `Demo settlement payout ${tradeId}`,
               sender_item_id: senderItemId,
               receiver: recipientEmail || 'vendor-payout-sandbox@paybridge.ai',
             },
@@ -250,6 +292,7 @@ export async function executePayPalPayout({ tradeId, recipientEmail, amount, cur
           amount,
           currency,
           isSimulation: false,
+          providerMode: 'sandbox',
           executedAt: new Date().toISOString(),
         };
       }
@@ -271,8 +314,9 @@ export async function executePayPalPayout({ tradeId, recipientEmail, amount, cur
     recipientEmail: recipientEmail || 'treasury-desk-sg@bankb1.sandbox.paypal.com',
     amount,
     currency,
-    note: note || `Autonomous Agentic Payout for Settlement ${tradeId}`,
+    note: note || `Simulated Demo Payout for Settlement ${tradeId}`,
     isSimulation: true,
+    providerMode: 'simulation',
     executedAt: new Date().toISOString(),
   };
 }

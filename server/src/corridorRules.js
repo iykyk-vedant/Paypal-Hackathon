@@ -1,4 +1,5 @@
-// Corridor Rules, FX Rates, and Risk Limits for PayBridge AI
+// Sample Corridor Rules, Illustrative Static FX Rates, and Demo Risk Limits for PayBridge AI
+// These values are built-in prototype samples, not live market quotes or official regulatory policies.
 
 export const CORRIDORS = {
   'JUR-A': {
@@ -42,7 +43,7 @@ export const CORRIDORS = {
   },
 };
 
-// Benchmark FX Rates (relative to 1 USD)
+// Illustrative Static FX Rates (relative to 1 USD; not a live FX feed)
 export const FX_RATES = {
   USD: 1.0,
   SGD: 1.34,
@@ -61,7 +62,7 @@ export const REFUSAL_CODES = {
   REF_AMOUNT_EXCEEDS_CEILING: 'Amount exceeds corridor single-transaction regulatory ceiling',
   REF_OUTSIDE_OPERATING_HOURS: 'Corridor settlement window is currently closed',
   REF_CORRIDOR_HALTED: 'Regulatory jurisdiction has issued an emergency corridor halt',
-  REF_SANCTIONS_ALERT: 'High-risk or sanctioned entity flagged by AI Sentinel agent',
+  REF_SANCTIONS_ALERT: 'Counterparty matched the prototype sample blocklist',
   REF_INSUFFICIENT_HEADROOM: 'Insufficient currency reserve headroom for settlement',
   REF_PAYPAL_VERIFICATION_FAILED: 'PayPal sandbox authentication or capture verification failed',
 };
