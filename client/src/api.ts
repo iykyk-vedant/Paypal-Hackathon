@@ -239,6 +239,10 @@ export class ApiClient {
     return this.request<any>('/api/fabric/status');
   }
 
+  async getFabricLedgerSnapshot() {
+    return this.request<any>('/api/fabric/ledger');
+  }
+
   async getFabricBlocks() {
     return this.request<any[]>('/api/fabric/blocks');
   }

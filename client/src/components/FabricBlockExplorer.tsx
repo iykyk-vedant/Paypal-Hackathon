@@ -10,6 +10,7 @@ export const FabricBlockExplorer: React.FC = () => {
   const gridRef = useRef<AgGridReact>(null);
   const [blocks, setBlocks] = useState<FabricBlock[]>([]);
   const [status, setStatus] = useState<any | null>(null);
+  const [ledgerSnapshot, setLedgerSnapshot] = useState<any | null>(null);
   const [selectedBlock, setSelectedBlock] = useState<FabricBlock | null>(null);
   const [quickFilterText, setQuickFilterText] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(false);
@@ -23,6 +24,15 @@ export const FabricBlockExplorer: React.FC = () => {
       ]);
       setBlocks(blockList || []);
       setStatus(statusData);
+      if (statusData?.gatewayConnected) {
+        try {
+          setLedgerSnapshot(await api.getFabricLedgerSnapshot());
+        } catch (ledgerError) {
+          setLedgerSnapshot({ error: ledgerError instanceof Error ? ledgerError.message : 'Live ledger query failed' });
+        }
+      } else {
+        setLedgerSnapshot(null);
+      }
       if (blockList?.length > 0 && !selectedBlock) {
         setSelectedBlock(blockList[0]);
       }
@@ -160,12 +170,35 @@ export const FabricBlockExplorer: React.FC = () => {
               <div className="text-[10px] text-slate-600">Fabric Network Mode:</div>
               <div className="text-slate-900 font-bold text-[11px]">{status?.mode || 'DEMO_FIXTURES'}</div>
               <div className="text-[10px] text-slate-600">
-                Peer TCP: {status?.peerReachable ? 'reachable (no Gateway)' : status?.peerConfigured ? 'unreachable' : 'not configured'}
+                {status?.gatewayConnected ? 'Gateway query verified' : status?.peerReachable ? 'peer reachable (Gateway not connected)' : status?.peerConfigured ? 'unreachable' : 'not configured'}
               </div>
             </div>
           </div>
         </div>
       </div>
+
+      {ledgerSnapshot && (
+        <section className="glass-panel rounded-2xl p-5 border border-emerald-200 space-y-3">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <h3 className="font-bold text-slate-900">Live chaincode query snapshot</h3>
+              <p className="text-xs text-slate-600">Read-only Fabric Gateway queries. The block table below remains seeded fixture data.</p>
+            </div>
+            <span className="text-[10px] font-bold uppercase rounded-full px-2 py-1 bg-emerald-100 text-emerald-800">{ledgerSnapshot.mode || 'Query error'}</span>
+          </div>
+          {ledgerSnapshot.queries ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              {Object.entries(ledgerSnapshot.queries).map(([name, result]: [string, any]) => (
+                <div key={name} className="rounded-lg border border-slate-200 bg-white p-3 min-w-0">
+                  <div className="text-xs font-semibold text-slate-800">{name}</div>
+                  <pre className="mt-1 text-[11px] text-slate-600 whitespace-pre-wrap break-words max-h-40 overflow-auto">{result.ok ? JSON.stringify(result.data, null, 2) : result.error}</pre>
+                </div>
+              ))}
+            </div>
+          ) : <p className="text-sm text-rose-700">{ledgerSnapshot.error || 'Unable to query live ledger.'}</p>}
+          <p className="text-[11px] text-slate-500">{ledgerSnapshot.notice || 'Queries are not transactions and do not change ledger state.'}</p>
+        </section>
+      )}
 
       {/* Consortium Architecture & Consensus Meta */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
