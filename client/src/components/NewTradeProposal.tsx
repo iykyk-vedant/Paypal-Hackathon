@@ -37,7 +37,7 @@ export const NewTradeProposal: React.FC<NewTradeProposalProps> = ({
 
       setFxRate(res.agreedFx);
       setAmountB(Math.round(res.amountTo / 100));
-      setNegotiationNotice(`AI Agent locked ${res.discountAppliedPct}% volume forward hedge discount.`);
+      setNegotiationNotice(`Demo quote calculated with a static FX benchmark and ${res.discountAppliedPct}% illustrative volume heuristic.`);
     } catch (err: any) {
       alert(`Negotiation error: ${err.message}`);
     } finally {
@@ -80,9 +80,9 @@ export const NewTradeProposal: React.FC<NewTradeProposalProps> = ({
               <PlusCircle className="w-6 h-6" />
             </div>
             <div>
-              <h2 className="text-xl font-bold text-slate-900 tracking-tight">Propose Bilateral Sovereign Trade</h2>
+              <h2 className="text-xl font-bold text-slate-900 tracking-tight">Create a sample trade proposal</h2>
               <p className="text-xs text-slate-600">
-                Initiate cross-border trade terms with autonomous AI forward hedge calculation.
+                Generate an indicative cross-border proposal using static demo FX benchmarks and illustrative pricing rules.
               </p>
             </div>
           </div>
@@ -91,10 +91,10 @@ export const NewTradeProposal: React.FC<NewTradeProposalProps> = ({
             type="button"
             onClick={handleAutoNegotiate}
             disabled={loading}
-            className="px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-accent-purple/30 to-primary/40 hover:from-accent-purple/40 hover:to-primary/50 text-slate-900 text-xs font-semibold border border-accent-purple/40 shadow-glow flex items-center gap-2 transition-all disabled:opacity-50"
+            className="px-3.5 py-1.5 rounded-xl bg-sky-50 hover:bg-sky-100 text-slate-900 text-xs font-semibold border border-sky-200 flex items-center gap-2 transition-colors disabled:opacity-50"
           >
             <Sparkles className="w-3.5 h-3.5 text-cyan-800" />
-            <span>AI Auto-Negotiate Terms</span>
+            <span>Calculate Demo Quote</span>
           </button>
         </div>
 
@@ -160,7 +160,7 @@ export const NewTradeProposal: React.FC<NewTradeProposalProps> = ({
             </div>
 
             <div>
-              <label className="text-xs font-semibold text-slate-700">Agreed FX Rate</label>
+              <label className="text-xs font-semibold text-slate-700">Indicative Demo FX Rate</label>
               <input
                 type="text"
                 value={fxRate}
@@ -212,15 +212,15 @@ export const NewTradeProposal: React.FC<NewTradeProposalProps> = ({
           <div className="pt-4 border-t border-slate-200 flex items-center justify-between">
             <span className="text-xs text-slate-600 flex items-center gap-1.5">
               <ShieldCheck className="w-4 h-4 text-emerald-800" />
-              Proposing will automatically lock Leg A funds in atomic hold
+              Proposing updates the in-memory demo ledger; it does not submit a Fabric transaction.
             </span>
 
             <button
               type="submit"
               disabled={loading}
-              className="px-6 py-2.5 rounded-xl bg-sky-100 hover:bg-sky-100 text-slate-900 text-xs font-bold shadow-glow flex items-center gap-2 transition-all disabled:opacity-50"
+              className="px-6 py-2.5 rounded-xl bg-sky-100 hover:bg-sky-200 border border-sky-200 text-slate-900 text-xs font-bold flex items-center gap-2 transition-colors disabled:opacity-50"
             >
-              {loading ? 'Submitting Proposal...' : 'Commit Proposal & Lock Leg A'}
+              {loading ? 'Submitting Proposal...' : 'Add Demo Proposal'}
             </button>
           </div>
         </form>

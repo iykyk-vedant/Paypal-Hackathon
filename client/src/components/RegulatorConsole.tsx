@@ -42,13 +42,13 @@ export const RegulatorConsole: React.FC = () => {
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <h2 className="text-xl font-bold text-slate-900 tracking-tight">Sovereign Central Bank Supervisory Console</h2>
+              <h2 className="text-xl font-bold text-slate-900 tracking-tight">Sample Regulatory Controls</h2>
               <span className="bg-amber-100 text-amber-800 border border-amber-200 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">
-                {activeJur === 'JUR-A' ? 'Reserve Bank of India (RBI)' : 'Monetary Authority of Singapore (MAS)'}
+                {activeJur === 'JUR-A' ? 'RBI sample profile' : 'MAS sample profile'}
               </span>
             </div>
             <p className="text-xs text-slate-600 mt-0.5">
-              Supervises 1:1 RTGS reserve backing, single-transaction regulatory ceilings, and corridor emergency halts.
+              Illustrative reserve values, corridor limits, and demo halt flags; no regulator system is connected.
             </p>
           </div>
         </div>
@@ -79,7 +79,7 @@ export const RegulatorConsole: React.FC = () => {
         {/* Reserve Attestation */}
         <div className="glass-panel rounded-2xl p-5 border border-slate-200 space-y-3">
           <div className="text-xs text-slate-600 font-semibold flex items-center justify-between">
-            <span>Central Bank RTGS Reserve Backing</span>
+            <span>Sample reserve value</span>
             <CheckCircle2 className="w-4 h-4 text-emerald-800" />
           </div>
 
@@ -89,14 +89,14 @@ export const RegulatorConsole: React.FC = () => {
 
           <div className="text-[11px] font-mono text-slate-600 space-y-1">
             <div>Statement Ref: <span className="text-slate-800">{reserve?.statementRef}</span></div>
-            <div>Attestation: <span className="text-emerald-800">1:1 Backed & Verified</span></div>
+            <div>Attestation: <span className="text-amber-800">Demo reserve value; not independently verified</span></div>
           </div>
         </div>
 
         {/* Max Tx Ceiling */}
         <div className="glass-panel rounded-2xl p-5 border border-slate-200 space-y-3">
           <div className="text-xs text-slate-600 font-semibold flex items-center justify-between">
-            <span>Single-Transaction Regulatory Ceiling</span>
+            <span>Illustrative transaction ceiling</span>
             <Lock className="w-4 h-4 text-sky-800" />
           </div>
 
@@ -105,14 +105,14 @@ export const RegulatorConsole: React.FC = () => {
           </div>
 
           <div className="text-[11px] text-slate-600">
-            Enforced autonomously by the AI Compliance Sentinel & sovereign chaincode rules.
+            Illustrative controls in this prototype; no live regulator systems or Fabric chaincode are called by this console.
           </div>
         </div>
 
         {/* Corridor Halt Status */}
         <div className="glass-panel rounded-2xl p-5 border border-slate-200 space-y-3">
           <div className="text-xs text-slate-600 font-semibold flex items-center justify-between">
-            <span>Corridor Emergency Circuit Breaker</span>
+            <span>Demo corridor flag</span>
             <AlertOctagon className="w-4 h-4 text-rose-800" />
           </div>
 
@@ -122,8 +122,8 @@ export const RegulatorConsole: React.FC = () => {
 
           <div className="text-[11px] text-slate-600">
             {rules?.halted
-              ? 'Settlement corridor halted by central bank order'
-              : 'Continuous 24-hr settlement window active'}
+              ? 'Demo corridor flag is set to halted'
+              : 'Demo corridor flag is active'}
           </div>
         </div>
       </div>
@@ -132,12 +132,12 @@ export const RegulatorConsole: React.FC = () => {
       <div className="glass-panel rounded-2xl p-6 border border-slate-200 space-y-4">
         <div className="flex items-center justify-between border-b border-slate-200 pb-3">
           <div className="flex items-center gap-2">
-            <h3 className="text-sm font-bold text-slate-900">Immutable Regulatory Refusals Ledger</h3>
+        <h3 className="text-sm font-bold text-slate-900">Sample refusal records</h3>
             <span className="bg-rose-100 text-rose-800 text-[10px] px-2 py-0.2 rounded font-mono font-bold">
               {refusals.length} Refusals Recorded
             </span>
           </div>
-          <span className="text-xs text-slate-600 font-mono">Permanent Ledger Audit Trail</span>
+          <span className="text-xs text-slate-600 font-mono">In-memory prototype data</span>
         </div>
 
         <div className="space-y-3 font-mono text-xs">

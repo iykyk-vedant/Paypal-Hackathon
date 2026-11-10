@@ -77,8 +77,11 @@ export interface Trade {
   status: 'PROPOSED' | 'ACCEPTED' | 'SETTLED' | 'EXPIRED' | 'CANCELLED' | 'REFUSED';
   paypalOrderId?: string;
   paypalStatus?: string;
+  paypalMode?: string;
   payoutBatchId?: string;
-  kernelReceiptHash?: string;
+  payoutStatus?: string;
+  payoutError?: string;
+  receiptHash?: string;
   channel3Sku?: string;
   createdAt?: string | number;
   proposedAt?: string | number;
@@ -107,7 +110,7 @@ export interface TradeComposite {
     status: string;
     txId?: string;
     settledAt?: string;
-    kernelReceiptHash?: string;
+    receiptHash?: string;
   };
 }
 
@@ -118,6 +121,8 @@ export interface PayPalLedgerEntry {
   paypalOrderId?: string;
   captureId?: string;
   payoutBatchId?: string;
+  paypalMode?: string;
+  isSimulation?: boolean;
   grossAmount: string;
   paypalFee: string;
   netAmount: string;
@@ -201,5 +206,6 @@ export interface ToastMessage {
   message: string;
   txId?: string;
   paypalOrderId?: string;
+  isSimulation?: boolean;
   timestamp: number;
 }

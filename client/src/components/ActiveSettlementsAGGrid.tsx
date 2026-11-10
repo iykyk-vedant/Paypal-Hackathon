@@ -1,9 +1,9 @@
-import React, { useState, useMemo, useRef, useCallback } from 'react';
+import React, { useState, useMemo, useRef, useCallback, useEffect } from 'react';
 import { AgGridReact } from 'ag-grid-react';
 import '../grid.css';
 import { ColDef, GridReadyEvent, ICellRendererParams } from 'ag-grid-community';
 import { TradeComposite, ScreenId } from '../types';
-import { formatMinorUnits } from '../api';
+import { api, formatMinorUnits } from '../api';
 import { Table, Download, Search, Play, Eye, ShieldCheck, CheckCircle2, Clock, Sparkles } from 'lucide-react';
 
 interface ActiveSettlementsAGGridProps {
@@ -24,6 +24,13 @@ export const ActiveSettlementsAGGrid: React.FC<ActiveSettlementsAGGridProps> = (
   const gridRef = useRef<AgGridReact>(null);
   const [quickFilterText, setQuickFilterText] = useState<string>('');
   const [statusFilter, setStatusFilter] = useState<string>('ALL');
+  const [paypalMode, setPaypalMode] = useState<string>('checking');
+
+  useEffect(() => {
+    api.getHealth()
+      .then((health) => setPaypalMode(health.paypalMode))
+      .catch(() => setPaypalMode('unavailable'));
+  }, []);
 
   // Filtered dataset
   const rowData = useMemo(() => {
@@ -131,7 +138,7 @@ export const ActiveSettlementsAGGrid: React.FC<ActiveSettlementsAGGridProps> = (
         },
       },
       {
-        headerName: 'Agreed FX',
+        headerName: 'Demo FX',
         field: 'trade.fxRate',
         width: 120,
         cellRenderer: (params: ICellRendererParams) => {
@@ -143,7 +150,7 @@ export const ActiveSettlementsAGGrid: React.FC<ActiveSettlementsAGGridProps> = (
         },
       },
       {
-        headerName: 'PayPal Integration',
+        headerName: 'PayPal / Demo Ref',
         field: 'trade.paypalOrderId',
         width: 200,
         cellRenderer: (params: ICellRendererParams) => {
@@ -153,11 +160,11 @@ export const ActiveSettlementsAGGrid: React.FC<ActiveSettlementsAGGridProps> = (
             <div className="flex flex-col justify-center h-full text-xs">
               {orderId ? (
                 <span className="font-mono text-amber-800 text-[11px] font-semibold truncate flex items-center gap-1">
-                  <span className="w-1.5 h-1.5 rounded-full bg-paypal-gold"></span>
+                  <span className="w-1.5 h-1.5 rounded-full bg-amber-600"></span>
                   {orderId}
                 </span>
               ) : (
-                <span className="text-slate-600 text-[11px]">Ready to Authorize</span>
+                <span className="text-slate-600 text-[11px]">Not created</span>
               )}
               <span className="text-[10px] text-slate-600">{status}</span>
             </div>
@@ -165,7 +172,7 @@ export const ActiveSettlementsAGGrid: React.FC<ActiveSettlementsAGGridProps> = (
         },
       },
       {
-        headerName: 'Dual-Leg Hold',
+        headerName: 'Demo Hold State',
         valueGetter: (params) => `A:${params.data?.legA?.holdStatus} • B:${params.data?.legB?.holdStatus}`,
         width: 180,
         cellRenderer: (params: ICellRendererParams) => {
@@ -182,7 +189,7 @@ export const ActiveSettlementsAGGrid: React.FC<ActiveSettlementsAGGridProps> = (
                     : 'bg-amber-50 text-amber-800 border-amber-200'
                 }`}
               >
-                {bothHeld ? '🔒 Both Legs Locked' : '⏳ Awaiting Dual Hold'}
+                {bothHeld ? 'Demo legs held' : 'Awaiting accept'}
               </span>
             </div>
           );
@@ -203,10 +210,10 @@ export const ActiveSettlementsAGGrid: React.FC<ActiveSettlementsAGGridProps> = (
               {isAccepted && (
                 <button
                   onClick={() => onOpenPayPalModal(tradeComposite)}
-                  className="px-2.5 py-1 rounded bg-gradient-to-r from-paypal-blue to-primary hover:from-sky-100 hover:to-sky-100 text-slate-900 font-semibold text-xs shadow-glow flex items-center gap-1 transition-all"
-                  title="Checkout & Settle via PayPal Sandbox"
+                  className="px-2.5 py-1 rounded bg-sky-100 hover:bg-sky-200 border border-sky-200 text-sky-900 font-semibold text-xs flex items-center gap-1 transition-colors"
+                  title="Open PayPal / Demo Settlement Checkout"
                 >
-                  <Play className="w-3 h-3 fill-white" /> Settle PayPal
+                  <Play className="w-3 h-3" /> {paypalMode === 'simulation' ? 'Simulate Settle' : 'Settle PayPal'}
                 </button>
               )}
               {isSettled && (
@@ -229,7 +236,7 @@ export const ActiveSettlementsAGGrid: React.FC<ActiveSettlementsAGGridProps> = (
         },
       },
     ];
-  }, [onOpenPayPalModal, onSelectTrade, onNavigate]);
+  }, [onOpenPayPalModal, onSelectTrade, onNavigate, paypalMode]);
 
   const defaultColDef = useMemo<ColDef>(() => {
     return {
@@ -251,8 +258,8 @@ export const ActiveSettlementsAGGrid: React.FC<ActiveSettlementsAGGridProps> = (
             <div>
               <div className="flex items-center gap-2">
                 <h2 className="text-xl font-bold text-slate-900 tracking-tight">Active Settlements & Corridor Flow</h2>
-                <span className="bg-emerald-100 text-emerald-800 border border-emerald-200 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">
-
+                <span className="bg-amber-100 text-amber-800 border border-amber-200 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">
+                  Demo Ledger
                 </span>
               </div>
               <p className="text-xs text-slate-600 mt-0.5">
@@ -340,8 +347,12 @@ export const ActiveSettlementsAGGrid: React.FC<ActiveSettlementsAGGridProps> = (
         </div>
         <div className="glass-panel p-4 rounded-xl border border-slate-200/80">
           <div className="text-slate-600 text-xs font-medium">PayPal Sandbox Readiness</div>
-          <div className="text-xl font-bold text-amber-800 mt-1 font-mono">Sandbox mode</div>
-          <div className="text-[11px] text-slate-700 mt-1">Live calls require valid credentials and payer approval</div>
+          <div className="text-xl font-bold text-amber-800 mt-1 font-mono">
+            {paypalMode === 'sandbox' ? 'Sandbox configured' : paypalMode === 'simulation' ? 'Simulation only' : paypalMode}
+          </div>
+          <div className="text-[11px] text-slate-700 mt-1">
+            {paypalMode === 'sandbox' ? 'PayPal Sandbox calls require payer approval' : 'Simulation does not call PayPal'}
+          </div>
         </div>
       </div>
     </div>

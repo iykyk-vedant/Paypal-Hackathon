@@ -67,7 +67,7 @@ export const ZapierConfigModal: React.FC<ZapierConfigModalProps> = ({ isOpen, on
 
             </div>
             <p className="text-xs text-slate-600">
-              Dispatches automated triggers to Slack, QuickBooks, and corporate ERP systems.
+              Send optional outbound webhook notifications or log simulated demo events locally.
             </p>
           </div>
         </div>

@@ -140,10 +140,10 @@ export const FabricBlockExplorer: React.FC = () => {
             <div className="flex items-center gap-2">
               <h2 className="text-xl font-bold text-slate-900 tracking-tight">Hyperledger Fabric 2.5 Block Explorer</h2>
               <span className="bg-sky-100 text-blue-800 border border-sky-200 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">
-                Consortium Channel: settlement
+                Sample Channel: settlement
               </span>
-              <span className="bg-emerald-100 text-emerald-800 border border-emerald-200 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">
-
+              <span className="bg-amber-100 text-amber-800 border border-amber-200 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">
+                Demo Fixtures
               </span>
             </div>
             <p className="text-xs text-slate-600 mt-0.5">
@@ -160,7 +160,7 @@ export const FabricBlockExplorer: React.FC = () => {
               <div className="text-[10px] text-slate-600">Fabric Network Mode:</div>
               <div className="text-slate-900 font-bold text-[11px]">{status?.mode || 'DEMO_FIXTURES'}</div>
               <div className="text-[10px] text-slate-600">
-                EC2 peer TCP: {status?.peerReachable ? 'reachable' : status?.peerConfigured ? 'unreachable' : 'not configured'}
+                Peer TCP: {status?.peerReachable ? 'reachable (no Gateway)' : status?.peerConfigured ? 'unreachable' : 'not configured'}
               </div>
             </div>
           </div>
@@ -174,7 +174,7 @@ export const FabricBlockExplorer: React.FC = () => {
           <div className="text-sm font-bold text-emerald-800 mt-1 font-mono truncate">
             {status?.activeEndorsementPolicy || "AND('RegA', 'RegB')"}
           </div>
-          <div className="text-[10px] text-slate-600 mt-1">Dual central bank sovereign signatures required</div>
+          <div className="text-[10px] text-slate-600 mt-1">Example policy details; signatures not checked</div>
         </div>
 
         <div className="glass-panel p-4 rounded-xl border border-slate-200/80">
@@ -194,18 +194,18 @@ export const FabricBlockExplorer: React.FC = () => {
         </div>
 
         <div className="glass-panel p-4 rounded-xl border border-slate-200/80">
-          <div className="text-slate-600 text-xs">PayPal Atomic Bridge</div>
+          <div className="text-slate-600 text-xs">PayPal event references in fixtures</div>
           <div className="text-sm font-bold text-amber-800 mt-1 font-mono">
-            Orders v2 ↔ Block Commit
+            Sample order reference
           </div>
-          <div className="text-[10px] text-slate-600 mt-1">Disburses payouts on block consensus</div>
+          <div className="text-[10px] text-slate-600 mt-1">No payout is triggered by fixture data</div>
         </div>
       </div>
 
       {/* AG Grid Blocks Table */}
       <div className="glass-panel rounded-2xl p-4 border border-slate-200 shadow-xl overflow-hidden space-y-3">
         <div className="flex items-center justify-between px-2">
-          <span className="text-xs font-bold text-slate-900">Committed Ledger Blocks</span>
+          <span className="text-xs font-bold text-slate-900">Seeded sample blocks</span>
           <div className="flex items-center gap-2">
             <input
               type="text"
@@ -245,7 +245,7 @@ export const FabricBlockExplorer: React.FC = () => {
           <div className="flex items-center justify-between border-b border-slate-200 pb-3">
             <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
               <Blocks className="w-4 h-4 text-cyan-800" />
-              <span>Block #{selectedBlock.blockNumber} — Transaction Payload & Endorsement Signatures</span>
+              <span>Block #{selectedBlock.blockNumber} — Sample Payload & Fixture Endorsements</span>
             </h3>
             <span className="text-xs font-mono text-slate-600">{selectedBlock.committedAt}</span>
           </div>
@@ -268,11 +268,11 @@ export const FabricBlockExplorer: React.FC = () => {
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
-                    <span className="text-[11px] text-slate-600">Sovereign Endorsements:</span>
+                    <span className="text-[11px] text-slate-600">Endorsements listed in fixture:</span>
                     <div className="flex flex-wrap gap-1.5 mt-1">
                       {tx.endorsements?.map((end: string) => (
-                        <span key={end} className="bg-white border border-slate-300 px-2 py-0.5 rounded text-[10px] text-emerald-800 font-semibold">
-                          ✓ {end}
+                        <span key={end} className="bg-white border border-slate-300 px-2 py-0.5 rounded text-[10px] text-slate-700 font-semibold">
+                          {end} (fixture)
                         </span>
                       ))}
                     </div>
@@ -280,7 +280,7 @@ export const FabricBlockExplorer: React.FC = () => {
 
                   {tx.paypalLinkage && (
                     <div>
-                      <span className="text-[11px] text-slate-600">PayPal Atomic Linkage:</span>
+                      <span className="text-[11px] text-slate-600">Sample PayPal references:</span>
                       <div className="mt-1 text-[11px] space-y-0.5">
                         <div>Order ID: <span className="text-amber-800 font-bold">{tx.paypalLinkage.orderId}</span></div>
                         <div>Payout Batch: <span className="text-purple-800 font-bold">{tx.paypalLinkage.payoutBatchId}</span></div>

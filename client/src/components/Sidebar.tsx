@@ -19,6 +19,7 @@ interface SidebarProps {
   currentScreen: ScreenId;
   onNavigate: (screen: ScreenId) => void;
   me: MeResponse | null;
+  paypalMode?: string;
   onOpenZapierModal?: () => void;
 }
 
@@ -26,6 +27,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   currentScreen,
   onNavigate,
   me,
+  paypalMode = 'checking',
   onOpenZapierModal,
 }) => {
   const navItems = [
@@ -43,8 +45,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
     },
     {
       id: 'paypal-ledger' as ScreenId,
-      label: 'PayPal Sandbox Ledger',
-      sublabel: 'Orders & payout history',
+      label: 'PayPal Ledger',
+      sublabel: 'Sandbox & demo history',
       icon: CreditCard,
     },
     {
@@ -86,7 +88,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     {
       id: 'regulator' as ScreenId,
       label: 'Regulator Console',
-      sublabel: 'Reserve Attestation & Halts',
+      sublabel: 'Sample rules & limits',
       icon: Scale,
     },
     {
@@ -164,8 +166,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
       {/* Footer System Status Card */}
       <div className="space-y-2 border-t border-slate-200 bg-slate-50 p-4 text-xs">
         <div className="flex items-center justify-between text-slate-600">
-          <span>Environment:</span>
-          <span className="font-mono font-semibold text-emerald-800">Sandbox</span>
+          <span>PayPal Mode:</span>
+          <span className={`font-mono font-semibold ${paypalMode === 'sandbox' ? 'text-emerald-800' : 'text-amber-800'}`}>
+            {paypalMode === 'sandbox' ? 'Sandbox' : paypalMode === 'simulation' ? 'Simulation' : 'Checking...'}
+          </span>
         </div>
         <div className="flex items-center justify-between text-slate-600">
           <span>Ledger:</span>

@@ -40,18 +40,18 @@ export const AIChaincodeAuditorView: React.FC = () => {
       {/* Top Banner */}
       <div className="glass-panel rounded-2xl p-6 border border-slate-200 flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="flex items-center gap-3">
-          <div className="p-2.5 bg-gradient-to-tr from-accent-purple to-primary text-slate-900 rounded-xl shadow-glow">
+          <div className="p-2.5 bg-purple-100 text-purple-800 rounded-xl border border-purple-200">
             <Bot className="w-6 h-6" />
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <h2 className="text-xl font-bold text-slate-900 tracking-tight">AI Smart Chaincode & DLT Auditor</h2>
+              <h2 className="text-xl font-bold text-slate-900 tracking-tight">Fabric Fixture Review</h2>
               <span className="bg-accent-purple/20 border border-accent-purple/40 text-purple-800 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">
-                Autonomous Compliance Engine
+                Sample data only
               </span>
             </div>
             <p className="text-xs text-slate-600 mt-0.5">
-              Continuously audits Hyperledger Fabric 2.5 blocks, verifies dual-regulator endorsements, and detects financial crime anomalies.
+              Reviews seeded example records. The web app has no Fabric Gateway connection and does not verify signatures or detect live financial crime.
             </p>
           </div>
         </div>
@@ -59,17 +59,17 @@ export const AIChaincodeAuditorView: React.FC = () => {
         <button
           onClick={handleRunAudit}
           disabled={loading}
-          className="px-4 py-2 bg-gradient-to-r from-sky-100 to-sky-100 hover:from-sky-100-light hover:to-cyan-100 text-slate-900 rounded-xl text-xs font-bold shadow-glow flex items-center gap-2 transition-all disabled:opacity-50"
+          className="px-4 py-2 bg-sky-100 hover:bg-sky-200 border border-sky-200 text-slate-900 rounded-xl text-xs font-bold flex items-center gap-2 transition-colors disabled:opacity-50"
         >
           {loading ? (
             <>
               <RefreshCw className="w-4 h-4 animate-spin" />
-              Auditing Fabric Ledger...
+              Reviewing sample records...
             </>
           ) : (
             <>
               <Play className="w-4 h-4 text-amber-800" />
-              Run Live AI Ledger Audit
+              Review sample records
             </>
           )}
         </button>
@@ -80,12 +80,12 @@ export const AIChaincodeAuditorView: React.FC = () => {
           {/* Key Audit KPI Cards */}
           <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
             <div className="glass-panel p-4 rounded-xl border border-slate-200/80">
-              <div className="text-slate-600 text-xs">DLT Integrity Score</div>
+              <div className="text-slate-600 text-xs">Fixture consistency score</div>
               <div className="text-2xl font-black text-emerald-800 mt-1 font-mono">
                 {report.integrityScore} / 100
               </div>
               <div className="text-[11px] text-emerald-800 mt-1 flex items-center gap-1">
-                <CheckCircle2 className="w-3.5 h-3.5" /> High Integrity Rating
+                <CheckCircle2 className="w-3.5 h-3.5" /> Sample checks only
               </div>
             </div>
 
@@ -102,15 +102,15 @@ export const AIChaincodeAuditorView: React.FC = () => {
               <div className="text-2xl font-black text-cyan-800 mt-1 font-mono">
                 {report.totalTransactionsInspected} Transactions
               </div>
-              <div className="text-[11px] text-slate-600 mt-1">100% Cryptographic Verification</div>
+              <div className="text-[11px] text-slate-600 mt-1">Endorsement signatures not verified</div>
             </div>
 
             <div className="glass-panel p-4 rounded-xl border border-slate-200/80">
               <div className="text-slate-600 text-xs">Audit Status</div>
               <div className="text-2xl font-black text-emerald-800 mt-1 font-mono">
-                CLEAN
+                {report.status === 'CLEAN_AUDIT' ? 'Fixture checks pass' : 'Fixture anomalies'}
               </div>
-              <div className="text-[11px] text-slate-600 mt-1">Zero Double-Spend Anomalies</div>
+              <div className="text-[11px] text-slate-600 mt-1">No live double-spend analysis performed</div>
             </div>
           </div>
 
@@ -119,7 +119,7 @@ export const AIChaincodeAuditorView: React.FC = () => {
             <div className="flex items-center justify-between border-b border-slate-200 pb-3">
               <div className="flex items-center gap-2">
                 <FileText className="w-5 h-5 text-sky-800" />
-                <h3 className="text-sm font-bold text-slate-900">Autonomous Supervisory Audit Report</h3>
+                <h3 className="text-sm font-bold text-slate-900">Fixture review summary</h3>
               </div>
               <span className="text-xs font-mono text-slate-600">Report ID: {report.reportId}</span>
             </div>
@@ -128,15 +128,15 @@ export const AIChaincodeAuditorView: React.FC = () => {
               {report.executiveSummary}
             </div>
 
-            {/* Central Bank Signoffs */}
+            {/* Fixture status, not regulator approval */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2 font-mono text-xs">
               <div className="bg-white p-3 rounded-lg border border-slate-200 flex items-center justify-between">
-                <span className="text-slate-600">RBI Regulatory Supervisor Sign-off:</span>
-                <span className="text-emerald-800 font-bold">✓ {report.supervisorySignoff?.rbiSupervisor}</span>
+                <span className="text-slate-600">RBI sign-off in fixture:</span>
+                <span className="text-amber-800 font-bold">{report.supervisorySignoff?.rbiSupervisor}</span>
               </div>
               <div className="bg-white p-3 rounded-lg border border-slate-200 flex items-center justify-between">
-                <span className="text-slate-600">MAS Regulatory Supervisor Sign-off:</span>
-                <span className="text-emerald-800 font-bold">✓ {report.supervisorySignoff?.masSupervisor}</span>
+                <span className="text-slate-600">MAS sign-off in fixture:</span>
+                <span className="text-amber-800 font-bold">{report.supervisorySignoff?.masSupervisor}</span>
               </div>
             </div>
           </div>
@@ -145,7 +145,7 @@ export const AIChaincodeAuditorView: React.FC = () => {
           <div className="glass-panel rounded-2xl p-6 border border-slate-200 space-y-4">
             <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
               <ShieldCheck className="w-4 h-4 text-emerald-800" />
-              <span>Deep Block Inspection Findings & PayPal Atomic Linkage</span>
+              <span>Sample findings and PayPal references</span>
             </h3>
 
             <div className="space-y-3 font-mono text-xs">

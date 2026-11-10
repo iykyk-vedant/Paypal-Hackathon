@@ -55,11 +55,11 @@ export const Channel3SourcingModal: React.FC<Channel3SourcingModalProps> = ({
             <div className="flex items-center gap-2">
               <h2 className="text-xl font-bold text-slate-900 tracking-tight">Product Catalog</h2>
               <span className="bg-amber-100 text-amber-800 border border-amber-200 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">
-
+                Sample + Optional API
               </span>
             </div>
             <p className="text-xs text-slate-600 mt-0.5">
-              Autonomous AI buyer agents discover wholesale inventory, negotiate institutional quotes, and execute PayPal settlement.
+              Browse sample supplier items (or live Channel3 results when configured) and prefill a demo trade proposal.
             </p>
           </div>
         </div>
@@ -190,9 +190,9 @@ export const Channel3SourcingModal: React.FC<Channel3SourcingModalProps> = ({
                   setActiveQuote(null);
                   onNavigate('new-trade');
                 }}
-                className="flex-1 py-2.5 bg-sky-100 hover:bg-sky-100 text-slate-900 rounded-xl font-bold text-xs shadow-glow flex items-center justify-center gap-1.5 transition-all"
+                className="flex-1 py-2.5 bg-sky-100 hover:bg-sky-200 border border-sky-200 text-slate-900 rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 transition-colors"
               >
-                <Sparkles className="w-4 h-4 text-amber-800" /> Initiate Bilateral Trade & PayPal Settle
+                <Sparkles className="w-4 h-4 text-amber-800" /> Prefill Demo Trade Proposal
               </button>
             </div>
           </div>

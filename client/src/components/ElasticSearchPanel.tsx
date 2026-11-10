@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '../api';
-import { Search, Database, CheckCircle2, Clock, Terminal, Filter } from 'lucide-react';
+import { Search, Database, Clock, Terminal, Filter } from 'lucide-react';
 
 export const ElasticSearchPanel: React.FC = () => {
   const [query, setQuery] = useState<string>('');
@@ -9,6 +9,7 @@ export const ElasticSearchPanel: React.FC = () => {
   const [tookMs, setTookMs] = useState<number>(3);
   const [totalHits, setTotalHits] = useState<number>(0);
   const [stats, setStats] = useState<any | null>(null);
+  const [searchSource, setSearchSource] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(false);
 
   const executeSearch = async () => {
@@ -18,6 +19,7 @@ export const ElasticSearchPanel: React.FC = () => {
       setResults(data.hits || []);
       setTookMs(data.took_ms || 2);
       setTotalHits(data.total || 0);
+      setSearchSource(data.poweredBy || 'Unknown search source');
 
       const clusterStats = await api.getElasticStats();
       setStats(clusterStats);
@@ -43,12 +45,9 @@ export const ElasticSearchPanel: React.FC = () => {
           <div>
             <div className="flex items-center gap-2">
               <h2 className="text-xl font-bold text-slate-900 tracking-tight">Activity Search</h2>
-              <span className="bg-sky-100 text-blue-800 border border-sky-200 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">
-
-              </span>
             </div>
             <p className="text-xs text-slate-600 mt-0.5">
-              Full-text indexing, fuzzy search, and audit trail retrieval across multi-currency settlements and compliance logs.
+              Search prototype activity records in the local demo engine or the configured Elasticsearch service.
             </p>
           </div>
         </div>
@@ -89,17 +88,17 @@ export const ElasticSearchPanel: React.FC = () => {
       {/* Cluster Health & KPI Banner */}
       <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
         <div className="glass-panel p-4 rounded-xl border border-slate-200/80">
-          <div className="text-slate-600 text-xs">Cluster Health</div>
-          <div className="text-lg font-bold text-emerald-800 mt-1 flex items-center gap-1.5">
-            <CheckCircle2 className="w-4 h-4" /> Green (Healthy)
+          <div className="text-slate-600 text-xs">Search source</div>
+          <div className="text-lg font-bold text-slate-900 mt-1 flex items-center gap-1.5">
+            {stats?.liveConnected ? 'Elastic Cloud connected' : 'Local demo engine'}
           </div>
-          <div className="text-[11px] text-slate-600 mt-1">Available search indexes</div>
+          <div className="text-[11px] text-slate-600 mt-1">{searchSource || 'Checking configured source'}</div>
         </div>
 
         <div className="glass-panel p-4 rounded-xl border border-slate-200/80">
           <div className="text-slate-600 text-xs">Total Hits Found</div>
           <div className="text-lg font-bold text-slate-900 mt-1 font-mono">{totalHits} Documents</div>
-          <div className="text-[11px] text-slate-600 mt-1">Indexed in real-time</div>
+          <div className="text-[11px] text-slate-600 mt-1">Matching documents in selected source</div>
         </div>
 
         <div className="glass-panel p-4 rounded-xl border border-slate-200/80">
@@ -109,9 +108,9 @@ export const ElasticSearchPanel: React.FC = () => {
         </div>
 
         <div className="glass-panel p-4 rounded-xl border border-slate-200/80">
-          <div className="text-slate-600 text-xs">Auditor Verification</div>
-          <div className="text-lg font-bold text-purple-800 mt-1 font-mono">100% Cryptographic</div>
-          <div className="text-[11px] text-slate-600 mt-1">Deterministic state proof</div>
+          <div className="text-slate-600 text-xs">Search integrity</div>
+          <div className="text-lg font-bold text-slate-900 mt-1 font-mono">Not verified</div>
+          <div className="text-[11px] text-slate-600 mt-1">Search results are not cryptographic proofs</div>
         </div>
       </div>
 

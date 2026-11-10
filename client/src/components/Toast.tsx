@@ -47,8 +47,10 @@ export const Toast: React.FC<ToastProps> = ({ toasts, onDismiss }) => {
               )}
               {t.paypalOrderId && (
                 <div className="text-[11px] font-mono text-amber-800 mt-1 bg-white/60 p-1.5 rounded border border-slate-200 break-all flex items-center justify-between">
-                  <span>PayPal: {t.paypalOrderId}</span>
-                  <span className="text-[9px] bg-paypal-blue/60 text-slate-900 px-1.5 py-0.5 rounded font-bold">SANDBOX</span>
+                  <span>{t.isSimulation ? 'Demo Ref' : 'PayPal'}: {t.paypalOrderId}</span>
+                  <span className={`text-[9px] px-1.5 py-0.5 rounded font-bold ${t.isSimulation ? 'bg-amber-100 text-amber-900 border border-amber-200' : 'bg-sky-100 text-sky-900 border border-sky-200'}`}>
+                    {t.isSimulation ? 'SIMULATED' : 'SANDBOX'}
+                  </span>
                 </div>
               )}
             </div>

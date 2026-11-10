@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { TradeComposite, ScreenId } from '../types';
-import { FileCheck2, Search, CheckCircle2, ShieldCheck, Key, Terminal, ExternalLink } from 'lucide-react';
+import { FileCheck2, Search, ShieldCheck, Key, Terminal, ExternalLink } from 'lucide-react';
 
 interface AuditorPortalProps {
   trades: TradeComposite[];
@@ -38,7 +38,7 @@ export const AuditorPortal: React.FC<AuditorPortalProps> = ({
               <h2 className="text-xl font-bold text-slate-900 tracking-tight">Settlement Receipt Review</h2>
             </div>
             <p className="text-xs text-slate-600 mt-0.5">
-              Deterministic verification of bilateral trades, PayPal capture hashes, and sovereign central bank signatures.
+              Review sample trade records and receipt references; no signatures or provider events are verified here.
             </p>
           </div>
         </div>
@@ -71,35 +71,34 @@ export const AuditorPortal: React.FC<AuditorPortalProps> = ({
           <div className="glass-panel rounded-2xl p-6 border border-slate-200 space-y-4">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-200 pb-4">
               <div>
-                <span className="text-xs text-slate-600 font-mono">Verified Trade ID:</span>
+                <span className="text-xs text-slate-600 font-mono">Demo trade record:</span>
                 <h3 className="text-xl font-bold text-slate-900 font-mono">{verifiedTrade.trade.tradeId}</h3>
               </div>
 
               <div className="flex items-center gap-2">
-                <span className="inline-flex items-center gap-1.5 bg-emerald-100 text-emerald-800 border border-emerald-200 px-3 py-1 rounded-full text-xs font-bold font-mono">
-                  <CheckCircle2 className="w-4 h-4 text-emerald-800" />
-                  CRYPTOGRAPHICALLY VERIFIED
+                <span className="inline-flex items-center gap-1.5 bg-amber-100 text-amber-800 border border-amber-200 px-3 py-1 rounded-full text-xs font-bold font-mono">
+                  Sample fixture; not verified
                 </span>
               </div>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs font-mono">
               <div className="bg-white p-3.5 rounded-xl border border-slate-200 space-y-1">
-                <div className="text-slate-600 text-[11px]">Receipt hash:</div>
+                <div className="text-slate-600 text-[11px]">Receipt reference (not a proof):</div>
                 <div className="text-cyan-800 font-bold truncate">
-                  {verifiedTrade.trade.kernelReceiptHash || '0x94f83b27acbe83091df94827104bda02819028'}
+                  {verifiedTrade.trade.receiptHash || 'Not recorded'}
                 </div>
               </div>
 
               <div className="bg-white p-3.5 rounded-xl border border-slate-200 space-y-1">
                 <div className="text-slate-600 text-[11px]">PayPal Order Reference:</div>
                 <div className="text-amber-800 font-bold truncate">
-                  {verifiedTrade.trade.paypalOrderId || 'PAYID-LR99410294102'}
+                  {verifiedTrade.trade.paypalOrderId || 'Not recorded'}
                 </div>
               </div>
 
               <div className="bg-white p-3.5 rounded-xl border border-slate-200 space-y-1">
-                <div className="text-slate-600 text-[11px]">Sovereign Corridor:</div>
+                <div className="text-slate-600 text-[11px]">Sample Corridor:</div>
                 <div className="text-slate-900 font-bold">
                   {verifiedTrade.trade.ccyA} <span className="text-slate-600">↔</span> {verifiedTrade.trade.ccyB}
                 </div>
@@ -110,59 +109,51 @@ export const AuditorPortal: React.FC<AuditorPortalProps> = ({
           {/* Reconstruction Timeline */}
           <div className="glass-panel rounded-2xl p-6 border border-slate-200 space-y-4">
             <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
-              <Key className="w-4 h-4 text-purple-800" /> Deterministic State Transition Timeline
+              <Key className="w-4 h-4 text-purple-800" /> Sample Workflow Stages (Fixture Only)
             </h3>
 
             <div className="space-y-4 font-mono text-xs">
               <div className="flex items-start gap-4 p-3 bg-white rounded-xl border border-slate-200">
-                <div className="w-2.5 h-2.5 rounded-full bg-emerald-100 mt-1 shrink-0"></div>
+                <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 mt-1 shrink-0"></div>
                 <div className="flex-1 space-y-1">
                   <div className="flex justify-between">
-                    <span className="font-bold text-slate-900">1. Bilateral Propose & Leg A Hold</span>
-                    <span className="text-slate-600 text-[11px]">Consensus Block #1042</span>
+                    <span className="font-bold text-slate-900">1. Demo Proposal & Leg A Hold</span>
+                    <span className="text-slate-600 text-[11px]">Sample step</span>
                   </div>
-                  <div className="text-slate-600 text-[11px]">
-                    Proposer {verifiedTrade.trade.proposerMsp} locked {verifiedTrade.trade.ccyA} in escrow.
-                  </div>
+                  <div className="text-slate-600 text-[11px]">Illustrative fixture step; no live escrow or Fabric transaction was checked.</div>
                 </div>
               </div>
 
               <div className="flex items-start gap-4 p-3 bg-white rounded-xl border border-slate-200">
-                <div className="w-2.5 h-2.5 rounded-full bg-sky-100 mt-1 shrink-0"></div>
+                <div className="w-2.5 h-2.5 rounded-full bg-sky-500 mt-1 shrink-0"></div>
                 <div className="flex-1 space-y-1">
                   <div className="flex justify-between">
                     <span className="font-bold text-slate-900">2. Counterparty Accept & Leg B Hold</span>
-                    <span className="text-slate-600 text-[11px]">Consensus Block #1043</span>
+                    <span className="text-slate-600 text-[11px]">Sample step</span>
                   </div>
-                  <div className="text-slate-600 text-[11px]">
-                    Counterparty {verifiedTrade.trade.counterpartyMsp} committed matching {verifiedTrade.trade.ccyB}.
-                  </div>
+                  <div className="text-slate-600 text-[11px]">Illustrative fixture step; no counterparty hold was verified.</div>
                 </div>
               </div>
 
               <div className="flex items-start gap-4 p-3 bg-white rounded-xl border border-slate-200">
-                <div className="w-2.5 h-2.5 rounded-full bg-paypal-gold mt-1 shrink-0"></div>
+                <div className="w-2.5 h-2.5 rounded-full bg-amber-500 mt-1 shrink-0"></div>
                 <div className="flex-1 space-y-1">
                   <div className="flex justify-between">
-                    <span className="font-bold text-slate-900">3. PayPal Sandbox Authorization & Capture</span>
-                    <span className="text-amber-800 text-[11px]">Orders v2 CAPTURED</span>
+                    <span className="font-bold text-slate-900">3. PayPal Funding / Capture Reference</span>
+                    <span className="text-amber-800 text-[11px]">Sample event</span>
                   </div>
-                  <div className="text-slate-600 text-[11px]">
-                    PayPal capture triggered simultaneous debit & credit of both legs without intermediary Herstatt risk.
-                  </div>
+                  <div className="text-slate-600 text-[11px]">This fixture does not verify a PayPal capture or update two currency legs.</div>
                 </div>
               </div>
 
               <div className="flex items-start gap-4 p-3 bg-white rounded-xl border border-slate-200">
-                <div className="w-2.5 h-2.5 rounded-full bg-violet-100 mt-1 shrink-0"></div>
+                <div className="w-2.5 h-2.5 rounded-full bg-purple-500 mt-1 shrink-0"></div>
                 <div className="flex-1 space-y-1">
                   <div className="flex justify-between">
-                    <span className="font-bold text-slate-900">4. Autonomous Vendor Payout Disbursed</span>
-                    <span className="text-purple-800 text-[11px]">Batch Payout v1 SUCCESS</span>
+                    <span className="font-bold text-slate-900">4. Payout reference</span>
+                    <span className="text-purple-800 text-[11px]">Sample event</span>
                   </div>
-                  <div className="text-slate-600 text-[11px]">
-                    Automated Treasury Agent disbursed final settlement to overseas vendor account.
-                  </div>
+                  <div className="text-slate-600 text-[11px]">The fixture contains a payout reference; no external payout was verified.</div>
                 </div>
               </div>
             </div>
@@ -170,7 +161,7 @@ export const AuditorPortal: React.FC<AuditorPortalProps> = ({
         </div>
       ) : (
         <div className="glass-panel rounded-2xl p-12 text-center text-slate-600 text-xs">
-          Trade ID "{searchId}" not found in cryptographic ledger index.
+          Demo trade ID "{searchId}" was not found in the in-memory ledger.
         </div>
       )}
     </div>

@@ -8,7 +8,7 @@ export const AIAgentSwarmView: React.FC = () => {
   const [deliberationLogs, setDeliberationLogs] = useState<string[]>([
     '[System] Multi-Agent Swarm initialized on PayBridge Protocol.',
     '[Negotiator] Standing by for agentic bilateral commerce proposals.',
-    '[Sentinel] Active OFAC/FATF sanctions and corridor limit screening armed.',
+    '[Sentinel] Demo corridor rules and a small sample blocklist are ready; no official watchlists are connected.',
     '[Treasury] Monitoring INR, SGD, and USD reserve coverage.',
   ]);
 
@@ -92,13 +92,13 @@ export const AIAgentSwarmView: React.FC = () => {
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <h2 className="text-xl font-bold text-slate-900 tracking-tight">AI Multi-Agent Swarm (Agentic Commerce)</h2>
-              <span className="bg-accent-cyan/20 border border-accent-cyan/40 text-cyan-800 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">
-                Autonomous Swarm
+              <h2 className="text-xl font-bold text-slate-900 tracking-tight">AI Agent Tools (Demo)</h2>
+              <span className="bg-amber-100 border border-amber-200 text-amber-800 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">
+                Prototype Demo
               </span>
             </div>
             <p className="text-xs text-slate-600 mt-0.5">
-              Three specialized agents collaborating on B2B negotiation, regulatory AML guardrails, and PayPal payouts.
+              Demo agents for indicative pricing, sample risk checks, and treasury summaries.
             </p>
           </div>
         </div>
@@ -107,23 +107,23 @@ export const AIAgentSwarmView: React.FC = () => {
           <button
             onClick={handleRunNegotiate}
             disabled={loading}
-            className="px-3.5 py-1.5 rounded-lg bg-sky-100 hover:bg-sky-100 text-slate-900 text-xs font-semibold shadow-glow flex items-center gap-1.5 transition-all disabled:opacity-50"
+            className="px-3.5 py-1.5 rounded-lg bg-sky-100 hover:bg-sky-200 text-slate-900 text-xs font-semibold border border-sky-200 flex items-center gap-1.5 transition-colors disabled:opacity-50"
           >
-            <Sparkles className="w-3.5 h-3.5" /> Negotiate Trade
+            <Sparkles className="w-3.5 h-3.5" /> Run Demo Quote
           </button>
           <button
             onClick={handleRunCompliance}
             disabled={loading}
             className="px-3.5 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-900 text-xs font-semibold border border-slate-300 flex items-center gap-1.5 transition-all disabled:opacity-50"
           >
-            <ShieldCheck className="w-3.5 h-3.5 text-cyan-800" /> AML Screen
+            <ShieldCheck className="w-3.5 h-3.5 text-cyan-800" /> Sample Risk Check
           </button>
           <button
             onClick={handleRunTreasury}
             disabled={loading}
-            className="px-3.5 py-1.5 rounded-lg bg-violet-100 hover:bg-violet-100 text-purple-800 text-xs font-semibold border border-purple-700/60 flex items-center gap-1.5 transition-all disabled:opacity-50"
+            className="px-3.5 py-1.5 rounded-lg bg-violet-100 hover:bg-violet-200 text-purple-800 text-xs font-semibold border border-purple-300 flex items-center gap-1.5 transition-colors disabled:opacity-50"
           >
-            <DollarSign className="w-3.5 h-3.5 text-purple-800" /> Treasury Rebalance
+            <DollarSign className="w-3.5 h-3.5 text-purple-800" /> Check Demo Balances
           </button>
         </div>
       </div>
@@ -138,16 +138,16 @@ export const AIAgentSwarmView: React.FC = () => {
           </div>
           <h3 className="text-base font-bold text-slate-900 mt-2">Trade Negotiation Agent</h3>
           <p className="text-xs text-slate-600 mt-1">
-            Evaluates corridor liquidity, dynamic FX spread, and locks institutional volume discounts.
+            Calculates an indicative proposal from static demo FX benchmarks and an illustrative volume heuristic.
           </p>
           <div className="mt-4 pt-3 border-t border-slate-200 text-[11px] font-mono text-slate-700 space-y-1">
             <div className="flex justify-between">
               <span className="text-slate-600">Model:</span>
-              <span className="text-slate-900">Gemini / Heuristic Swarm</span>
+              <span className="text-slate-900">Demo rules; Gemini explains risk checks when configured</span>
             </div>
             <div className="flex justify-between">
               <span className="text-slate-600">Specialty:</span>
-              <span className="text-sky-800">Bilateral B2B Forward Hedging</span>
+              <span className="text-sky-800">Indicative demo pricing</span>
             </div>
           </div>
         </div>
@@ -160,12 +160,12 @@ export const AIAgentSwarmView: React.FC = () => {
           </div>
           <h3 className="text-base font-bold text-slate-900 mt-2">Compliance & AML Sentinel</h3>
           <p className="text-xs text-slate-600 mt-1">
-            Real-time screening against single-tx corridor caps, sanctions watchlists, and regulatory operating windows.
+            Checks sample corridor limits and a small built-in blocklist; it does not query official sanctions or regulator systems.
           </p>
           <div className="mt-4 pt-3 border-t border-slate-200 text-[11px] font-mono text-slate-700 space-y-1">
             <div className="flex justify-between">
               <span className="text-slate-600">Watchlists:</span>
-              <span className="text-slate-900">OFAC / FATF / Interpol</span>
+              <span className="text-slate-900">Sample blocklist only</span>
             </div>
             <div className="flex justify-between">
               <span className="text-slate-600">Output:</span>
@@ -182,16 +182,16 @@ export const AIAgentSwarmView: React.FC = () => {
           </div>
           <h3 className="text-base font-bold text-slate-900 mt-2">Treasury Orchestrator</h3>
           <p className="text-xs text-slate-600 mt-1">
-            Monitors multi-currency float and automatically triggers PayPal Batch Payouts for atomic fund releases.
+            Summarizes the seeded in-memory demo balances and recommends illustrative treasury actions.
           </p>
           <div className="mt-4 pt-3 border-t border-slate-200 text-[11px] font-mono text-slate-700 space-y-1">
             <div className="flex justify-between">
-              <span className="text-slate-600">Integration:</span>
-              <span className="text-slate-900">PayPal Payouts v1</span>
+              <span className="text-slate-600">Scope:</span>
+              <span className="text-slate-900">In-memory demo balances</span>
             </div>
             <div className="flex justify-between">
               <span className="text-slate-600">Action:</span>
-              <span className="text-purple-800">Automated Vendor Disbursements</span>
+              <span className="text-purple-800">Illustrative summary only</span>
             </div>
           </div>
         </div>
@@ -205,7 +205,7 @@ export const AIAgentSwarmView: React.FC = () => {
             <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
               <Play className="w-4 h-4 text-sky-800" /> Test Agent Deliberation Parameters
             </h3>
-            <span className="text-[10px] text-slate-600 font-mono">Live Sandbox Execution</span>
+            <span className="text-[10px] text-slate-600 font-mono">Prototype actions</span>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
@@ -259,7 +259,7 @@ export const AIAgentSwarmView: React.FC = () => {
               disabled={loading}
               className="flex-1 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 border border-slate-300 text-slate-900 text-xs font-bold transition-all flex items-center justify-center gap-1.5"
             >
-              <ShieldCheck className="w-4 h-4 text-cyan-800" /> Screen AML Risk
+              <ShieldCheck className="w-4 h-4 text-cyan-800" /> Run sample risk checks
             </button>
           </div>
 
@@ -270,13 +270,13 @@ export const AIAgentSwarmView: React.FC = () => {
               </div>
               {resultData.agreedFx && (
                 <div className="flex justify-between">
-                  <span className="text-slate-600">Locked Forward FX:</span>
+                  <span className="text-slate-600">Indicative demo rate:</span>
                   <span className="text-emerald-800 font-bold">{resultData.agreedFx} (Discount: {resultData.discountAppliedPct}%)</span>
                 </div>
               )}
               {resultData.verdict && (
                 <div className="flex justify-between">
-                  <span className="text-slate-600">AML Compliance Verdict:</span>
+                  <span className="text-slate-600">Sample rule result:</span>
                   <span className={resultData.verdict === 'APPROVED' ? 'text-emerald-800 font-bold' : 'text-rose-800 font-bold'}>
                     {resultData.verdict} (Risk Score: {resultData.riskScore}/100)
                   </span>
@@ -292,15 +292,15 @@ export const AIAgentSwarmView: React.FC = () => {
           )}
         </div>
 
-        {/* Live Swarm Deliberation Terminal */}
+        {/* Request trace */}
         <div className="glass-panel rounded-2xl p-6 border border-slate-200 flex flex-col justify-between">
           <div>
             <div className="flex items-center justify-between border-b border-slate-200 pb-3">
               <div className="flex items-center gap-2 text-xs font-bold text-slate-900">
                 <Terminal className="w-4 h-4 text-emerald-800" />
-                <span>Live Swarm Deliberation Trace</span>
+                <span>Agent decision trace</span>
               </div>
-              <span className="text-[10px] text-emerald-800 font-mono">Stream Active</span>
+              <span className="text-[10px] text-slate-600 font-mono">Request log</span>
             </div>
 
             <div className="mt-4 bg-white/90 rounded-xl p-4 border border-slate-200 font-mono text-[11px] h-[320px] overflow-y-auto space-y-2">
@@ -333,8 +333,8 @@ export const AIAgentSwarmView: React.FC = () => {
           </div>
 
           <div className="pt-3 border-t border-slate-200/80 text-[10px] text-slate-600 flex items-center justify-between">
-            <span>Deterministic Agentic Verification</span>
-            <span className="text-slate-600 font-mono">Zero Hallucination Protocol</span>
+            <span>Deterministic sample rules</span>
+            <span className="text-slate-600 font-mono">Gemini explains results when configured</span>
           </div>
         </div>
       </div>

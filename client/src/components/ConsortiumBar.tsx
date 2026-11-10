@@ -11,7 +11,7 @@ export const ConsortiumBar: React.FC<ConsortiumBarProps> = ({ currentNodeId, onS
     <div className="flex flex-col gap-2 overflow-hidden border-b border-slate-200/80 bg-slate-50 px-4 py-2.5 text-xs sm:flex-row sm:items-center sm:justify-between sm:gap-4">
       <div className="flex items-center gap-2 whitespace-nowrap font-medium text-slate-600">
         <span className="inline-block h-2 w-2 rounded-full bg-slate-500" aria-hidden="true"></span>
-        <span className="text-[11px] uppercase tracking-wider text-slate-700">Demo identities:</span>
+        <span className="text-[11px] uppercase tracking-wider text-slate-700">Demo identities · in-memory ledger · Fabric fixtures:</span>
       </div>
 
       <div className="flex max-w-full items-center gap-2 overflow-x-auto py-1">

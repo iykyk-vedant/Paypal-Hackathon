@@ -43,6 +43,7 @@ export function App() {
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [trades, setTrades] = useState<TradeComposite[]>([]);
   const [paypalLedger, setPayPalLedger] = useState<PayPalLedgerEntry[]>([]);
+  const [paypalMode, setPaypalMode] = useState<string>('checking');
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
 
   // Modals & Drawers
@@ -79,10 +80,11 @@ export function App() {
   // Refresh Accounts, Trades, and PayPal Ledger
   const refreshData = useCallback(async () => {
     try {
-      const [accts, trs, ledger] = await Promise.all([
+      const [accts, trs, ledger, health] = await Promise.all([
         api.getAccounts().catch(() => []),
         api.getTrades().catch(() => []),
         api.getPayPalLedger().catch(() => []),
+        api.getHealth().catch(() => null),
       ]);
 
       if (Array.isArray(accts)) setAccounts(accts);
@@ -93,6 +95,7 @@ export function App() {
         }
       }
       if (Array.isArray(ledger)) setPayPalLedger(ledger);
+      if (health?.paypalMode) setPaypalMode(health.paypalMode);
     } catch (err) {
       console.warn('Error refreshing data:', err);
     }
@@ -148,11 +151,12 @@ export function App() {
   const handlePayPalCaptureSuccess = async (captureData: any) => {
     addToast({
       type: 'success',
-      title: captureData.isSimulation ? 'Payment simulation completed' : 'PayPal capture completed',
+      title: captureData.isSimulation ? 'Simulated demo capture completed' : 'PayPal Sandbox capture completed',
       message: captureData.isSimulation
-        ? 'This flow used simulated PayPal data and the in-memory demo ledger.'
-        : 'PayPal confirmed the capture; the local demo ledger was updated. Fabric was not updated.',
+        ? 'This flow used simulated data (not a real PayPal transaction) and updated the in-memory demo ledger.'
+        : 'PayPal Sandbox confirmed the capture; the local demo ledger was updated. Fabric was not updated.',
       paypalOrderId: captureData.orderId,
+      isSimulation: Boolean(captureData.isSimulation),
     });
     await refreshData();
   };
@@ -164,7 +168,7 @@ export function App() {
       <a href="#main-content" className="sr-only z-[100] rounded-md bg-white px-4 py-3 text-sm text-slate-900 focus:not-sr-only focus:fixed focus:left-4 focus:top-4">
         Skip to main content
       </a>
-      {/* 1. Header with branding, sponsor badges, operator switcher */}
+      {/* Header with branding and demo operator selector */}
       <Header
         me={me}
         activeOperator={activeOperator}
@@ -188,6 +192,7 @@ export function App() {
           currentScreen={currentScreen}
           onNavigate={(screen) => setCurrentScreen(screen)}
           me={me}
+          paypalMode={paypalMode}
           onOpenZapierModal={() => setIsZapierModalOpen(true)}
         />
 

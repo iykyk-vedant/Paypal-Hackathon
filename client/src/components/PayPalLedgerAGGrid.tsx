@@ -55,6 +55,26 @@ export const PayPalLedgerAGGrid: React.FC<PayPalLedgerAGGridProps> = ({ ledger, 
         },
       },
       {
+        headerName: 'Mode',
+        field: 'paypalMode',
+        width: 140,
+        cellRenderer: (params: ICellRendererParams) => {
+          const mode = params.value || (params.data?.isSimulation ? 'SIMULATION' : 'PAYPAL_SANDBOX');
+          const isSandbox = mode === 'PAYPAL_SANDBOX' && !params.data?.isSimulation;
+          return (
+            <div className="flex items-center h-full">
+              <span className={`text-[10px] px-2 py-0.5 rounded font-mono font-bold border ${
+                isSandbox
+                  ? 'bg-sky-100 text-sky-800 border-sky-200'
+                  : 'bg-amber-100 text-amber-800 border-amber-200'
+              }`}>
+                {mode === 'SEEDED_FIXTURE' ? 'SEEDED FIXTURE' : isSandbox ? 'PAYPAL SANDBOX' : 'SIMULATED'}
+              </span>
+            </div>
+          );
+        },
+      },
+      {
         headerName: 'Operation Type',
         field: 'type',
         width: 170,
@@ -130,14 +150,25 @@ export const PayPalLedgerAGGrid: React.FC<PayPalLedgerAGGridProps> = ({ ledger, 
         field: 'status',
         width: 130,
         pinned: 'right',
-        cellRenderer: (params: ICellRendererParams) => (
-          <div className="flex items-center h-full">
-            <span className="inline-flex items-center gap-1 bg-emerald-100 text-emerald-800 border border-emerald-200 px-2.5 py-0.5 rounded-full text-xs font-semibold">
-              <CheckCircle2 className="w-3 h-3 text-emerald-800" />
-              {params.value}
-            </span>
-          </div>
-        ),
+        cellRenderer: (params: ICellRendererParams) => {
+          const status = params.value || 'UNKNOWN';
+          const isFailed = status === 'FAILED' || status === 'DENIED';
+          const isPending = status === 'PENDING';
+          const isSimulated = status === 'SIMULATED' || status === 'SEEDED_FIXTURE';
+          const style = isFailed
+            ? 'bg-rose-100 text-rose-800 border-rose-200'
+            : isPending || isSimulated
+            ? 'bg-amber-100 text-amber-800 border-amber-200'
+            : 'bg-emerald-100 text-emerald-800 border-emerald-200';
+          return (
+            <div className="flex items-center h-full">
+              <span className={`inline-flex items-center gap-1 border px-2.5 py-0.5 rounded-full text-xs font-semibold ${style}`}>
+                <CheckCircle2 className="w-3 h-3" />
+                {status}
+              </span>
+            </div>
+          );
+        },
       },
     ];
   }, []);
@@ -160,14 +191,13 @@ export const PayPalLedgerAGGrid: React.FC<PayPalLedgerAGGridProps> = ({ ledger, 
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <h2 className="text-xl font-bold text-slate-900 tracking-tight">PayPal Sandbox Transaction Ledger</h2>
-
-              <span className="bg-emerald-100 text-emerald-800 border border-emerald-200 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">
-
+              <h2 className="text-xl font-bold text-slate-900 tracking-tight">PayPal & Demo Event Ledger</h2>
+              <span className="bg-amber-100 text-amber-800 border border-amber-200 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">
+                In-Memory Demo
               </span>
             </div>
             <p className="text-xs text-slate-600 mt-0.5">
-              Live audit stream of all PayPal Sandbox captures, vendor disbursements, and fees.
+              Captured or simulated PayPal events recorded by this prototype.
             </p>
           </div>
         </div>
@@ -212,7 +242,7 @@ export const PayPalLedgerAGGrid: React.FC<PayPalLedgerAGGridProps> = ({ ledger, 
             <CreditCard className="w-4 h-4 text-sky-800" />
           </div>
           <div className="text-2xl font-bold text-sky-800 mt-1 font-mono">Demo ledger</div>
-          <div className="text-[11px] text-slate-700 mt-1">PayPal events are not atomic with Fabric</div>
+          <div className="text-[11px] text-slate-700 mt-1">Events are separate from the Fabric fixture data</div>
         </div>
 
         <div className="glass-panel p-4 rounded-xl border border-slate-200/80">
@@ -221,9 +251,9 @@ export const PayPalLedgerAGGrid: React.FC<PayPalLedgerAGGridProps> = ({ ledger, 
             <ArrowUpRight className="w-4 h-4 text-purple-800" />
           </div>
           <div className="text-2xl font-bold text-purple-800 mt-1 font-mono">
-            {ledger.filter((l) => l.type?.includes('PAYOUT')).length} Disbursed
+            {ledger.filter((l) => l.type?.includes('PAYOUT')).length} Recorded
           </div>
-          <div className="text-[11px] text-slate-600 mt-1">Direct to overseas vendor accounts</div>
+          <div className="text-[11px] text-slate-600 mt-1">Sandbox or fixture payout records</div>
         </div>
       </div>
 

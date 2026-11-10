@@ -30,13 +30,13 @@ export const AICopilotDrawer: React.FC<AICopilotDrawerProps> = ({
     {
       id: 'welcome',
       sender: 'assistant',
-      text: 'Hello! I am your **PayBridge AI Copilot**.\n\nI can negotiate B2B trades with institutional volume discounts, screen counterparties for AML compliance, orchestrate treasury liquidity, and execute atomic settlements via the **PayPal Sandbox API**.\n\nTry one of the quick prompts below or ask me anything!',
+      text: 'Hello! I am your **PayBridge AI Copilot**.\n\nI can explain indicative demo trade pricing, run sample corridor and blocklist checks, and help explore the prototype ledger. PayPal actions use Sandbox credentials when configured or clearly labeled simulation. This app does not submit ledger changes to Fabric or perform atomic real-world settlement.\n\nTry a quick prompt or ask a question.',
     },
   ]);
 
   const quickPrompts = [
     'Negotiate 50,000 SGD trade with Bank B1',
-    'Screen trade for AML and sanctions risk',
+    'Run sample corridor and blocklist checks',
     'Check PayPal Sandbox settlement status',
     'Rebalance INR and SGD treasury liquidity',
   ];
@@ -84,8 +84,8 @@ export const AICopilotDrawer: React.FC<AICopilotDrawerProps> = ({
       {/* Header */}
       <div className="p-4 border-b border-slate-200 flex items-center justify-between bg-white/60">
         <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-accent-purple to-primary flex items-center justify-center">
-            <Bot className="w-4 h-4 text-slate-900" />
+          <div className="w-8 h-8 rounded-lg bg-sky-100 border border-sky-200 text-sky-800 flex items-center justify-center">
+            <Bot className="w-4 h-4" />
           </div>
           <div>
             <h3 className="text-sm font-bold text-slate-900 flex items-center gap-1.5">
@@ -153,7 +153,7 @@ export const AICopilotDrawer: React.FC<AICopilotDrawerProps> = ({
             <div className="w-7 h-7 rounded-lg bg-sky-100 flex items-center justify-center">
               <Bot className="w-4 h-4 text-sky-800 animate-spin" />
             </div>
-            <span>AI Swarm synthesizing deliberation...</span>
+            <span>Running demo copilot...</span>
           </div>
         )}
       </div>

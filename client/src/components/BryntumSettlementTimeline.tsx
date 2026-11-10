@@ -22,7 +22,7 @@ export const BryntumSettlementTimeline: React.FC<BryntumSettlementTimelineProps>
   const stages = [
     { id: 'PROPOSED', title: '1. AI Proposed & Negotiated', color: 'border-amber-200 bg-amber-50 text-amber-800' },
     { id: 'ACCEPTED', title: '2. Dual-Leg Hold & PayPal Ready', color: 'border-sky-200 bg-sky-100/10 text-sky-800' },
-    { id: 'SETTLED', title: '3. Atomic PvP Settle & Payout', color: 'border-emerald-200 bg-emerald-50 text-emerald-800' },
+    { id: 'SETTLED', title: '3. Demo ledger updated', color: 'border-emerald-200 bg-emerald-50 text-emerald-800' },
   ];
 
   return (
@@ -39,7 +39,7 @@ export const BryntumSettlementTimeline: React.FC<BryntumSettlementTimelineProps>
 
             </div>
             <p className="text-xs text-slate-600 mt-0.5">
-              Gantt scheduling of cross-border currency corridor cutoffs, RTGS operating windows, and atomic payout timelines.
+              Illustrative schedule for sample currency corridor windows and demo workflow stages.
             </p>
           </div>
         </div>
@@ -95,11 +95,11 @@ export const BryntumSettlementTimeline: React.FC<BryntumSettlementTimelineProps>
 
         <div className="glass-panel p-4 rounded-xl border border-slate-200/80 bg-gradient-to-r from-violet-50 to-white">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-purple-800">Synchronized PvP Overlap Window</span>
-            <span className="text-[10px] bg-purple-100 text-purple-800 px-2 py-0.5 rounded font-mono">Active</span>
+            <span className="text-xs font-semibold text-purple-800">Sample Corridor Overlap Window</span>
+            <span className="text-[10px] bg-purple-100 text-purple-800 px-2 py-0.5 rounded font-mono">Demo</span>
           </div>
           <div className="text-lg font-bold text-slate-900 mt-1 font-mono">48m Remaining</div>
-          <div className="text-[11px] text-slate-700 mt-1">Autonomous atomic settlement guaranteed</div>
+          <div className="text-[11px] text-slate-700 mt-1">Sample schedule; no settlement guarantee</div>
         </div>
       </div>
 
@@ -187,9 +187,9 @@ export const BryntumSettlementTimeline: React.FC<BryntumSettlementTimelineProps>
                         {t.trade.status === 'SETTLED' && (
                           <div className="mt-3 pt-2 border-t border-slate-200/80 flex items-center justify-between text-[11px] text-emerald-800 font-mono">
                             <span className="flex items-center gap-1">
-                              <CheckCircle2 className="w-3 h-3" /> PvP Debited & Credited
+                              <CheckCircle2 className="w-3 h-3" /> Recorded in demo ledger
                             </span>
-                            <span className="text-[10px] text-slate-600">Atomic</span>
+                            <span className="text-[10px] text-slate-600">Demo</span>
                           </div>
                         )}
                       </div>
@@ -206,24 +206,24 @@ export const BryntumSettlementTimeline: React.FC<BryntumSettlementTimelineProps>
           <div className="flex items-center justify-between border-b border-slate-200 pb-4">
             <div>
               <h3 className="text-sm font-bold text-slate-900">Cross-Border Settlement Gantt Schedule</h3>
-              <p className="text-xs text-slate-600">Corridor operating timeline synchronized to UTC consensus</p>
+              <p className="text-xs text-slate-600">Illustrative corridor timeline and demo workflow state</p>
             </div>
             <div className="flex items-center gap-4 text-xs font-mono">
               <span className="flex items-center gap-1.5 text-slate-700">
-                <span className="w-3 h-2 bg-amber-100 rounded-sm"></span> RBI Corridor
+                <span className="w-3 h-2 bg-amber-200 rounded-sm"></span> JUR-A Corridor
               </span>
               <span className="flex items-center gap-1.5 text-slate-700">
-                <span className="w-3 h-2 bg-cyan-100 rounded-sm"></span> MAS Corridor
+                <span className="w-3 h-2 bg-cyan-200 rounded-sm"></span> JUR-B Corridor
               </span>
               <span className="flex items-center gap-1.5 text-slate-700">
-                <span className="w-3 h-2 bg-emerald-100 rounded-sm"></span> PayPal PvP Execution
+                <span className="w-3 h-2 bg-emerald-200 rounded-sm"></span> PayPal Demo Settlement
               </span>
             </div>
           </div>
 
           {/* Simulated Gantt Bars */}
           <div className="space-y-4 font-mono text-xs">
-            {trades.map((t, idx) => (
+            {trades.map((t) => (
               <div key={t.trade.tradeId} className="space-y-1">
                 <div className="flex items-center justify-between text-slate-600">
                   <span className="font-bold text-slate-900">{t.trade.tradeId} — {t.trade.ccyA}/{t.trade.ccyB}</span>
@@ -233,13 +233,13 @@ export const BryntumSettlementTimeline: React.FC<BryntumSettlementTimelineProps>
                   <div
                     className={`h-full rounded flex items-center px-2 text-[10px] font-bold text-slate-900 transition-all ${
                       t.trade.status === 'SETTLED'
-                        ? 'bg-gradient-to-r from-emerald-100 to-teal-500 w-[95%]'
+                        ? 'bg-emerald-100 border border-emerald-200 w-[95%]'
                         : t.trade.status === 'ACCEPTED'
-                        ? 'bg-gradient-to-r from-sky-100 to-accent-cyan w-[65%]'
-                        : 'bg-gradient-to-r from-amber-100 to-orange-100 w-[35%]'
+                        ? 'bg-sky-100 border border-sky-200 w-[65%]'
+                        : 'bg-amber-100 border border-amber-200 w-[35%]'
                     }`}
                   >
-                    <span>{t.trade.status === 'SETTLED' ? 'Settled & Disbursed' : 'In PvP Hold Queue'}</span>
+                    <span>{t.trade.status === 'SETTLED' ? 'Recorded in demo ledger' : 'In demo hold queue'}</span>
                   </div>
                 </div>
               </div>

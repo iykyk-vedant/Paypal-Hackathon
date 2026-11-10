@@ -85,7 +85,13 @@ export class ApiClient {
 
   // --- CORE ROUTES ---
   async getHealth() {
-    return this.request<{ status: string; paypalMode: string }>('/health');
+    return this.request<{
+      status: string;
+      paypalMode: string;
+      geminiConfigured?: boolean;
+      ledgerMode?: string;
+      fabricGatewayConnected?: boolean;
+    }>('/health');
   }
 
   async getMe(): Promise<MeResponse> {
@@ -117,13 +123,6 @@ export class ApiClient {
     });
   }
 
-  async settleTrade(tradeId: string, paypalCapture: any = null): Promise<TradeComposite> {
-    return this.request<TradeComposite>(`/trades/${tradeId}/settle`, {
-      method: 'POST',
-      body: JSON.stringify({ paypalCapture }),
-    });
-  }
-
   async getRefusals(): Promise<Refusal[]> {
     return this.request<Refusal[]>('/refusals');
   }
@@ -141,11 +140,15 @@ export class ApiClient {
   }
 
   // --- PAYPAL DEVELOPER PLATFORM ---
-  async createPayPalOrder(data: { tradeId: string; amount: number; currency?: string; description?: string }) {
+  async createPayPalOrder(data: { tradeId: string; description?: string }) {
     return this.request<any>('/api/paypal/orders/create', {
       method: 'POST',
       body: JSON.stringify(data),
     });
+  }
+
+  async getPayPalFundingQuote(tradeId: string) {
+    return this.request<any>(`/api/paypal/orders/quote/${encodeURIComponent(tradeId)}`);
   }
 
   async capturePayPalOrder(orderId: string, tradeId?: string) {
@@ -155,10 +158,10 @@ export class ApiClient {
     });
   }
 
-  async executePayPalPayout(data: { tradeId: string; recipientEmail?: string; amount: number; currency?: string }) {
+  async executePayPalPayout(tradeId: string) {
     return this.request<any>('/api/paypal/payouts/batch', {
       method: 'POST',
-      body: JSON.stringify(data),
+      body: JSON.stringify({ tradeId }),
     });
   }
 
@@ -192,7 +195,7 @@ export class ApiClient {
     });
   }
 
-  // --- SPONSORS ---
+  // --- INTEGRATIONS ---
   async getChannel3Catalog(q = '', category = '') {
     return this.request<{ count: number; results: Channel3Item[]; poweredBy: string }>(
       `/api/channel3/catalog?q=${encodeURIComponent(q)}&category=${encodeURIComponent(category)}`
@@ -207,7 +210,7 @@ export class ApiClient {
   }
 
   async queryElastic(index = 'paybridge_trades', q = '') {
-    return this.request<{ took_ms: number; total: number; hits: any[] }>(
+    return this.request<{ took_ms: number; total: number; hits: any[]; poweredBy?: string }>(
       `/api/elastic/search?index=${index}&q=${encodeURIComponent(q)}`
     );
   }
@@ -227,8 +230,8 @@ export class ApiClient {
     return this.request<any[]>('/api/zapier/events');
   }
 
-  async getKernelReceipt(tradeId: string) {
-    return this.request<any>(`/api/kernel/receipt/${tradeId}`);
+  async getReceipt(tradeId: string) {
+    return this.request<any>(`/api/receipts/${encodeURIComponent(tradeId)}`);
   }
 
   // --- HYPERLEDGER FABRIC 2.5 & AI AUDITOR ---

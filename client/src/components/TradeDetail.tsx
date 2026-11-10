@@ -89,18 +89,18 @@ export const TradeDetail: React.FC<TradeDetailProps> = ({
             {t.status === 'PROPOSED' && (
               <button
                 onClick={() => onAcceptTrade(t.tradeId)}
-                className="px-4 py-2 bg-emerald-100 hover:bg-emerald-100 text-slate-900 rounded-xl text-xs font-bold shadow-glow flex items-center gap-2 transition-all"
+                className="px-4 py-2 bg-emerald-100 hover:bg-emerald-200 border border-emerald-200 text-slate-900 rounded-xl text-xs font-bold flex items-center gap-2 transition-colors"
               >
-                <CheckCircle2 className="w-4 h-4" /> Accept Trade & Lock Leg B
+                <CheckCircle2 className="w-4 h-4" /> Accept Demo Trade
               </button>
             )}
 
             {t.status === 'ACCEPTED' && (
               <button
                 onClick={() => onOpenPayPalModal(trade)}
-                className="px-4 py-2 bg-gradient-to-r from-sky-100 to-sky-100 hover:from-sky-100-light hover:to-cyan-100 text-slate-900 rounded-xl text-xs font-bold shadow-glow flex items-center gap-2 transition-all"
+                className="px-4 py-2 bg-sky-100 hover:bg-sky-200 border border-sky-200 text-slate-900 rounded-xl text-xs font-bold flex items-center gap-2 transition-colors"
               >
-                <Sparkles className="w-4 h-4 text-amber-800" /> Settle via PayPal Sandbox
+                <Sparkles className="w-4 h-4 text-amber-800" /> Open Settlement Checkout
               </button>
             )}
           </div>
@@ -117,17 +117,17 @@ export const TradeDetail: React.FC<TradeDetailProps> = ({
             <div className="text-slate-900 font-bold mt-0.5">{t.counterpartyMsp}</div>
           </div>
           <div>
-            <div className="text-slate-600 text-[11px]">Agreed FX Rate:</div>
+            <div className="text-slate-600 text-[11px]">Demo FX Rate:</div>
             <div className="text-cyan-800 font-bold mt-0.5">{t.fxRate}</div>
           </div>
           <div>
             <div className="text-slate-600 text-[11px]">Settlement Method:</div>
-            <div className="text-emerald-800 font-bold mt-0.5">Atomic PvP Guarantee</div>
+            <div className="text-emerald-800 font-bold mt-0.5">In-memory demo workflow</div>
           </div>
         </div>
       </div>
 
-      {/* Bilateral Legs (Payment-versus-Payment) */}
+      {/* Illustrative Currency Legs */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Leg A */}
         <div className="glass-panel rounded-2xl p-5 border border-slate-200 space-y-4">
@@ -190,55 +190,70 @@ export const TradeDetail: React.FC<TradeDetailProps> = ({
         </div>
       </div>
 
-      {/* Integrations: PayPal & KERNEL Proof */}
+      {/* Integrations: PayPal & Local Demo Receipt */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* PayPal Sandbox Card */}
+        {/* PayPal / Demo Settlement Details */}
         <div className="glass-panel rounded-2xl p-5 border border-slate-200 space-y-3">
           <div className="flex items-center gap-2 text-xs font-bold text-sky-800">
             <CreditCard className="w-4 h-4" />
-            <span>PayPal Sandbox Integration Details</span>
+            <span>PayPal / Demo Settlement Details</span>
           </div>
 
           <div className="bg-white p-4 rounded-xl border border-slate-200 space-y-2 font-mono text-xs">
             <div className="flex justify-between">
-              <span className="text-slate-600">PayPal Order ID:</span>
+              <span className="text-slate-600">Order / Demo Ref:</span>
               <span className="text-amber-800 font-bold">{t.paypalOrderId || 'NOT_CREATED'}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-slate-600">Capture Status:</span>
               <span className="text-slate-900">{t.paypalStatus || 'AWAITING_APPROVAL'}</span>
             </div>
+            {t.paypalMode && (
+              <div className="flex justify-between">
+                <span className="text-slate-600">Provider Mode:</span>
+                <span className="text-slate-900 font-semibold">{t.paypalMode}</span>
+              </div>
+            )}
             {t.payoutBatchId && (
               <div className="flex justify-between">
                 <span className="text-slate-600">Payout Batch ID:</span>
                 <span className="text-purple-800 font-bold">{t.payoutBatchId}</span>
               </div>
             )}
+            {t.payoutStatus && (
+              <div className="flex justify-between">
+                <span className="text-slate-600">Payout Status:</span>
+                <span className={t.payoutStatus === 'FAILED' ? 'text-rose-800 font-bold' : 'text-slate-900'}>{t.payoutStatus}</span>
+              </div>
+            )}
           </div>
         </div>
 
-        {/* KERNEL Cryptographic Proof Card */}
+        {/* Local receipt reference */}
         <div className="glass-panel rounded-2xl p-5 border border-slate-200 space-y-3">
           <div className="flex items-center gap-2 text-xs font-bold text-cyan-800">
             <Key className="w-4 h-4" />
-            <span>Settlement receipt</span>
+            <span>Local Demo Receipt</span>
           </div>
 
           <div className="bg-white p-4 rounded-xl border border-slate-200 space-y-2 font-mono text-xs">
             <div className="flex justify-between items-center">
-              <span className="text-slate-600">Proof Hash:</span>
+              <span className="text-slate-600">Local SHA-256 Digest:</span>
               <span className="text-slate-700 truncate max-w-[200px]">
-                {t.kernelReceiptHash || '0x0000000000000000000000000000000000000000'}
+                {t.receiptHash || 'Not recorded'}
               </span>
             </div>
             <div className="flex justify-between">
-              <span className="text-slate-600">Consensus Endorsement:</span>
-              <span className="text-emerald-800 font-bold">Dual-Regulator Validated</span>
+              <span className="text-slate-600">Fabric commit:</span>
+              <span className="text-amber-800 font-bold">Not connected</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-slate-600">Verifiable Audit:</span>
-              <span className="text-cyan-800 font-bold">Receipt recorded</span>
+              <span className="text-slate-600">Receipt scope:</span>
+              <span className="text-cyan-800 font-bold">Local demo payload only</span>
             </div>
+            <p className="pt-1 font-sans text-[11px] leading-relaxed text-slate-600">
+              Not a Fabric endorsement, regulator approval, or proof of an external payment.
+            </p>
           </div>
         </div>
       </div>
