@@ -1,5 +1,4 @@
-# Render Infrastructure as Code (Blueprint)
-# Qualifies for "Best Use of Render" Sponsor Prize ($1,000 Credits)
+# Render Infrastructure as Code (Prototype Blueprint - Not Production)
 services:
   # PayBridge AI Express API Backend
   - type: web

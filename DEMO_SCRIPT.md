@@ -1,52 +1,27 @@
-# PayBridge AI — 3-Minute Video Demo Script
-*Conforms to the PayPal AI Hackathon <3 minute submission rule*
+# PayBridge AI — 2-Minute Demo Script
 
----
+### 0:00–0:20 — Set expectations
 
-### [0:00 - 0:30] Introduction & The Problem
-- **Visual**: Show PayBridge AI Dashboard on screen with glowing dark-mode interface and live PayPal Sandbox connection indicator.
-- **Voiceover**: 
-  > "Welcome to PayBridge AI. Cross-border wholesale trade between international currency corridors—like India and Singapore—suffers from Herstatt settlement risk: you pay one leg and wait hours or days for the other. 
-  > With the rise of autonomous AI agents purchasing goods across borders, businesses need real-time, atomic, and compliance-guaranteed settlement. 
-  > PayBridge AI puts artificial intelligence behind the wheel of the PayPal Developer Platform to solve this."
+**Show:** Dashboard and the visible demo-mode notice.
 
----
+**Say:** “PayBridge AI is a hackathon prototype for cross-border trade workflows. It uses sample corridor rules, optional Gemini explanations, and PayPal Sandbox. Trade state stays in this app’s in-memory demo ledger; the web app is not connected to a Fabric Gateway.”
 
-### [0:30 - 1:15] Agentic Commerce & Multi-Agent Swarm
-- **Visual**: Navigate to **"AI Multi-Agent Swarm"** tab. Click **"Trigger Autonomous Negotiation"**. Show real-time deliberation logs streaming.
-- **Voiceover**: 
-  > "Here in our AI Multi-Agent Swarm, three autonomous agents collaborate:
-  > First, our **Trade Negotiation Agent** analyzes currency corridor liquidity and calculates forward hedging discounts—here locking a 1.2% volume discount for an INR-SGD cross-border trade.
-  > Second, our **Compliance & AML Sentinel Agent** screens counterparties against OFAC and FATF sanctions watchlists and enforces central bank single-transaction caps.
-  > And third, our **Treasury Orchestrator** balances liquidity float and schedules automated payouts."
+### 0:20–0:50 — Indicative proposal and risk explanation
 
----
+**Show:** Generate a proposal on **New Trade** (or **AI Multi-Agent Swarm**), then run **Sample Risk Check** and view the **Agent decision trace**.
 
-### [1:15 - 2:00] PayPal Sandbox Orders & Atomic PvP Settle
-- **Visual**: Open **"Active Settlements (AG Grid)"**. Show interactive table sorting and filtering. Click **"Settle via PayPal"** on Trade `T-1048`. Show the **PayPal Checkout Modal** with official PayPal Buttons. Click the button to approve and capture.
-- **Voiceover**: 
-  > "Under Active Settlements, powered by **AG Grid**, we see our active bilateral trades. Both currency legs are locked in atomic escrow.
-  > Clicking 'Settle via PayPal' connects directly to the **PayPal Orders v2 API**.
-  > When captured, our protocol atomically debits and credits both sovereign currency legs simultaneously, eliminating settlement risk.
-  > Instantly, our Autonomous Treasury Agent triggers a **PayPal Batch Payout** to disburse net funds to the supplier's overseas account."
+**Say:** “The quote uses a static benchmark and an illustrative volume rule, so it is not a market quote or hedge. The risk checks use prototype rules and a small sample blocklist, not official sanctions sources. When Gemini is configured, it explains those results without making the decision.”
 
----
+### 0:50–1:35 — PayPal Sandbox flow
 
-### [2:00 - 2:30] PayPal Sandbox Ledger & AG Grid
-- **Visual**: Navigate to **"PayPal Sandbox Ledger"**. Show the newly captured transaction and batch payout appearing live in the AG Grid table. Click **"Export CSV"**.
-- **Voiceover**: 
-  > "In the PayPal Ledger—also built with AG Grid—we see an immutable stream of all PayPal Order IDs, capture hashes, and batch payout receipts. 
-  > Treasury managers can filter, sort, and export auditable CSV reports in one click."
+**Show:** Open an accepted trade (e.g., `T-1048`) and click **Open Settlement Checkout** (or **Settle PayPal**), review the USD funding quote and its static demo FX disclosure, approve the PayPal Sandbox order, and show the capture result.
 
----
+**Say:** “The server converts the trade amount to a USD Sandbox funding quote and checks the captured amount against that quote. After capture, PayBridge records the event in its local demo ledger. That does not move both currency legs atomically or write to Fabric.”
 
-### [2:30 - 3:00] 12-Sponsor Suite & Conclusion
-- **Visual**: Rapidly highlight:
-  1. **Bryntum Timeline**: Gantt schedule of corridor operating windows.
-  2. **Channel3 Sourcing**: Wholesale product catalog search.
-  3. **Elastic Observability**: Financial crime search.
-  4. **Zapier**: Outbound webhooks.
-  5. **Postman & Render**: Postman collection and Render blueprint.
-- **Voiceover**: 
-  > "PayBridge AI is ready to scale: featuring Bryntum timeline scheduling, APIMatic OpenAPI context plugins, Channel3 agentic sourcing, Elastic observability, and a 1-click Render blueprint.
-  > PayBridge AI: Building what's next with PayPal and AI. Thank you!"
+If credentials are absent, show **Run simulated demo capture** and say: “This run uses simulation instead of PayPal.”
+
+### 1:35–2:00 — Audit trail and close
+
+**Show:** **PayPal Ledger**, the **Local Demo Receipt** SHA-256 digest on **Trade Detail**, and the **Demo Fixtures** badge on **Fabric Block Explorer**.
+
+**Say:** “The tables make the workflow and its evidence easy to inspect. Fabric is included as a separate Go chaincode proof of concept; these screens show fixtures rather than a live network. PayBridge AI demonstrates how an AI-assisted review and an explicit payment approval can fit into a trade workflow.”

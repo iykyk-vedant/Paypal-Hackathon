@@ -1,14 +1,13 @@
 #!/bin/bash
 # ==============================================================================
-# PayFabric AI — AWS EC2 1-Click Bootstrap Script
-# Optimized for Ubuntu 22.04 LTS on AWS EC2 (t3.small / t3.medium)
-# Cost-effective: Runs full 5-peer + 3-orderer Fabric 2.5 network on $0.50/day
+# PayBridge AI — AWS EC2 Bootstrap Script for Separate Fabric Proof of Concept
+# Target OS: Ubuntu 22.04 LTS on AWS EC2 (t3.small / t3.medium)
 # ==============================================================================
 
 set -e
 
 echo "========================================================================"
-echo "  PayFabric AI — Initializing AWS EC2 Environment for Hyperledger Fabric"
+echo "  PayBridge AI — Initializing AWS EC2 Environment for Hyperledger Fabric"
 echo "========================================================================"
 
 # 1. Update OS & Install Basic Tools
@@ -57,9 +56,9 @@ docker compose up -d
 echo "Configuring automatic startup on EC2 boot/reboot..."
 chmod +x network/start-fabric.sh network/stop-fabric.sh
 CURRENT_DIR=$(pwd)
-sudo bash -c "cat <<EOF > /etc/systemd/system/payfabric.service
+sudo bash -c "cat <<EOF > /etc/systemd/system/paybridge-fabric.service
 [Unit]
-Description=PayFabric Hyperledger Fabric 2.5 Auto-Restart Service
+Description=PayBridge AI Hyperledger Fabric 2.5 Auto-Restart Service
 Requires=docker.service
 After=docker.service network-online.target
 
@@ -77,7 +76,7 @@ EOF"
 
 sudo systemctl daemon-reload
 sudo systemctl enable docker
-sudo systemctl enable payfabric.service
+sudo systemctl enable paybridge-fabric.service
 
 echo "========================================================================"
 echo "  SUCCESS! Hyperledger Fabric 2.5 is running and configured to AUTO-START."

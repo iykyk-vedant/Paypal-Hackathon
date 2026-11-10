@@ -1,19 +1,17 @@
 openapi: 3.1.0
 info:
-  title: PayBridge AI - Autonomous Agentic Commerce & Cross-Border Treasury API
+  title: PayBridge AI - Cross-Border Trade Prototype API
   description: >-
-    PayBridge AI combines the PayPal Developer Platform (Orders v2, Payouts v1)
-    with a Multi-Agent AI Swarm, AG Grid real-time tables, Channel3 sourcing,
-    and Elastic observability to eliminate cross-border settlement friction.
+    Hackathon prototype API combining an in-memory demo trade ledger,
+    deterministic corridor rules, optional Gemini explanations, and
+    PayPal Developer Platform (Orders v2, Payouts v1) Sandbox or simulation.
+    Demo operator headers are not authentication; not production-ready.
   version: 1.0.0
   contact:
-    name: PayBridge Developer Team
-    email: developers@paybridge.ai
+    name: PayBridge AI Contributors
 servers:
   - url: http://localhost:3001
-    description: Local Dev Server
-  - url: https://paybridge-api.onrender.com
-    description: Render Cloud Production Service
+    description: Local Prototype Dev Server
 paths:
   /health:
     get:
@@ -40,7 +38,7 @@ paths:
         '200':
           description: Array of trade composites
     post:
-      summary: Propose a new bilateral trade with atomic hold
+      summary: Propose a new sample trade in the in-memory demo ledger
       requestBody:
         required: true
         content:
@@ -69,7 +67,7 @@ paths:
           description: Proposed trade record
   /trades/{id}/accept:
     post:
-      summary: Counterparty accepts trade and locks opposing leg
+      summary: Marks the sample counterparty leg held in the in-memory demo ledger
       parameters:
         - in: path
           name: id
@@ -81,7 +79,7 @@ paths:
           description: Accepted trade
   /trades/{id}/settle:
     post:
-      summary: Atomic settlement trigger (Payment-versus-Payment)
+      summary: Deprecated direct settle endpoint (returns 409; capture via /api/paypal/orders/{id}/capture)
       parameters:
         - in: path
           name: id
@@ -89,11 +87,11 @@ paths:
           schema:
             type: string
       responses:
-        '200':
-          description: Settled trade with KERNEL receipt hash
+        '409':
+          description: Settlement requires capturing a linked PayPal order
   /api/paypal/orders/create:
     post:
-      summary: Create PayPal Orders v2 Sandbox Order
+      summary: Create PayPal Orders v2 Order (Sandbox or simulation) using server-calculated USD quote
       requestBody:
         required: true
         content:
@@ -102,31 +100,65 @@ paths:
               type: object
               properties:
                 tradeId:
-                  type: string
-                amount:
-                  type: number
-                currency:
                   type: string
                 description:
                   type: string
       responses:
         '200':
-          description: PayPal Order response with approve link
+          description: PayPal Order response with server USD funding quote
+        '409':
+          description: Trade is not accepted or has a conflicting funding quote
+  /api/paypal/orders/quote/{tradeId}:
+    get:
+      summary: Get the illustrative USD funding quote for an accepted demo trade
+      parameters:
+        - in: path
+          name: tradeId
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Static demo FX quote; not a live market rate
   /api/paypal/orders/{id}/capture:
     post:
-      summary: Capture PayPal Order and finalize atomic trade
+      summary: Capture PayPal Order, verify USD amount against quote, and update demo ledger
       parameters:
         - in: path
           name: id
           required: true
           schema:
             type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [tradeId]
+              properties:
+                tradeId:
+                  type: string
       responses:
         '200':
-          description: Capture details
+          description: Capture and local demo settlement details
+        '409':
+          description: Capture status, amount, or order link does not match the quote
+  /api/receipts/{tradeId}:
+    get:
+      summary: Get a local SHA-256 receipt digest for a demo settlement
+      parameters:
+        - in: path
+          name: tradeId
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Local demo digest; not proof of Fabric, regulator approval, or external payment
   /api/paypal/payouts/batch:
     post:
-      summary: Trigger PayPal Batch Payout v1 for vendor disbursement
+      summary: Retry a failed PayPal Batch Payout v1 for a settled demo trade
       requestBody:
         required: true
         content:
@@ -135,19 +167,13 @@ paths:
               type: object
               properties:
                 tradeId:
-                  type: string
-                recipientEmail:
-                  type: string
-                amount:
-                  type: number
-                currency:
                   type: string
       responses:
         '200':
           description: Payout batch response
   /api/ai/negotiate:
     post:
-      summary: AI Trade Negotiation Agent (Agentic Commerce)
+      summary: Calculate indicative demo quote with optional Gemini explanation
       requestBody:
         content:
           application/json:
@@ -166,10 +192,10 @@ paths:
                   type: number
       responses:
         '200':
-          description: Negotiated trade proposal with FX hedging
+          description: Indicative demo trade proposal (static FX benchmark and volume heuristic)
   /api/ai/risk-screen:
     post:
-      summary: AI Compliance & AML Sentinel Agent
+      summary: Run deterministic sample corridor & blocklist checks with optional Gemini explanation
       requestBody:
         content:
           application/json:

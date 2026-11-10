@@ -1,8 +1,8 @@
 {
   "info": {
     "_postman_id": "paybridge-ai-postman-v1",
-    "name": "PayBridge AI - PayPal & Multi-Agent Settlement Suite",
-    "description": "Comprehensive Postman test collection for PayBridge AI: End-to-end testing of PayPal Sandbox Orders, Payouts, AI Swarm, AG Grid data feeds, Channel3, and Elastic search.",
+    "name": "PayBridge AI - Prototype API Suite",
+    "description": "Postman collection for PayBridge AI hackathon prototype: PayPal Sandbox/simulated Orders & Payouts, deterministic AI demo checks, Channel3, Elastic, and Zapier endpoints.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "item": [
@@ -57,7 +57,7 @@
               "listen": "test",
               "script": {
                 "exec": [
-                  "pm.test('Confidence score is above 90%', function () { const j = pm.response.json(); pm.expect(j.confidenceScore).to.be.above(0.9); });"
+                  "pm.test('Indicative FX calculated', function () { const j = pm.response.json(); pm.expect(j.agreedFx).to.be.a('string'); });"
                 ]
               }
             }
@@ -89,13 +89,22 @@
       "name": "3. PayPal Sandbox APIs",
       "item": [
         {
+          "name": "Get PayPal USD Funding Quote",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/api/paypal/orders/quote/T-1048", "host": ["{{baseUrl}}"], "path": ["api", "paypal", "orders", "quote", "T-1048"] },
+            "description": "Returns the static demo FX conversion for the accepted sample trade. The rate is not a live market quote."
+          }
+        },
+        {
           "name": "Create PayPal Order",
           "request": {
             "method": "POST",
             "header": [{ "key": "Content-Type", "value": "application/json" }],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"tradeId\": \"T-1048\",\n  \"amount\": 160000,\n  \"currency\": \"USD\",\n  \"description\": \"PayBridge Medical Equipment Trade T-1048\"\n}"
+              "raw": "{\n  \"tradeId\": \"T-1048\",\n  \"description\": \"PayBridge Medical Equipment Trade T-1048\"\n}"
             },
             "url": { "raw": "{{baseUrl}}/api/paypal/orders/create", "host": ["{{baseUrl}}"], "path": ["api", "paypal", "orders", "create"] }
           },
@@ -121,17 +130,27 @@
               "mode": "raw",
               "raw": "{\n  \"tradeId\": \"T-1048\"\n}"
             },
-            "url": { "raw": "{{baseUrl}}/api/paypal/orders/{{paypalOrderId}}/capture", "host": ["{{baseUrl}}"], "path": ["api", "paypal", "orders", "{{paypalOrderId}}", "capture"] }
+            "url": { "raw": "{{baseUrl}}/api/paypal/orders/{{paypalOrderId}}/capture", "host": ["{{baseUrl}}"], "path": ["api", "paypal", "orders", "{{paypalOrderId}}", "capture"] },
+            "description": "In PayPal Sandbox mode, approve the order in the PayPal UI before calling capture. Simulation mode completes a local demo capture."
           }
         },
         {
-          "name": "Execute PayPal Batch Payout",
+          "name": "Get Local Demo Receipt",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/api/receipts/T-1048", "host": ["{{baseUrl}}"], "path": ["api", "receipts", "T-1048"] },
+            "description": "Returns a local SHA-256 digest only; it is not a Fabric endorsement, regulator approval, or proof of external payment."
+          }
+        },
+        {
+          "name": "Retry Failed PayPal Batch Payout",
           "request": {
             "method": "POST",
             "header": [{ "key": "Content-Type", "value": "application/json" }],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"tradeId\": \"T-1048\",\n  \"recipientEmail\": \"vendor-payout-sandbox@paybridge.ai\",\n  \"amount\": 160000,\n  \"currency\": \"USD\"\n}"
+              "raw": "{\n  \"tradeId\": \"T-1048\"\n}"
             },
             "url": { "raw": "{{baseUrl}}/api/paypal/payouts/batch", "host": ["{{baseUrl}}"], "path": ["api", "paypal", "payouts", "batch"] }
           }
@@ -147,7 +166,7 @@
       ]
     },
     {
-      "name": "4. Sponsor Integrations",
+      "name": "4. Optional Integrations",
       "item": [
         {
           "name": "Channel3 Catalog Search",
@@ -172,7 +191,7 @@
             "header": [{ "key": "Content-Type", "value": "application/json" }],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"eventType\": \"POSTMAN_AUTOMATED_AUDIT\",\n  \"payload\": { \"verified\": true }\n}"
+              "raw": "{\n  \"eventType\": \"POSTMAN_DEMO_TEST\",\n  \"payload\": { \"source\": \"postman\" }\n}"
             },
             "url": { "raw": "{{baseUrl}}/api/zapier/trigger", "host": ["{{baseUrl}}"], "path": ["api", "zapier", "trigger"] }
           }

@@ -1,6 +1,6 @@
 #!/bin/bash
 # ==============================================================================
-# PayFabric AI — Deploy / Start Fabric Consortium on AWS EC2
+# PayBridge AI — Deploy / Start Separate Fabric Proof of Concept on AWS EC2
 # ==============================================================================
 
 set -e

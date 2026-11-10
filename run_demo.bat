@@ -1,9 +1,9 @@
 @echo off
-title PayBridge AI - Autonomous Agentic Commerce & Hyperledger Fabric Protocol
+title PayBridge AI - Cross-Border Trade Workflow Prototype
 color 0A
 
 echo ==============================================================================
-echo       PayBridge AI: Cross-Border Treasury, PayPal & Hyperledger Fabric
+echo       PayBridge AI: Cross-Border Trade Prototype & PayPal Sandbox Demo
 echo ==============================================================================
 echo.
 
@@ -24,14 +24,12 @@ timeout /t 3 /nobreak >nul
 
 echo.
 echo ==============================================================================
-echo [SUCCESS] PayBridge AI Servers are LIVE!
+echo [STARTED] PayBridge AI local prototype servers launched.
 echo.
-echo   - Enterprise Frontend URL: http://localhost:5173
+echo   - Frontend URL:            http://localhost:5173
 echo   - Backend REST API:        http://localhost:3001
-echo   - PayPal Sandbox OAuth:    Active
-echo   - Google Gemini 2.5 Flash: Active
-echo   - Channel3 Product Search: Active
-echo   - Fabric Block Explorer:   Active
+echo   - Ledger Mode:             In-memory demo ledger (Fabric UI uses fixtures)
+echo   - PayPal / AI / Elastic:   Uses .env / client/.env when configured; otherwise simulation
 echo.
 echo Press any key in this window to stop all PayBridge services...
 echo ==============================================================================
