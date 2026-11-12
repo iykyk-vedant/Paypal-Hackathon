@@ -9,6 +9,15 @@ const serverSourceDir = path.dirname(fileURLToPath(import.meta.url));
 // Load root .env as the canonical local config, independent of the launch cwd.
 dotenv.config({ path: path.resolve(serverSourceDir, '../../.env') });
 dotenv.config({ path: path.resolve(serverSourceDir, '../.env') });
+// A generated local Fabric profile takes precedence over remote Fabric settings.
+// Clear the whole namespace first so old base64 credentials cannot override local files.
+const localFabricPath = path.resolve(serverSourceDir, '../../.env.fabric.local');
+const localFabric = dotenv.config({ path: localFabricPath, processEnv: {} });
+if (localFabric.parsed) {
+  for (const name of Object.keys(process.env)) if (name.startsWith('FABRIC_')) delete process.env[name];
+  for (const [name, value] of Object.entries(localFabric.parsed)) if (name.startsWith('FABRIC_')) process.env[name] = value;
+}
+
 import express from 'express';
 import cors from 'cors';
 import net from 'node:net';
