@@ -148,7 +148,7 @@ class ElasticObservabilityEngine {
     }
 
     // 2. Local in-memory search fallback
-    if (!this.localStore.has(indexName)) return { total: 0, hits: [], poweredBy: 'PayBridge In-Memory Elastic Engine' };
+    if (!this.localStore.has(indexName)) return { total: 0, hits: [], poweredBy: 'CorridorFlow In-Memory Elastic Engine' };
     const store = this.localStore.get(indexName);
     const q = (queryStr || '').toLowerCase().trim();
 

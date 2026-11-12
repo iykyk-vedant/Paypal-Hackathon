@@ -1,4 +1,4 @@
-// Sample Corridor Rules, Illustrative Static FX Rates, and Demo Risk Limits for PayBridge AI
+// Sample Corridor Rules, Illustrative Static FX Rates, and Demo Risk Limits for CorridorFlow
 // These values are built-in prototype samples, not live market quotes or official regulatory policies.
 
 export const CORRIDORS = {

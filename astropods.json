@@ -1,11 +1,11 @@
 {
-  "name": "paybridge-ai-sandbox",
+  "name": "corridorflow-sandbox",
   "version": "1.0.0",
-  "description": "Astropods containerized development and runtime pod for PayBridge AI",
+  "description": "Astropods containerized development and runtime pod for CorridorFlow",
   "baseImage": "node:22-bookworm-slim",
   "ports": [
-    { "port": 3001, "protocol": "HTTP", "description": "PayBridge Express API" },
-    { "port": 5173, "protocol": "HTTP", "description": "PayBridge Vite Client" }
+    { "port": 3001, "protocol": "HTTP", "description": "CorridorFlow Express API" },
+    { "port": 5173, "protocol": "HTTP", "description": "CorridorFlow Vite Client" }
   ],
   "env": {
     "PAYPAL_MODE": "sandbox",

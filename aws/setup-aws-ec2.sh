@@ -1,13 +1,13 @@
 #!/bin/bash
 # ==============================================================================
-# PayBridge AI — AWS EC2 Bootstrap Script for Separate Fabric Proof of Concept
+# CorridorFlow — AWS EC2 Bootstrap Script for Separate Fabric Proof of Concept
 # Target OS: Ubuntu 22.04 LTS on AWS EC2 (t3.small / t3.medium)
 # ==============================================================================
 
 set -e
 
 echo "========================================================================"
-echo "  PayBridge AI — Initializing AWS EC2 Environment for Hyperledger Fabric"
+echo "  CorridorFlow — Initializing AWS EC2 Environment for Hyperledger Fabric"
 echo "========================================================================"
 
 # 1. Update OS & Install Basic Tools
@@ -58,7 +58,7 @@ chmod +x network/start-fabric.sh network/stop-fabric.sh
 CURRENT_DIR=$(pwd)
 sudo bash -c "cat <<EOF > /etc/systemd/system/paybridge-fabric.service
 [Unit]
-Description=PayBridge AI Hyperledger Fabric 2.5 Auto-Restart Service
+Description=CorridorFlow Hyperledger Fabric 2.5 Auto-Restart Service
 Requires=docker.service
 After=docker.service network-online.target
 

@@ -1,8 +1,8 @@
-# PayBridge AI — PayPal Sandbox + AI-Assisted Trade Demo
+# CorridorFlow — PayPal Sandbox + AI-Assisted Trade Demo
 
 ## Elevator pitch
 
-PayBridge AI is a cross-border trade workflow prototype. It uses deterministic corridor rules to produce an indicative quote, Gemini to explain sample risk results when configured, and PayPal Sandbox to demonstrate an approved USD payment. The app records the result in a local demo ledger so a reviewer can follow the payment workflow end to end.
+CorridorFlow is a cross-border trade workflow prototype. It uses deterministic corridor rules to produce an indicative quote, Gemini to explain sample risk results when configured, and PayPal Sandbox to demonstrate an approved USD payment. The app records the result in a local demo ledger so a reviewer can follow the payment workflow end to end.
 
 ## The problem
 

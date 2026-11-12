@@ -1,8 +1,8 @@
 {
   "info": {
-    "_postman_id": "paybridge-ai-postman-v1",
-    "name": "PayBridge AI - Prototype API Suite",
-    "description": "Postman collection for PayBridge AI hackathon prototype: PayPal Sandbox/simulated Orders & Payouts, deterministic AI demo checks, Channel3, Elastic, and Zapier endpoints.",
+    "_postman_id": "corridorflow-postman-v1",
+    "name": "CorridorFlow - Prototype API Suite",
+    "description": "Postman collection for CorridorFlow: PayPal Sandbox/simulated Orders & Payouts, deterministic AI demo checks, Channel3, Elastic, and Zapier endpoints.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "item": [
@@ -104,7 +104,7 @@
             "header": [{ "key": "Content-Type", "value": "application/json" }],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"tradeId\": \"T-1048\",\n  \"description\": \"PayBridge Medical Equipment Trade T-1048\"\n}"
+              "raw": "{\n  \"tradeId\": \"T-1048\",\n  \"description\": \"CorridorFlow Medical Equipment Trade T-1048\"\n}"
             },
             "url": { "raw": "{{baseUrl}}/api/paypal/orders/create", "host": ["{{baseUrl}}"], "path": ["api", "paypal", "orders", "create"] }
           },

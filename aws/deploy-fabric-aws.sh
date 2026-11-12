@@ -1,6 +1,6 @@
 #!/bin/bash
 # ==============================================================================
-# PayBridge AI — Deploy / Start Separate Fabric Proof of Concept on AWS EC2
+# CorridorFlow — Deploy / Start Separate Fabric Proof of Concept on AWS EC2
 # ==============================================================================
 
 set -e

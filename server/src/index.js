@@ -1,4 +1,4 @@
-// PayBridge AI Backend Server
+// CorridorFlow Backend Server
 // Autonomous Agentic Commerce & Cross-Border Treasury Protocol
 // Integrates PayPal Sandbox, Multi-Agent AI Swarm, AG Grid APIs, Elastic, Channel3, and Zapier
 
@@ -133,7 +133,7 @@ app.get('/health', async (req, res) => {
   const databaseReady = await storageHealthy();
   res.status(databaseReady ? 200 : 503).json({
     status: databaseReady ? 'online' : 'storage_unavailable',
-    system: 'PayBridge AI Prototype',
+    system: 'CorridorFlow Prototype',
     version: '1.0.0-hackathon',
     paypalMode: getPayPalMode(),
     geminiConfigured: Boolean(process.env.GEMINI_API_KEY),
@@ -468,7 +468,7 @@ app.post('/api/paypal/payouts/batch', async (req, res) => {
       isSimulation: Boolean(payout.isSimulation),
       grossAmount: `${trade.trade.ccyB} ${(Number(trade.trade.amountB) / 100).toFixed(2)}`,
       netAmount: `${trade.trade.ccyB} ${(Number(trade.trade.amountB) / 100).toFixed(2)}`,
-      sender: 'PayBridge Sandbox Demo',
+      sender: 'CorridorFlow Sandbox Demo',
       recipient: payout.recipientEmail,
       status: payout.status,
       timestamp: new Date().toISOString(),
@@ -599,7 +599,7 @@ app.post('/api/zapier/trigger', async (req, res) => {
   if (zapierManualDispatches.length >= 5) return res.status(429).json({ error: 'Manual Zapier test limit reached; try again later.' });
   zapierManualDispatches.push(now);
   const result = await triggerZapierWebhook('MANUAL_TEST_TRIGGER', {
-    protocol: 'PayBridge AI settlement demo',
+    protocol: 'CorridorFlow settlement demo',
     triggeredAt: new Date(now).toISOString(),
     action: 'operator_manual_test',
   });
@@ -972,7 +972,7 @@ seedElasticFromStores();
 
 app.listen(PORT, () => {
   console.log(`================================================================`);
-  console.log(`  PayBridge AI Backend Server running on http://localhost:${PORT}`);
+  console.log(`  CorridorFlow Backend Server running on http://localhost:${PORT}`);
   console.log(`  PayPal mode: ${getPayPalMode()}`);
   console.log(`  Gemini explanation: ${process.env.GEMINI_API_KEY ? 'configured' : 'not configured'}`);
   console.log(`  Workflow storage: ${storageMode()}`);

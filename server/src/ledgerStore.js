@@ -1,4 +1,4 @@
-// PayBridge Core Ledger & State Store
+// CorridorFlow Core Ledger & State Store
 // Manages Multi-Currency Accounts, Sovereign Corridor Ledgers,
 // In-memory trade workflow, PayPal events, and local demo receipt digests.
 
@@ -171,7 +171,7 @@ export const paypalLedgerStore = [
     grossAmount: '$18,695.62 USD',
     paypalFee: '$0.25 USD',
     netAmount: '$18,695.37 USD',
-    sender: 'PayBridge Settlement Custody',
+    sender: 'CorridorFlow Settlement Custody',
     recipient: 'vendor-payout-sandbox@paybridge.ai',
     status: 'SEEDED_FIXTURE',
     timestamp: new Date(Date.now() - 3590000).toISOString(),

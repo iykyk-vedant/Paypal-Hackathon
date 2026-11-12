@@ -1,10 +1,10 @@
-# PayBridge AI — 2-Minute Demo Script
+# CorridorFlow — 2-Minute Demo Script
 
 ### 0:00–0:20 — Set expectations
 
 **Show:** Dashboard and the visible demo-mode notice.
 
-**Say:** “PayBridge AI is a hackathon prototype for cross-border trade. It connects supplier quote prefill, prototype risk review, PayPal Sandbox funding, and explicitly confirmed Hyperledger Fabric test-ledger steps. The systems remain separate and non-atomic.”
+**Say:** “CorridorFlow is a hackathon prototype for cross-border trade. It connects supplier quote prefill, prototype risk review, PayPal Sandbox funding, and explicitly confirmed Hyperledger Fabric test-ledger steps. The systems remain separate and non-atomic.”
 
 ### 0:20–0:55 — Channel3 sourcing, proposal, and risk explanation
 

@@ -1,8 +1,8 @@
 {
   "$schema": "https://apimatic.io/schemas/context-plugin/v1.json",
-  "pluginName": "PayBridgePayPalContextPlugin",
+  "pluginName": "CorridorFlowPayPalContextPlugin",
   "version": "1.0.0",
-  "description": "APIMatic Context Plugin for PayBridge AI: Autonomous Agentic Commerce & PayPal Settlement",
+  "description": "APIMatic Context Plugin for CorridorFlow: Autonomous Agentic Commerce & PayPal Settlement",
   "specifications": [
     {
       "path": "./openapi.yaml",

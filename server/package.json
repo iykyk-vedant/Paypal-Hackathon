@@ -1,7 +1,7 @@
 {
   "name": "paybridge-server",
   "version": "1.0.0",
-  "description": "PayBridge AI Backend Service with PayPal Sandbox & AI Swarm",
+  "description": "CorridorFlow Backend Service with PayPal Sandbox & AI Swarm",
   "main": "src/index.js",
   "type": "module",
   "scripts": {

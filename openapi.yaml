@@ -1,6 +1,6 @@
 openapi: 3.1.0
 info:
-  title: PayBridge AI - Cross-Border Trade Prototype API
+  title: CorridorFlow - Cross-Border Trade Prototype API
   description: >-
     Hackathon prototype API for the CorridorFlow web demo, combining a PostgreSQL-backed demo trade workflow,
     deterministic corridor rules, optional Gemini explanations, and
@@ -9,7 +9,7 @@ info:
     This prototype access layer is not a production identity system.
   version: 1.0.0
   contact:
-    name: PayBridge AI Contributors
+    name: CorridorFlow Contributors
 servers:
   - url: https://paybridge-api-8ua8.onrender.com
     description: Hosted Demo API
