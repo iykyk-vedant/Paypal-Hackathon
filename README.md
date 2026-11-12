@@ -1,7 +1,7 @@
 # CorridorFlow
 
 <p align="center">
-  <strong>AI-assisted cross-border trade workflows with transparent, human-approved payment steps.</strong>
+  <strong>A review and settlement-workflow prototype for cross-border trade between two banks.</strong>
 </p>
 
 <p align="center">
@@ -16,26 +16,108 @@
 ![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?logo=typescript&logoColor=white)
 ![License](https://img.shields.io/badge/License-MIT-64748B)
 
-CorridorFlow is a hackathon prototype for reviewing cross-border trade proposals. It combines illustrative FX benchmarks and deterministic demo checks with optional Gemini explanations and PayPal Sandbox checkout. A separate Hyperledger Fabric Gateway panel can query a test ledger and, when explicitly configured, submit test transactions.
+**CorridorFlow shows how two bank teams could review a proposed currency trade, record each party's approval, verify demo funding, and inspect a shared ledger trail.** Bank operators work in a role-based dashboard; the API applies deterministic prototype checks; optional services add supplier quote prefill, AI explanations, search, and notifications. PayPal runs in Sandbox or simulation mode. Hyperledger Fabric is a separately configured test ledger.
 
-> **Prototype notice:** This project is for demonstration and evaluation. It does not process real payments, provide live FX quotes, perform official sanctions screening, or make regulatory decisions. Do not use it with real funds or for production financial operations.
+> **Prototype notice:** CorridorFlow is for demonstration and evaluation. It does not process real payments, provide live FX quotes, perform official sanctions screening, or make regulatory decisions. Do not use it with real funds or for production financial operations.
 
-## How it works
+## Project at a glance
+
+1. A bank operator creates a trade proposal using illustrative FX values, optionally prefilled from a Channel3 product quote.
+2. The API runs deterministic demo corridor and sample-blocklist checks. Gemini may explain the result; it does not approve the trade.
+3. The counterparty bank operator accepts the proposal. If Fabric writes are enabled, proposal and acceptance are also submitted to the test ledger; otherwise the workflow stays in the app's demo store.
+4. The proposing bank captures the linked PayPal Sandbox order (or runs the explicitly labeled simulation).
+5. An authorized operator explicitly confirms Fabric settlement. Required regulator endorsements and four separate debit/credit ledger actions complete the test settlement.
+6. The dashboard shows the trade, activity, and receipt trail. PostgreSQL stores workflow data when configured; Elasticsearch and Zapier are optional.
+
+**PayPal capture and Fabric settlement are separate systems and separate commits.** A failure during the four ledger actions can leave a partial test settlement that requires operator reconciliation.
+
+## Architecture
+
+The diagram separates people and the web application from optional providers, application storage, and the independently configured Fabric network. Solid paths show the main workflow; dashed paths are optional integrations.
 
 ```mermaid
-flowchart LR
-    U[Trader in browser] --> W[React + TypeScript web app]
-    W -->|HTTPS API requests| A[Node.js + Express API]
-    A -->|Persist demo workflow and sessions| D[(Render PostgreSQL)]
-    A -->|Sandbox orders and capture| P[PayPal Sandbox]
-    A -. optional .-> G[Gemini explanations]
-    A -. optional .-> C[Channel3 product search]
-    A -. optional .-> E[Elasticsearch]
-    A -. explicitly configured .-> F[Fabric Gateway]
-    F --> H[Hyperledger Fabric test network]
+flowchart TB
+  subgraph PEOPLE["Actors"]
+    direction LR
+    BANK["Bank A / Bank B operators"]
+    REG["Regulator demo roles"]
+    AUD["Consortium auditor"]
+  end
+
+  subgraph APP["CorridorFlow application"]
+    direction LR
+    UI["React + TypeScript dashboard"]
+    API["Node.js + Express API<br/>sessions · permissions · workflow"]
+    RULES["Deterministic demo risk checks"]
+    UI -->|HTTPS API| API
+    API --> RULES
+  end
+
+  subgraph SERVICES["Optional providers"]
+    direction LR
+    C3["Channel3<br/>supplier quote prefill"]
+    GEM["Gemini<br/>risk explanation"]
+    PP["PayPal Sandbox<br/>order + capture"]
+    SIM["Funding simulation"]
+    EL["Elasticsearch<br/>event search"]
+    ZAP["Zapier Catch<br/>event notifications"]
+  end
+
+  subgraph DATA["Application data"]
+    direction LR
+    PG[("PostgreSQL<br/>trades · sessions · receipts")]
+    MEM[("In-memory fallback<br/>local demo only")]
+  end
+
+  subgraph FABRIC["Separate Hyperledger Fabric test network · optional"]
+    direction LR
+    GW["Fabric Gateway<br/>API-side identities"]
+    PEERS["Bank peers<br/>BankA1MSP · BankB1MSP"]
+    REGPEERS["Regulator endorsement<br/>RegAMSP AND RegBMSP"]
+    CC["Settlement chaincode<br/>proposal · acceptance · settle · value legs"]
+    LEDGER[("Shared test ledger<br/>public state + private collections")]
+    GW --> PEERS --> CC --> LEDGER
+    REGPEERS -. endorsement policy .-> CC
+  end
+
+  BANK --> UI
+  REG --> UI
+  AUD --> UI
+  API -. quote lookup .-> C3
+  API -. optional explanation .-> GEM
+  API -->|Sandbox funding after acceptance| PP
+  API -. when Sandbox credentials are absent .-> SIM
+  API -->|configured persistence| PG
+  API -. local fallback .-> MEM
+  API -. optional indexing .-> EL
+  API -. optional lifecycle events .-> ZAP
+  API -. when Fabric is configured .-> GW
+  PP -. capture required before linked settlement .-> API
+  CC -. committed status and ledger reads .-> API
+
+  classDef actor fill:#eaf2ff,stroke:#7299cc,color:#18324f
+  classDef app fill:#fff1df,stroke:#d99a5b,color:#4a3017
+  classDef provider fill:#f4f0ff,stroke:#9d83d3,color:#32234d
+  classDef data fill:#e8f7f4,stroke:#69aaa2,color:#183c39
+  classDef ledger fill:#e3f4f2,stroke:#5b9f99,color:#173b38
+  class BANK,REG,AUD actor
+  class UI,API,RULES app
+  class C3,GEM,PP,SIM,EL,ZAP provider
+  class PG,MEM data
+  class GW,PEERS,REGPEERS,CC,LEDGER ledger
 ```
 
-The web app and API are separate services. A Channel3 quote can prefill a trade; the API runs deterministic demo risk checks with an optional Gemini explanation, and records workflow events in Elasticsearch and Zapier when configured. After the counterparty accepts, PayPal Sandbox funding can be captured. The operator then links the accepted trade to Fabric, explicitly confirms Fabric settlement, and submits the chaincode's four separate value-leg transactions. These are sequential demo steps, not one atomic payment.
+### What is real, optional, or simulated?
+
+| Part | What it does in this project |
+| --- | --- |
+| Dashboard and API | Role-based trade review, deterministic prototype checks, workflow tracking, and operator actions. |
+| PayPal | Sandbox order approval/capture when credentials are configured; otherwise a clearly labeled simulation. Capture records funding, not Fabric settlement. |
+| Hyperledger Fabric | Optional Gateway connection to a test network. The linked trade can be proposed, accepted, settled with regulator endorsement, then updated with four independent value-leg transactions. |
+| PostgreSQL | Persistent application workflow and session storage when configured; local development can use in-memory fallback. It is not the Fabric ledger. |
+| Gemini, Channel3, Elasticsearch, Zapier | Optional integrations for explanation, quote prefill, event search, and notifications. |
+
+The Fabric block explorer and auditor currently use sample block fixtures; live QSCC block retrieval and decoding are not implemented. The Fabric backend holds both bank signing identities when writes are enabled, so this setup is only appropriate for a controlled hackathon test network.
 
 ## What the demo includes
 
