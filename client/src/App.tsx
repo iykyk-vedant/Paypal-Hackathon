@@ -133,7 +133,9 @@ export function App() {
       addToast({
         type: 'success',
         title: 'Trade accepted',
-        message: 'Counterparty leg marked as held in the demo workflow.',
+        message: updated.fabricAcceptanceStatus === 'RECORDED_ON_FABRIC'
+          ? 'Counterparty acceptance committed to Hyperledger Fabric and added to the peer transaction log.'
+          : 'Counterparty leg marked as held in the demo workflow; Fabric is not linked yet.',
       });
       await refreshData();
     } catch (err: any) {
@@ -313,7 +315,9 @@ export function App() {
                 addToast({
                   type: 'success',
                   title: 'Demo trade proposed',
-                  message: `Trade ${trade.trade.tradeId} added to the demo workflow.`,
+                  message: trade.trade.fabricTradeId
+                    ? `Trade ${trade.trade.tradeId} was proposed in the workflow and committed to Hyperledger Fabric.`
+                    : `Trade ${trade.trade.tradeId} was proposed in the demo workflow. Fabric is not linked for this run.`,
                 });
                 setChannel3Quote(null);
                 await refreshData();

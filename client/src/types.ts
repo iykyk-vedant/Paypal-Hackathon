@@ -131,6 +131,7 @@ export interface TradeComposite {
     settledAt?: string;
     receiptHash?: string;
   };
+  fabricAcceptanceStatus?: 'RECORDED_ON_FABRIC' | 'NOT_LINKED';
 }
 
 export interface PayPalLedgerEntry {

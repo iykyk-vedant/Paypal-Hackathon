@@ -22,6 +22,7 @@ import express from 'express';
 import cors from 'cors';
 import net from 'node:net';
 import { createHash, timingSafeEqual } from 'node:crypto';
+import { ulid } from 'ulid';
 const { OPERATORS, login, authenticate, logout, authorizeRoute } = await import('./auth.js');
 const { initStorage, storageMode, storageHealthy, saveTrade, saveRefusal, saveTradeAndPayPalEntry } = await import('./storage.js');
 
@@ -200,9 +201,28 @@ app.post('/trades', async (req, res) => {
       await saveRefusal(recordRefusal(null, body.ccyA === 'INR' ? 'JUR-A' : 'JUR-B', 'PRE_TRADE_RISK_REFUSED', body.proposerMsp || 'BankA1MSP'));
       return res.status(422).json({ error: 'Trade did not pass the prototype pre-trade risk rules.', riskAssessment });
     }
-    const trade = proposeTrade(body);
+    const tradeId = `T-${ulid().slice(0, 10)}`;
+    const fabricWriteStatus = await getFabricWriteStatus();
+    let fabricProposal = null;
+    if (fabricWriteStatus.writeReady) {
+      fabricProposal = await proposeFabricTrade({
+        tradeId,
+        proposerMsp: body.proposerMsp,
+        ccyA: body.ccyA,
+        amountA: String(body.amountA),
+        ccyB: body.ccyB,
+        amountB: String(body.amountB),
+        reference: body.reference,
+      });
+    }
+    const trade = proposeTrade({ ...body, tradeId });
     trade.trade.riskAssessment = riskAssessment;
     if (body.channel3Quote) trade.trade.channel3Quote = body.channel3Quote;
+    if (fabricProposal) {
+      trade.trade.fabricTradeId = fabricProposal.tradeId;
+      trade.trade.fabricStatus = fabricProposal.status;
+      recordFabricActivity(trade, 'Trade proposed', [body.proposerMsp], fabricProposal);
+    }
     await saveTrade(trade);
     indexTradeEvent(trade.trade);
     res.status(201).json(trade);
@@ -216,9 +236,17 @@ app.post('/trades/:id/accept', async (req, res) => {
     const item = tradesStore.find((trade) => trade.trade.tradeId === req.params.id);
     if (!item || item.trade.counterpartyMsp !== req.profile.msp) return res.status(403).json({ error: 'Only the counterparty bank approver may accept this trade.' });
     if (item.trade.status !== 'PROPOSED') return res.status(409).json({ error: 'Only proposed trades can be accepted.' });
+    let fabricAcceptance = null;
+    if (item.trade.fabricTradeId && item.trade.fabricStatus === 'PROPOSED') {
+      fabricAcceptance = await acceptFabricTrade(item.trade.fabricTradeId);
+    }
     const trade = acceptTrade(req.params.id);
+    if (fabricAcceptance) {
+      trade.trade.fabricStatus = 'ACCEPTED';
+      recordFabricActivity(trade, 'Trade accepted', [trade.trade.counterpartyMsp], fabricAcceptance);
+    }
     await saveTrade(trade);
-    res.json(trade);
+    res.json({ ...trade, fabricAcceptanceStatus: fabricAcceptance ? 'RECORDED_ON_FABRIC' : 'NOT_LINKED' });
   } catch (err) {
     res.status(400).json({ error: err.message });
   }

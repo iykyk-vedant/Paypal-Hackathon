@@ -219,10 +219,11 @@ export async function proposeFabricTrade(input) {
   const amountA = positiveSafeAmount(input?.amountA, 'amountA');
   const amountB = positiveSafeAmount(input?.amountB, 'amountB');
   const reference = String(input?.reference || 'Fabric demo trade').trim().slice(0, 160);
-  const tradeId = `T-${ulid()}`;
+  const tradeId = input?.tradeId || `T-${ulid()}`;
+  if (!validTradeId(tradeId)) throw new Error('tradeId must be a valid Fabric trade identifier');
   const now = Math.floor(Date.now() / 1000);
-  const acceptBy = now + 600;
-  const cutoff = now + 1200;
+  const acceptBy = now + 24 * 60 * 60;
+  const cutoff = now + 48 * 60 * 60;
   const detail = {
     tradeId, ccyA, amountA, ccyB, amountB,
     proposer: proposerMsp,

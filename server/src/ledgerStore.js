@@ -188,6 +188,7 @@ export function seedElasticFromStores() {
  * Propose a new trade
  */
 export function proposeTrade({
+  tradeId: suppliedTradeId = null,
   proposer = 'a1-trader',
   proposerMsp = 'BankA1MSP',
   cparty = 'b1-trader',
@@ -200,7 +201,7 @@ export function proposeTrade({
   reference = 'B2B Cross-Border Sourcing',
   channel3Sku = null,
 }) {
-  const tradeId = `T-${ulid().slice(0, 10)}`;
+  const tradeId = suppliedTradeId || `T-${ulid().slice(0, 10)}`;
 
   const newComposite = {
     trade: {

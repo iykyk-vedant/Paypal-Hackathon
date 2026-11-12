@@ -51,7 +51,13 @@ export const FabricLedgerActions: React.FC<FabricLedgerActionsProps> = ({ curren
       item.trade.ccyA !== item.trade.ccyB
       );
       setAcceptedDemoTrades(accepted);
-      if (sourceTradeId) setSelectedSourceTrade(accepted.find((item) => item.trade.tradeId === sourceTradeId) || null);
+      if (sourceTradeId) {
+        setSelectedSourceTrade(accepted.find((item) => item.trade.tradeId === sourceTradeId) || null);
+      } else if (accepted[0]) {
+        setSourceTradeId(accepted[0].trade.tradeId);
+        setSelectedSourceTrade(accepted[0]);
+        setTradeId(accepted[0].trade.fabricTradeId || '');
+      }
     }).catch(() => setAcceptedDemoTrades([]));
   }, [demoTrades, sourceTradeId]);
 
@@ -173,7 +179,7 @@ export const FabricLedgerActions: React.FC<FabricLedgerActionsProps> = ({ curren
           }),
         ]
       : [];
-  const peerActivityRows = fabricActivity.flatMap((entry, index) => entry.peerOrgs.map((peerOrg) => ({ ...entry, peerOrg, rowKey: `${entry.transactionId}-${peerOrg}-${index}` }))).reverse();
+  const peerActivityRows = fabricActivity.flatMap((entry, index) => entry.peerOrgs.map((peerOrg) => ({ ...entry, peerOrg, rowKey: `${entry.transactionId}-${peerOrg}-${index}` })));
 
   const peerLabel = (msp: string) => ({
     BankA1MSP: 'Bank A1 peer', BankB1MSP: 'Bank B1 peer', RegAMSP: 'Regulator A peer', RegBMSP: 'Regulator B peer',
@@ -232,8 +238,8 @@ export const FabricLedgerActions: React.FC<FabricLedgerActionsProps> = ({ curren
           <section className="rounded-xl border border-slate-200 bg-white overflow-hidden">
             <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3">
               <div>
-                <h4 className="text-sm font-bold text-slate-900">Peer activity</h4>
-                <p className="text-[11px] text-slate-500">Committed transaction records grouped by participating peer organization</p>
+                <h4 className="text-sm font-bold text-slate-900">Live Fabric transaction log</h4>
+                <p className="text-[11px] text-slate-500">Each committed ledger step is shown under the peer organization that endorsed it</p>
               </div>
               <span className="rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-semibold text-slate-600">{peerActivityRows.length} entries</span>
             </div>
