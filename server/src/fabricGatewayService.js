@@ -238,7 +238,7 @@ export async function proposeFabricTrade(input) {
   const args = [tradeId, ccyA, String(amountA), ccyB, String(amountB), counterpartyMsp, String(acceptBy), String(cutoff)];
 
   const outcome = await withContract(
-    (contract) => submitAndConfirm(contract, 'ProposeTrade', { arguments: args, transientData }),
+    (contract) => submitAndConfirm(contract, 'ProposeTrade', { arguments: args, transientData, endorsingOrganizations: [proposerMsp] }),
     proposerMsp,
   );
   const pending = { detail, createdAt: Date.now() };
@@ -265,7 +265,7 @@ export async function acceptFabricTrade(tradeId) {
   const detailBytes = Buffer.from(JSON.stringify(pending.detail));
   const transientData = { detail: detailBytes, salt: Buffer.from(randomBytes(16).toString('hex')) };
   const outcome = await withContract(
-    (contract) => submitAndConfirm(contract, 'AcceptTrade', { arguments: [tradeId], transientData }),
+    (contract) => submitAndConfirm(contract, 'AcceptTrade', { arguments: [tradeId], transientData, endorsingOrganizations: [counterpartyMsp] }),
     counterpartyMsp,
   );
   pendingTradeDetails.delete(tradeId);
@@ -339,7 +339,7 @@ export async function performFabricLegAction(tradeId, leg, operation, confirmed)
     : (isDebit ? counterpartyMsp : proposerMsp);
   const transactionName = isDebit ? 'SettleDebit' : 'CreditPayee';
   const outcome = await withContract(
-    (contract) => submitAndConfirm(contract, transactionName, { arguments: [tradeId, leg] }),
+    (contract) => submitAndConfirm(contract, transactionName, { arguments: [tradeId, leg], endorsingOrganizations: [signerMsp] }),
     signerMsp,
   );
   return { ...outcome, tradeId, leg, operation, signedBy: signerMsp };
