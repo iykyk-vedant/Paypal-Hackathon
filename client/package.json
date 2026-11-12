@@ -9,6 +9,8 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@bryntum/scheduler-community": "8.0.1",
+    "@bryntum/scheduler-react-community": "8.0.1",
     "@paypal/react-paypal-js": "^8.7.0",
     "ag-grid-community": "^31.3.2",
     "ag-grid-react": "^31.3.2",
