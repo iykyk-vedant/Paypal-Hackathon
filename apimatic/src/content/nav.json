@@ -1,0 +1,4 @@
+{
+  "tabs": ["apimatic:sdks", "apimatic:api"],
+  "pages": ["index", "..."]
+}

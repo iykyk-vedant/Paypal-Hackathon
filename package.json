@@ -10,12 +10,17 @@
     "dev": "concurrently -n \"SERVER,CLIENT\" -c \"blue,green\" \"npm run server\" \"npm run client\"",
     "build": "cd client && npm run build",
     "start": "cd server && npm start",
+    "apimatic:sync": "node scripts/sync-apimatic-spec.mjs",
+    "apimatic:serve": "npm run apimatic:sync && apimatic portal serve --input=./apimatic --open",
+    "apimatic:generate": "npm run apimatic:sync && apimatic portal generate --input=./apimatic",
+    "apimatic:sdk:typescript": "npm run apimatic:sync && apimatic sdk generate --language=typescript --input=./apimatic --destination=./apimatic/generated-sdk/typescript",
     "fabric:configure": "node network/scripts/configure-local.mjs",
     "fabric:start": "node network/scripts/local-fabric.mjs start",
     "fabric:stop": "node network/scripts/local-fabric.mjs stop",
     "fabric:render-config": "node network/scripts/configure-render.mjs"
   },
   "devDependencies": {
+    "@apimatic/cli": "2.2.0",
     "concurrently": "^8.2.2"
   },
   "keywords": [

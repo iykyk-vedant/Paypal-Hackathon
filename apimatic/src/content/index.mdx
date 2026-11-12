@@ -1,0 +1,13 @@
+# CorridorFlow API
+
+This portal documents the API used by the CorridorFlow demonstration. The reference and interactive playground are generated from the repository's root `openapi.yaml` file.
+
+## Get started
+
+1. Call `POST /auth/login` with a configured demo operator and password.
+2. Send the returned bearer token in the `Authorization` header for protected endpoints.
+3. Use the API reference to inspect trade, PayPal Sandbox, and optional Hyperledger Fabric operations.
+
+## Demo safety
+
+This is a hackathon prototype. PayPal operations use Sandbox or simulation mode. Fabric write endpoints can submit permanent transactions to the configured test ledger and additionally require the server's Fabric write token. Never place passwords, PayPal credentials, or Fabric write tokens in public client code or API examples.

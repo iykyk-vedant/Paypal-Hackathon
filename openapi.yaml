@@ -2,7 +2,7 @@ openapi: 3.1.0
 info:
   title: PayBridge AI - Cross-Border Trade Prototype API
   description: >-
-    Hackathon prototype API combining a PostgreSQL-backed demo trade workflow,
+    Hackathon prototype API for the CorridorFlow web demo, combining a PostgreSQL-backed demo trade workflow,
     deterministic corridor rules, optional Gemini explanations, and
     PayPal Developer Platform (Orders v2, Payouts v1) Sandbox or simulation.
     Password-protected demo roles use expiring bearer sessions stored in PostgreSQL when configured.
@@ -11,8 +11,10 @@ info:
   contact:
     name: PayBridge AI Contributors
 servers:
+  - url: https://paybridge-api-8ua8.onrender.com
+    description: Hosted Demo API
   - url: http://localhost:3001
-    description: Local Prototype Dev Server
+    description: Local Development API
 security:
   - bearerAuth: []
 components:

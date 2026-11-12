@@ -1,0 +1,38 @@
+{
+  "$schema": "https://cdn.jsdelivr.net/npm/@apimatic/cli@2/apimatic.schema.json",
+  "schemaVersion": 1,
+  "portal": {
+    "site": {
+      "name": "CorridorFlow API",
+      "description": "API reference for the CorridorFlow cross-border trade demonstration."
+    },
+    "brand": {
+      "colors": {
+        "primary": {
+          "light": "#6d28d9",
+          "dark": "#a78bfa"
+        }
+      },
+      "colorMode": "both"
+    },
+    "navigation": {
+      "links": [
+        {
+          "label": "Demo app",
+          "url": "https://paypal-hackathon-061h.onrender.com/"
+        },
+        {
+          "label": "Source",
+          "url": "https://github.com/iykyk-vedant/Paypal-Hackathon"
+        }
+      ]
+    },
+    "ai": {
+      "pageActions": true
+    }
+  },
+  "languages": {
+    "typescript": {},
+    "python": {}
+  }
+}

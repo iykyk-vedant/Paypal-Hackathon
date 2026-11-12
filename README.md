@@ -109,6 +109,17 @@ To build the frontend:
 npm run build
 ```
 
+### APIMatic API portal
+
+The APIMatic project uses the root `openapi.yaml` as its source of truth. Install the root dependencies, sign in to APIMatic once with `npx apimatic auth login`, then preview the interactive portal locally:
+
+```bash
+npm install
+npm run apimatic:serve
+```
+
+Generate the static portal with `npm run apimatic:generate`. Generate a TypeScript SDK with `npm run apimatic:sdk:typescript`. The portal and SDK commands require an authenticated APIMatic CLI session; do not commit APIMatic credentials or generated SDKs containing local configuration.
+
 ### Configure integrations
 
 Copy `.env.example` to `.env` and set only the server-side integrations you plan to use. For the browser-based PayPal Sandbox button, copy `client/.env.example` to `client/.env` and set `VITE_PAYPAL_CLIENT_ID` to the **Sandbox client ID only**. Keep `PAYPAL_CLIENT_SECRET` in the backend environment. Restart the relevant server after changing environment variables.

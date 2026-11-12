@@ -1,0 +1,444 @@
+openapi: 3.1.0
+info:
+  title: PayBridge AI - Cross-Border Trade Prototype API
+  description: >-
+    Hackathon prototype API for the CorridorFlow web demo, combining a PostgreSQL-backed demo trade workflow,
+    deterministic corridor rules, optional Gemini explanations, and
+    PayPal Developer Platform (Orders v2, Payouts v1) Sandbox or simulation.
+    Password-protected demo roles use expiring bearer sessions stored in PostgreSQL when configured.
+    This prototype access layer is not a production identity system.
+  version: 1.0.0
+  contact:
+    name: PayBridge AI Contributors
+servers:
+  - url: https://paybridge-api-8ua8.onrender.com
+    description: Hosted Demo API
+  - url: http://localhost:3001
+    description: Local Development API
+security:
+  - bearerAuth: []
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      description: Token returned by POST /auth/login
+paths:
+  /health:
+    get:
+      summary: Health and System Status
+      security: []
+      responses:
+        '200':
+          description: System operational status
+  /auth/login:
+    post:
+      summary: Sign in to a configured demo role
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [operator, password]
+              properties:
+                operator:
+                  type: string
+                password:
+                  type: string
+                  format: password
+      responses:
+        '200':
+          description: Bearer token and role profile
+  /auth/logout:
+    post:
+      summary: End the current demo session
+      responses:
+        '200':
+          description: Session revoked
+  /api/fabric/status:
+    get:
+      summary: Check Fabric Gateway query connectivity
+      description: Reports a live read-only chaincode query probe when Gateway mode is enabled; TCP reachability alone is not treated as a Fabric connection.
+      responses:
+        '200':
+          description: Gateway status and demo or live ledger source
+  /api/fabric/ledger:
+    get:
+      summary: Read a live Fabric chaincode snapshot
+      description: Requires a configured Fabric Gateway identity. Evaluates chaincode queries only and never submits a transaction. Private account queries may be denied by chaincode access rules.
+      responses:
+        '200':
+          description: Results and per-query errors from read-only chaincode evaluations
+        '503':
+          description: Gateway disabled, unavailable, or misconfigured
+  /api/fabric/trades/propose:
+    post:
+      summary: Submit a new INR/SGD trade proposal to Fabric
+      description: Requires the Fabric write feature flag and a rotated signing identity. Private trade details and salt are sent as transient proposal data; this writes to the permanent test ledger.
+      parameters:
+        - in: header
+          name: X-Fabric-Write-Token
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [proposerMsp, ccyA, amountA, ccyB, amountB]
+              properties:
+                proposerMsp:
+                  type: string
+                  enum: [BankA1MSP, BankB1MSP]
+                ccyA:
+                  type: string
+                  enum: [INR, SGD]
+                amountA:
+                  type: string
+                  description: Positive currency minor units
+                ccyB:
+                  type: string
+                  enum: [INR, SGD]
+                amountB:
+                  type: string
+                  description: Positive currency minor units
+                reference:
+                  type: string
+      responses:
+        '201':
+          description: Fabric transaction committed and validated
+        '400':
+          description: Invalid proposal or chaincode rejected it
+        '503':
+          description: Fabric writes are disabled or identities are not configured
+  /api/fabric/trades/{tradeId}/accept:
+    post:
+      summary: Accept a Fabric trade proposal as the counterparty bank
+      parameters:
+        - in: header
+          name: X-Fabric-Write-Token
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: tradeId
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Fabric transaction committed and validated
+        '400':
+          description: Trade state or transient details are invalid
+        '503':
+          description: Fabric writes are disabled or identities are not configured
+  /api/fabric/trades/{tradeId}/settle:
+    post:
+      summary: Settle an accepted Fabric trade
+      description: Requires explicit confirmation in the request and RegAMSP plus RegBMSP peer endorsements. It does not verify PayPal capture.
+      parameters:
+        - in: header
+          name: X-Fabric-Write-Token
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: tradeId
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [confirmSettlement]
+              properties:
+                confirmSettlement:
+                  type: boolean
+                  const: true
+      responses:
+        '200':
+          description: Fabric transaction committed and validated
+        '400':
+          description: Trade is not accepted or explicit confirmation is missing
+        '503':
+          description: Fabric writes are disabled or identities are not configured
+  /api/fabric/trades/{tradeId}/legs/{leg}/{operation}:
+    post:
+      summary: Commit one Fabric settlement-leg debit or payee credit
+      description: Requires explicit settlement confirmation, a settled trade, and the signing identity for the payer or payee bank. Each call commits a separate ledger transaction.
+      parameters:
+        - in: header
+          name: X-Fabric-Write-Token
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: tradeId
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: leg
+          required: true
+          schema:
+            type: string
+            enum: [A, B]
+        - in: path
+          name: operation
+          required: true
+          schema:
+            type: string
+            enum: [debit, credit]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [confirmSettlement]
+              properties:
+                confirmSettlement:
+                  type: boolean
+                  const: true
+      responses:
+        '200':
+          description: Fabric transaction committed and validated
+        '400':
+          description: Trade state, settlement confirmation, or chaincode validation failed
+        '503':
+          description: Fabric writes are disabled or identities are not configured
+  /me:
+    get:
+      summary: Get the signed-in operator identity and role
+      responses:
+        '200':
+          description: Active identity profile
+  /trades:
+    get:
+      summary: List all active and settled bilateral trades
+      responses:
+        '200':
+          description: Array of trade composites
+    post:
+      summary: Propose a new sample trade in the demo workflow
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                proposer:
+                  type: string
+                cparty:
+                  type: string
+                ccyA:
+                  type: string
+                amountA:
+                  type: number
+                ccyB:
+                  type: string
+                amountB:
+                  type: number
+                fxRate:
+                  type: string
+                reference:
+                  type: string
+      responses:
+        '201':
+          description: Proposed trade record
+  /trades/{id}/accept:
+    post:
+      summary: Marks the sample counterparty leg held in the demo workflow
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Accepted trade
+  /trades/{id}/settle:
+    post:
+      summary: Deprecated direct settle endpoint (returns 409; capture via /api/paypal/orders/{id}/capture)
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        '409':
+          description: Settlement requires capturing a linked PayPal order
+  /api/paypal/orders/create:
+    post:
+      summary: Create PayPal Orders v2 Order (Sandbox or simulation) using server-calculated USD quote
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                tradeId:
+                  type: string
+                description:
+                  type: string
+      responses:
+        '200':
+          description: PayPal Order response with server USD funding quote
+        '409':
+          description: Trade is not accepted or has a conflicting funding quote
+  /api/paypal/orders/quote/{tradeId}:
+    get:
+      summary: Get the illustrative USD funding quote for an accepted demo trade
+      parameters:
+        - in: path
+          name: tradeId
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Static demo FX quote; not a live market rate
+  /api/paypal/orders/{id}/capture:
+    post:
+      summary: Capture PayPal Order, verify USD amount against quote, and update demo ledger
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [tradeId]
+              properties:
+                tradeId:
+                  type: string
+      responses:
+        '200':
+          description: Capture and local demo settlement details
+        '409':
+          description: Capture status, amount, or order link does not match the quote
+  /api/receipts/{tradeId}:
+    get:
+      summary: Get a local SHA-256 receipt digest for a demo settlement
+      parameters:
+        - in: path
+          name: tradeId
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Local demo digest; not proof of Fabric, regulator approval, or external payment
+  /api/paypal/payouts/batch:
+    post:
+      summary: Retry a failed PayPal Batch Payout v1 for a settled demo trade
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                tradeId:
+                  type: string
+      responses:
+        '200':
+          description: Payout batch response
+  /api/ai/negotiate:
+    post:
+      summary: Calculate indicative demo quote with optional Gemini explanation
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                buyerOrg:
+                  type: string
+                sellerOrg:
+                  type: string
+                currencyFrom:
+                  type: string
+                currencyTo:
+                  type: string
+                amountFrom:
+                  type: number
+      responses:
+        '200':
+          description: Indicative demo trade proposal (static FX benchmark and volume heuristic)
+  /api/ai/risk-screen:
+    post:
+      summary: Run deterministic sample corridor & blocklist checks with optional Gemini explanation
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                tradeId:
+                  type: string
+                amountA:
+                  type: string
+                currencyA:
+                  type: string
+                amountB:
+                  type: string
+                currencyB:
+                  type: string
+      responses:
+        '200':
+          description: Risk score and pass/refuse verdict
+  /api/channel3/catalog:
+    get:
+      summary: Search Channel3 B2B Product Catalog
+      parameters:
+        - in: query
+          name: q
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Catalog search results
+  /api/elastic/search:
+    get:
+      summary: Elastic Observability & Financial Crime Search
+      parameters:
+        - in: query
+          name: q
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Elastic search hits and query latency
+  /api/zapier/trigger:
+    post:
+      summary: Dispatch Zapier Outbound Automation Webhook
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                eventType:
+                  type: string
+                payload:
+                  type: object
+      responses:
+        '200':
+          description: Zapier delivery status
