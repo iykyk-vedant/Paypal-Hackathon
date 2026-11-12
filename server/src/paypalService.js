@@ -7,6 +7,7 @@ import { FX_RATES } from './corridorRules.js';
 const PAYPAL_API_BASE = process.env.PAYPAL_API_BASE || 'https://api-m.sandbox.paypal.com';
 const CLIENT_ID = process.env.PAYPAL_CLIENT_ID || '';
 const CLIENT_SECRET = process.env.PAYPAL_CLIENT_SECRET || '';
+const APP_URL = (process.env.PUBLIC_APP_URL || 'http://localhost:5173').replace(/\/+$/, '');
 const IS_SIMULATION_MODE = !CLIENT_ID || !CLIENT_SECRET || process.env.PAYPAL_MODE === 'mock';
 
 export function getPayPalMode() {
@@ -117,8 +118,8 @@ export async function createPayPalOrder({ tradeId, amountMinor, currency = 'USD'
             brand_name: 'CorridorFlow Treasury',
             landing_page: 'NO_PREFERENCE',
             user_action: 'PAY_NOW',
-            return_url: 'http://localhost:5173/checkout/success',
-            cancel_url: 'http://localhost:5173/checkout/cancel',
+            return_url: `${APP_URL}/checkout/success`,
+            cancel_url: `${APP_URL}/checkout/cancel`,
           },
         }),
       });
@@ -212,8 +213,13 @@ export async function capturePayPalOrder(orderId, tradeId, expectedAmountMinor) 
           details: liveCapture,
         };
       }
-      console.warn(`[PayPal Capture] Sandbox capture failed (HTTP ${response.status})`);
-      throw new Error(`PayPal Sandbox capture failed (HTTP ${response.status})`);
+      // Surface only PayPal's machine-readable issue code, never the provider's
+      // full response, which can contain payer or payment details.
+      const failure = await response.json().catch(() => null);
+      const issue = failure?.details?.[0]?.issue;
+      const safeIssue = typeof issue === 'string' && /^[A-Z0-9_]{1,80}$/.test(issue) ? `: ${issue}` : '';
+      console.warn(`[PayPal Capture] Sandbox capture failed (HTTP ${response.status})${safeIssue}`);
+      throw new Error(`PayPal Sandbox capture failed (HTTP ${response.status})${safeIssue}`);
     } catch (err) {
       if (err.message?.startsWith('PayPal Sandbox capture failed')) throw err;
       console.warn('[PayPal Capture] Sandbox request failed');

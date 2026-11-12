@@ -30,6 +30,8 @@ services:
         sync: false
       - key: PAYPAL_MODE
         value: sandbox
+      - key: PUBLIC_APP_URL
+        value: https://paypal-hackathon-061h.onrender.com
       - key: FABRIC_GATEWAY_ENABLED
         value: "true"
       - key: FABRIC_GATEWAY_WRITE_ENABLED

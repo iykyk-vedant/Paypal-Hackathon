@@ -208,10 +208,18 @@ export const PayPalCheckoutModal: React.FC<PayPalCheckoutModalProps> = ({
                     });
                     return order.orderId;
                   }}
-                  onApprove={async (data) => {
-                    const capture = await api.capturePayPalOrder(data.orderID, tradeData.tradeId);
-                    setSuccessCapture(capture);
-                    onSuccess(capture);
+                  onApprove={async (data, actions) => {
+                    try {
+                      const capture = await api.capturePayPalOrder(data.orderID, tradeData.tradeId);
+                      setSuccessCapture(capture);
+                      onSuccess(capture);
+                    } catch (error) {
+                      if (error instanceof Error && error.message.includes('INSTRUMENT_DECLINED') && actions.restart) {
+                        await actions.restart();
+                        return;
+                      }
+                      throw error;
+                    }
                   }}
                   onError={(err) => setError(err instanceof Error ? err.message : 'PayPal checkout failed')}
                 />
