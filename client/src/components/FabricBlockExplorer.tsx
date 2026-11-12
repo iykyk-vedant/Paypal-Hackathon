@@ -3,11 +3,11 @@ import { AgGridReact } from 'ag-grid-react';
 import '../grid.css';
 import { ColDef, ICellRendererParams } from 'ag-grid-community';
 import { api } from '../api';
-import { FabricBlock } from '../types';
+import { FabricBlock, TradeComposite } from '../types';
 import { Blocks, Search, Download, CheckCircle2, Cloud, Server, ShieldCheck, ExternalLink } from 'lucide-react';
 import { FabricLedgerActions } from './FabricLedgerActions';
 
-export const FabricBlockExplorer: React.FC<{ canWrite?: boolean; currentMsp?: string }> = ({ canWrite = false, currentMsp }) => {
+export const FabricBlockExplorer: React.FC<{ canWrite?: boolean; currentMsp?: string; demoTrades?: TradeComposite[]; onCapturePayPal?: (trade: TradeComposite) => void }> = ({ canWrite = false, currentMsp, demoTrades, onCapturePayPal }) => {
   const gridRef = useRef<AgGridReact>(null);
   const [blocks, setBlocks] = useState<FabricBlock[]>([]);
   const [status, setStatus] = useState<any | null>(null);
@@ -205,6 +205,8 @@ export const FabricBlockExplorer: React.FC<{ canWrite?: boolean; currentMsp?: st
         currentMsp={currentMsp || 'BankA1MSP'}
         enabled={Boolean(status?.gatewayConnected && status?.writeReady)}
         onChanged={fetchData}
+        demoTrades={demoTrades}
+        onCapturePayPal={onCapturePayPal}
       />}
 
       {/* Consortium Architecture & Consensus Meta */}

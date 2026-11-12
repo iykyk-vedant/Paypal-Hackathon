@@ -281,7 +281,12 @@ export function App() {
             />
           )}
 
-          {canOpen(me, currentScreen) && currentScreen === 'fabric-explorer' && <FabricBlockExplorer canWrite={me.role === 'approver'} currentMsp={me.msp} />}
+          {canOpen(me, currentScreen) && currentScreen === 'fabric-explorer' && <FabricBlockExplorer
+            canWrite={me.role === 'approver'}
+            currentMsp={me.msp}
+            demoTrades={trades}
+            onCapturePayPal={(trade) => { setPaypalModalTrade(trade); setIsPayPalModalOpen(true); }}
+          />}
 
           {canOpen(me, currentScreen) && currentScreen === 'ai-auditor' && <AIChaincodeAuditorView />}
 

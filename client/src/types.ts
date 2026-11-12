@@ -87,6 +87,7 @@ export interface Trade {
   fabricTradeId?: string;
   fabricStatus?: string;
   fabricTransactionId?: string;
+  fabricLegActions?: Record<string, string>;
   riskAssessment?: { verdict: string; riskScore: number; riskTier: string; aiExplanation?: string };
   channel3Sku?: string;
   channel3Quote?: { quoteId?: string; quantity?: number; item?: { title?: string; supplierName?: string } };

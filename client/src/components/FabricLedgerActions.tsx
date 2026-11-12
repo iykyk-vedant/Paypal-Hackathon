@@ -7,6 +7,8 @@ interface FabricLedgerActionsProps {
   currentMsp: string;
   enabled: boolean;
   onChanged: () => void;
+  demoTrades?: TradeComposite[];
+  onCapturePayPal?: (trade: TradeComposite) => void;
 }
 
 function toMinorUnits(value: string): string {
@@ -22,7 +24,7 @@ function fromMinorUnits(value: string | number | undefined): string {
   return `${minor / 100n}.${(minor % 100n).toString().padStart(2, '0')}`;
 }
 
-export const FabricLedgerActions: React.FC<FabricLedgerActionsProps> = ({ currentMsp, enabled, onChanged }) => {
+export const FabricLedgerActions: React.FC<FabricLedgerActionsProps> = ({ currentMsp, enabled, onChanged, demoTrades, onCapturePayPal }) => {
   const proposerMsp = currentMsp as 'BankA1MSP' | 'BankB1MSP';
   const [amountA, setAmountA] = useState('1000.00');
   const [amountB, setAmountB] = useState('16.00');
@@ -32,19 +34,26 @@ export const FabricLedgerActions: React.FC<FabricLedgerActionsProps> = ({ curren
   const [selectedSourceTrade, setSelectedSourceTrade] = useState<TradeComposite | null>(null);
   const [acceptedDemoTrades, setAcceptedDemoTrades] = useState<TradeComposite[]>([]);
   const [reference, setReference] = useState('CorridorFlow Fabric demo trade');
-  const [writeToken, setWriteToken] = useState('');
+  const [writeToken, setWriteToken] = useState(() => {
+    try { return sessionStorage.getItem('corridorflow-fabric-demo-token') || ''; } catch { return ''; }
+  });
   const [confirmSettlement, setConfirmSettlement] = useState(false);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<{ kind: 'success' | 'error'; text: string; transactionId?: string; blockNumber?: string } | null>(null);
 
   useEffect(() => {
-    api.getTrades().then((trades) => setAcceptedDemoTrades(trades.filter((item) =>
+    const loadTrades = demoTrades ? Promise.resolve(demoTrades) : api.getTrades();
+    loadTrades.then((trades) => {
+      const accepted = trades.filter((item) =>
       ['ACCEPTED', 'SETTLED'].includes(item.trade.status) &&
       ['INR', 'SGD'].includes(item.trade.ccyA) &&
       ['INR', 'SGD'].includes(item.trade.ccyB) &&
       item.trade.ccyA !== item.trade.ccyB
-    ))).catch(() => setAcceptedDemoTrades([]));
-  }, []);
+      );
+      setAcceptedDemoTrades(accepted);
+      if (sourceTradeId) setSelectedSourceTrade(accepted.find((item) => item.trade.tradeId === sourceTradeId) || null);
+    }).catch(() => setAcceptedDemoTrades([]));
+  }, [demoTrades, sourceTradeId]);
 
   const run = async (action: () => Promise<any>) => {
     setBusy(true);
@@ -66,6 +75,13 @@ export const FabricLedgerActions: React.FC<FabricLedgerActionsProps> = ({ curren
       });
       onChanged();
     } catch (error) {
+      if (sourceTradeId) {
+        try {
+          const refreshed = await api.getTrade(sourceTradeId);
+          setSelectedSourceTrade(refreshed);
+          setAcceptedDemoTrades((current) => current.map((item) => item.trade.tradeId === sourceTradeId ? refreshed : item));
+        } catch { /* Keep the original transaction error visible. */ }
+      }
       const detail = error as Error & { transactionId?: string; validationCode?: string; commitStatusUnknown?: boolean };
       const statusNote = detail.commitStatusUnknown ? 'Commit status is unknown; check the live ledger before retrying. ' : '';
       setMessage({
@@ -93,13 +109,72 @@ export const FabricLedgerActions: React.FC<FabricLedgerActionsProps> = ({ curren
     return api.proposeFabricTrade(input, writeToken);
   });
 
+  const runNextDemoStep = () => run(async () => {
+    if (!selectedSourceTrade) throw new Error('Choose an accepted demo trade first.');
+    const trade = selectedSourceTrade.trade;
+    const msp = currentMsp;
+    if (!trade.fabricTradeId) {
+      if (trade.proposerMsp !== msp) throw new Error('Switch to the proposing bank approver to create the linked Fabric proposal.');
+      const amountAMinor = String(trade.amountA);
+      const amountBMinor = String(trade.amountB);
+      return api.proposeFabricTrade({
+        proposerMsp: msp as 'BankA1MSP' | 'BankB1MSP',
+        ccyA: trade.ccyA as 'INR' | 'SGD', amountA: amountAMinor,
+        ccyB: trade.ccyB as 'INR' | 'SGD', amountB: amountBMinor,
+        reference: trade.reference, sourceTradeId,
+      }, writeToken);
+    }
+    if (trade.fabricStatus === 'PROPOSED') {
+      if (trade.counterpartyMsp !== msp) throw new Error('Switch to the counterparty bank approver to accept this Fabric proposal.');
+      return api.acceptFabricTrade(trade.fabricTradeId, writeToken);
+    }
+    if (trade.fabricStatus === 'ACCEPTED') {
+      if (trade.proposerMsp !== msp) throw new Error('The proposing bank approver must confirm settlement after PayPal Sandbox funding.');
+      if (!trade.paypalCaptureId || !String(trade.paypalStatus || '').startsWith('CAPTURED_')) {
+        throw new Error('Capture PayPal Sandbox funding for this trade first, then continue here.');
+      }
+      const settled = await api.settleFabricTrade(trade.fabricTradeId, writeToken);
+      const actions = msp === trade.proposerMsp
+        ? [{ leg: 'B' as const, operation: 'credit' as const }, { leg: 'A' as const, operation: 'debit' as const }]
+        : [{ leg: 'B' as const, operation: 'debit' as const }, { leg: 'A' as const, operation: 'credit' as const }];
+      let latest = settled;
+      for (const action of actions) latest = await api.performFabricLegAction(trade.fabricTradeId, action.leg, action.operation, writeToken);
+      return latest;
+    }
+    if (trade.fabricStatus === 'SETTLED_PENDING_VALUE_LEGS') {
+      const actions = msp === trade.proposerMsp
+        ? [{ leg: 'B' as const, operation: 'credit' as const }, { leg: 'A' as const, operation: 'debit' as const }]
+        : [{ leg: 'B' as const, operation: 'debit' as const }, { leg: 'A' as const, operation: 'credit' as const }];
+      const completed = trade.fabricLegActions || {};
+      let latest: any = { status: 'VALUE_LEGS_UPDATED' };
+      for (const action of actions) {
+        if (completed[`${action.leg}_${action.operation}`]) continue;
+        latest = await api.performFabricLegAction(trade.fabricTradeId, action.leg, action.operation, writeToken);
+      }
+      if (latest.status === 'VALUE_LEGS_UPDATED') throw new Error('This bank has no remaining value-leg actions. Switch to the other bank approver to finish.');
+      return latest;
+    }
+    if (trade.fabricStatus === 'SETTLED') throw new Error('This demo trade is already fully settled on the Fabric test ledger.');
+    throw new Error(`This trade is not ready for the guided Fabric step (${trade.fabricStatus || 'not linked'}).`);
+  });
+
+  const nextDemoStepLabel = !selectedSourceTrade
+    ? 'Choose an accepted trade to begin'
+    : selectedSourceTrade.trade.fabricStatus === 'SETTLED' ? 'Demo trade complete'
+      : selectedSourceTrade.trade.fabricStatus === 'PROPOSED' ? selectedSourceTrade.trade.counterpartyMsp === currentMsp ? 'Accept Fabric proposal'
+        : 'Next: counterparty approval'
+      : selectedSourceTrade.trade.fabricStatus === 'ACCEPTED' ? selectedSourceTrade.trade.proposerMsp === currentMsp ? selectedSourceTrade.trade.paypalCaptureId ? 'Settle and record my bank’s ledger steps' : 'Capture PayPal Sandbox funding'
+          : 'Next: proposing bank settlement'
+          : selectedSourceTrade.trade.fabricStatus === 'SETTLED_PENDING_VALUE_LEGS' ? 'Record my bank’s remaining ledger steps'
+            : selectedSourceTrade.trade.fabricTradeId ? 'Continue Fabric demo' : selectedSourceTrade.trade.proposerMsp === currentMsp ? 'Create linked Fabric proposal' : 'Next: proposing bank approval';
+
   return (
-    <section className="glass-panel rounded-2xl p-5 border border-amber-200 space-y-4">
+    <section className="glass-panel rounded-2xl p-5 border border-slate-200 space-y-4">
       <div className="flex items-start gap-3">
         <div className="rounded-xl p-2 bg-amber-50 text-amber-800 border border-amber-200"><AlertTriangle className="w-5 h-5" /></div>
         <div>
-          <h3 className="font-bold text-slate-900">Fabric ledger transactions</h3>
-          <p className="text-xs text-slate-600 mt-1">These actions write permanent transactions to the live test ledger. Link an accepted demo trade to carry its terms across; capture PayPal Sandbox funding before explicit Fabric settlement.</p>
+          <h3 className="font-bold text-slate-900">Complete the demo settlement</h3>
+          <p className="text-xs text-slate-600 mt-1">Follow the guided steps below. PayPal approval and each bank’s Fabric identity stay explicit.</p>
         </div>
       </div>
 
@@ -110,26 +185,44 @@ export const FabricLedgerActions: React.FC<FabricLedgerActionsProps> = ({ curren
       ) : (
         <>
           <label className="block text-xs text-slate-700">Authorized demo write token
-            <input type="password" autoComplete="off" value={writeToken} onChange={(event) => setWriteToken(event.target.value)} className="mt-1 w-full rounded-lg border border-slate-300 p-2 text-slate-900" placeholder="Provided by the backend operator; kept only in this page session" />
+            <input type="password" autoComplete="off" value={writeToken} onChange={(event) => {
+              setWriteToken(event.target.value);
+              try { if (event.target.value) sessionStorage.setItem('corridorflow-fabric-demo-token', event.target.value); else sessionStorage.removeItem('corridorflow-fabric-demo-token'); } catch { /* Storage may be unavailable in private contexts. */ }
+            }} className="mt-1 w-full rounded-lg border border-slate-300 p-2 text-slate-900" placeholder="Demo write authorization" />
           </label>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+          <label className="block text-xs text-slate-700">Accepted demo trade
+            <select value={sourceTradeId} onChange={(event) => {
+              const selected = acceptedDemoTrades.find((item) => item.trade.tradeId === event.target.value);
+              setSourceTradeId(event.target.value);
+              setSelectedSourceTrade(selected || null);
+              setTradeId(selected?.trade.fabricTradeId || '');
+              if (selected) {
+                setAmountA(fromMinorUnits(selected.trade.amountA));
+                setAmountB(fromMinorUnits(selected.trade.amountB));
+                setReference(selected.trade.reference || `CorridorFlow linked trade ${selected.trade.tradeId}`);
+              }
+            }} className="mt-1 w-full rounded-lg border border-slate-300 p-2 text-slate-900">
+              <option value="">Select an accepted trade…</option>
+              {acceptedDemoTrades.map((item) => <option key={item.trade.tradeId} value={item.trade.tradeId}>{item.trade.tradeId} · {item.trade.ccyA} → {item.trade.ccyB} · {item.trade.fabricStatus || 'ready for Fabric'}</option>)}
+            </select>
+          </label>
+          <div className="rounded-xl border border-sky-200 bg-sky-50 p-4 space-y-3">
+            <div>
+              <h4 className="text-sm font-bold text-slate-900">Guided demo run</h4>
+              <p className="mt-1 text-xs text-slate-700">Pick an accepted trade, then use one button for the next step. The page groups each bank’s Fabric writes, remembers the token for this browser tab, and tells you when to switch bank approvers or approve PayPal Sandbox.</p>
+            </div>
+            <button onClick={() => {
+              const needsPaypalCapture = selectedSourceTrade?.trade.fabricStatus === 'ACCEPTED' && !selectedSourceTrade.trade.paypalCaptureId && selectedSourceTrade.trade.proposerMsp === currentMsp;
+              if (needsPaypalCapture && onCapturePayPal && selectedSourceTrade) onCapturePayPal(selectedSourceTrade);
+              else void runNextDemoStep();
+            }} disabled={busy || !selectedSourceTrade || (writeToken.length < 32 && !(selectedSourceTrade?.trade.fabricStatus === 'ACCEPTED' && !selectedSourceTrade.trade.paypalCaptureId && selectedSourceTrade.trade.proposerMsp === currentMsp)) || selectedSourceTrade?.trade.fabricStatus === 'SETTLED'} className="w-full rounded-lg bg-sky-800 hover:bg-sky-900 text-white font-semibold text-sm p-3 disabled:opacity-50">{busy ? 'Completing step…' : nextDemoStepLabel}</button>
+            {selectedSourceTrade?.trade.fabricStatus === 'SETTLED' && <p className="text-xs font-semibold text-emerald-800">PayPal Sandbox funding and all four Fabric value legs are recorded. The detailed ledger controls remain available below.</p>}
+          </div>
+          <details className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+            <summary className="cursor-pointer text-xs font-semibold text-slate-700">Advanced controls and individual ledger actions</summary>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mt-4">
             <div className="rounded-xl border border-slate-200 bg-white p-4 space-y-3">
               <h4 className="text-sm font-bold text-slate-900 flex items-center gap-2"><ArrowRightLeft className="w-4 h-4 text-blue-700" /> Propose a live trade</h4>
-              <label className="block text-xs text-slate-700">Link an accepted demo trade (optional)
-                <select value={sourceTradeId} onChange={(event) => {
-                  const selected = acceptedDemoTrades.find((item) => item.trade.tradeId === event.target.value);
-                  setSourceTradeId(event.target.value);
-                  setSelectedSourceTrade(selected || null);
-                  setTradeId(selected?.trade.fabricTradeId || '');
-                  if (!selected) return;
-                  setAmountA(fromMinorUnits(selected.trade.amountA));
-                  setAmountB(fromMinorUnits(selected.trade.amountB));
-                  setReference(selected.trade.reference || `CorridorFlow linked trade ${selected.trade.tradeId}`);
-                }} className="mt-1 w-full rounded-lg border border-slate-300 p-2 text-slate-900">
-                  <option value="">Standalone Fabric test trade</option>
-                  {acceptedDemoTrades.map((item) => <option key={item.trade.tradeId} value={item.trade.tradeId}>{item.trade.tradeId}{item.trade.fabricTradeId ? ` ↔ ${item.trade.fabricTradeId}` : ''} · ${item.trade.ccyA} → {item.trade.ccyB} · {item.trade.fabricStatus || 'not linked'}</option>)}
-                </select>
-              </label>
               <label className="block text-xs text-slate-700">Signing bank
                 <div className="mt-1 rounded-lg border border-slate-300 bg-slate-50 p-2 text-slate-900">{proposerMsp === 'BankA1MSP' ? 'Bank A1 (INR payer)' : 'Bank B1 (SGD payer)'}</div>
               </label>
@@ -164,6 +257,7 @@ export const FabricLedgerActions: React.FC<FabricLedgerActionsProps> = ({ curren
               </div>
             </div>
           </div>
+          </details>
           {message && (
             <div className={`rounded-lg border p-3 text-xs ${message.kind === 'success' ? 'bg-emerald-50 border-emerald-200 text-emerald-900' : 'bg-rose-50 border-rose-200 text-rose-900'}`}>
               <div className="flex items-center gap-2 font-semibold">{message.kind === 'success' && <CheckCircle2 className="w-4 h-4" />}{message.text}</div>
