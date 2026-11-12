@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { api } from '../api';
-import { TradeComposite } from '../types';
+import { FabricActivity, TradeComposite } from '../types';
 import { AlertTriangle, ArrowRightLeft, CheckCircle2, LoaderCircle } from 'lucide-react';
 
 interface FabricLedgerActionsProps {
@@ -168,6 +168,27 @@ export const FabricLedgerActions: React.FC<FabricLedgerActionsProps> = ({ curren
           : selectedSourceTrade.trade.fabricStatus === 'SETTLED_PENDING_VALUE_LEGS' ? 'Record my bank’s remaining ledger steps'
             : selectedSourceTrade.trade.fabricTradeId ? 'Continue Fabric demo' : selectedSourceTrade.trade.proposerMsp === currentMsp ? 'Create linked Fabric proposal' : 'Next: proposing bank approval';
 
+  const fabricActivity: FabricActivity[] = selectedSourceTrade?.trade.fabricActivity?.length
+    ? selectedSourceTrade.trade.fabricActivity
+    : selectedSourceTrade?.trade.fabricTransactionId
+      ? [
+          { action: 'Settlement committed', transactionId: selectedSourceTrade.trade.fabricTransactionId, validationCode: 'VALID', peerOrgs: ['RegAMSP', 'RegBMSP'], timestamp: '' },
+          ...Object.entries(selectedSourceTrade.trade.fabricLegActions || {}).map(([key, transactionId]) => {
+            const [leg, operation] = key.split('_');
+            const isProposer = (leg === 'A' && operation === 'debit') || (leg === 'B' && operation === 'credit');
+            return {
+              action: `${leg} ${operation} committed`, transactionId, validationCode: 'VALID',
+              peerOrgs: [isProposer ? selectedSourceTrade.trade.proposerMsp || 'BankA1MSP' : selectedSourceTrade.trade.counterpartyMsp || 'BankB1MSP'], timestamp: '',
+            };
+          }),
+        ]
+      : [];
+  const peerActivityRows = fabricActivity.flatMap((entry, index) => entry.peerOrgs.map((peerOrg) => ({ ...entry, peerOrg, rowKey: `${entry.transactionId}-${peerOrg}-${index}` }))).reverse();
+
+  const peerLabel = (msp: string) => ({
+    BankA1MSP: 'Bank A1 peer', BankB1MSP: 'Bank B1 peer', RegAMSP: 'Regulator A peer', RegBMSP: 'Regulator B peer',
+  } as Record<string, string>)[msp] || `${msp} peer`;
+
   return (
     <section className="glass-panel rounded-2xl p-5 border border-slate-200 space-y-4">
       <div className="flex items-start gap-3">
@@ -218,6 +239,35 @@ export const FabricLedgerActions: React.FC<FabricLedgerActionsProps> = ({ curren
             }} disabled={busy || !selectedSourceTrade || (writeToken.length < 32 && !(selectedSourceTrade?.trade.fabricStatus === 'ACCEPTED' && !selectedSourceTrade.trade.paypalCaptureId && selectedSourceTrade.trade.proposerMsp === currentMsp)) || selectedSourceTrade?.trade.fabricStatus === 'SETTLED'} className="w-full rounded-lg bg-sky-800 hover:bg-sky-900 text-white font-semibold text-sm p-3 disabled:opacity-50">{busy ? 'Completing step…' : nextDemoStepLabel}</button>
             {selectedSourceTrade?.trade.fabricStatus === 'SETTLED' && <p className="text-xs font-semibold text-emerald-800">PayPal Sandbox funding and all four Fabric value legs are recorded. The detailed ledger controls remain available below.</p>}
           </div>
+          <section className="rounded-xl border border-slate-200 bg-white overflow-hidden">
+            <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3">
+              <div>
+                <h4 className="text-sm font-bold text-slate-900">Peer activity</h4>
+                <p className="text-[11px] text-slate-500">Committed transaction records grouped by participating peer organization</p>
+              </div>
+              <span className="rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-semibold text-slate-600">{peerActivityRows.length} entries</span>
+            </div>
+            {peerActivityRows.length ? (
+              <div className="divide-y divide-slate-100">
+                {peerActivityRows.map((entry) => (
+                  <div key={entry.rowKey} className="grid grid-cols-1 gap-1 px-4 py-3 sm:grid-cols-[150px_1fr_auto] sm:items-center sm:gap-4">
+                    <span className="text-xs font-semibold text-sky-900">{peerLabel(entry.peerOrg)}</span>
+                    <div className="min-w-0">
+                      <div className="text-xs font-medium text-slate-800">{entry.action}</div>
+                      <div className="mt-0.5 truncate font-mono text-[10px] text-slate-500" title={entry.transactionId}>Tx {entry.transactionId}</div>
+                    </div>
+                    <div className="flex items-center gap-2 text-[10px] text-slate-500">
+                      <span className="rounded-full bg-emerald-100 px-2 py-0.5 font-bold text-emerald-800">{entry.validationCode}</span>
+                      {entry.blockNumber && <span>Block {entry.blockNumber}</span>}
+                      {entry.timestamp && <time>{new Date(entry.timestamp).toLocaleTimeString()}</time>}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="px-4 py-5 text-xs text-slate-500">Select a trade to see its committed peer activity. New Fabric writes will appear here as they are confirmed.</p>
+            )}
+          </section>
           <details className="rounded-xl border border-slate-200 bg-slate-50 p-4">
             <summary className="cursor-pointer text-xs font-semibold text-slate-700">Advanced controls and individual ledger actions</summary>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mt-4">

@@ -88,6 +88,7 @@ export interface Trade {
   fabricStatus?: string;
   fabricTransactionId?: string;
   fabricLegActions?: Record<string, string>;
+  fabricActivity?: FabricActivity[];
   riskAssessment?: { verdict: string; riskScore: number; riskTier: string; aiExplanation?: string };
   channel3Sku?: string;
   channel3Quote?: { quoteId?: string; quantity?: number; item?: { title?: string; supplierName?: string } };
@@ -95,6 +96,15 @@ export interface Trade {
   proposedAt?: string | number;
   acceptedAt?: string | number;
   settledAt?: string | number;
+}
+
+export interface FabricActivity {
+  action: string;
+  transactionId: string;
+  blockNumber?: string;
+  validationCode: string;
+  peerOrgs: string[];
+  timestamp: string;
 }
 
 export interface LegState {

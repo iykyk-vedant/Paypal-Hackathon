@@ -722,6 +722,20 @@ function authorizeFabricWrite(req, res, next) {
   next();
 }
 
+function recordFabricActivity(sourceTrade, action, peerOrgs, outcome) {
+  if (!sourceTrade || !outcome?.transactionId) return;
+  sourceTrade.trade.fabricActivity = sourceTrade.trade.fabricActivity || [];
+  sourceTrade.trade.fabricActivity.push({
+    action,
+    transactionId: outcome.transactionId,
+    blockNumber: outcome.blockNumber ? String(outcome.blockNumber) : undefined,
+    validationCode: outcome.validationCode || 'VALID',
+    peerOrgs,
+    timestamp: new Date().toISOString(),
+  });
+  sourceTrade.trade.fabricActivity = sourceTrade.trade.fabricActivity.slice(-40);
+}
+
 app.post('/api/fabric/trades/propose', authorizeFabricWrite, async (req, res) => {
   try {
     const writeStatus = await getFabricWriteStatus();
@@ -744,6 +758,7 @@ app.post('/api/fabric/trades/propose', authorizeFabricWrite, async (req, res) =>
     if (sourceTrade) {
       sourceTrade.trade.fabricTradeId = outcome.tradeId;
       sourceTrade.trade.fabricStatus = 'PROPOSED';
+      recordFabricActivity(sourceTrade, 'Proposal submitted', [proposalInput.proposerMsp], outcome);
       await saveTrade(sourceTrade);
       indexTradeEvent(sourceTrade.trade);
       triggerZapierWebhook('FABRIC_PROPOSAL_LINKED', { sourceTradeId, fabricTradeId: outcome.tradeId, transactionId: outcome.transactionId });
@@ -783,6 +798,7 @@ app.post('/api/fabric/trades/:tradeId/accept', authorizeFabricWrite, async (req,
     const sourceTrade = tradesStore.find((item) => item.trade.fabricTradeId === req.params.tradeId);
     if (sourceTrade) {
       sourceTrade.trade.fabricStatus = 'ACCEPTED';
+      recordFabricActivity(sourceTrade, 'Proposal accepted', [parties.counterpartyMsp], outcome);
       await saveTrade(sourceTrade);
       indexTradeEvent(sourceTrade.trade);
       triggerZapierWebhook('FABRIC_TRADE_ACCEPTED', { sourceTradeId: sourceTrade.trade.tradeId, fabricTradeId: req.params.tradeId, transactionId: outcome.transactionId });
@@ -808,6 +824,7 @@ app.post('/api/fabric/trades/:tradeId/settle', authorizeFabricWrite, async (req,
     const outcome = await settleFabricTrade(req.params.tradeId, req.body?.confirmSettlement === true);
     if (sourceTrade) {
       const updated = recordFabricSettlement(sourceTrade.trade.tradeId, outcome);
+      recordFabricActivity(updated, 'Settlement committed', ['RegAMSP', 'RegBMSP'], outcome);
       await saveTrade(updated);
       indexTradeEvent(updated.trade);
     }
@@ -833,6 +850,7 @@ app.post('/api/fabric/trades/:tradeId/legs/:leg/:operation', authorizeFabricWrit
     const sourceTrade = tradesStore.find((item) => item.trade.fabricTradeId === tradeId);
     if (sourceTrade) {
       const updated = recordFabricLegAction(sourceTrade.trade.tradeId, leg.toUpperCase(), operation.toLowerCase(), outcome);
+      recordFabricActivity(updated, `${leg.toUpperCase()} ${operation.toLowerCase()} committed`, [signerMsp], outcome);
       await saveTrade(updated);
       triggerZapierWebhook('FABRIC_VALUE_LEG_COMMITTED', { sourceTradeId: sourceTrade.trade.tradeId, fabricTradeId: tradeId, leg: leg.toUpperCase(), operation: operation.toLowerCase(), transactionId: outcome.transactionId, signedBy: outcome.signedBy });
       indexTradeEvent(sourceTrade.trade);

@@ -149,16 +149,13 @@ export const FabricBlockExplorer: React.FC<{ canWrite?: boolean; currentMsp?: st
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <h2 className="text-xl font-bold text-slate-900 tracking-tight">Hyperledger Fabric 2.5 Block Explorer</h2>
+              <h2 className="text-xl font-bold text-slate-900 tracking-tight">Fabric settlement</h2>
               <span className="bg-sky-100 text-blue-800 border border-sky-200 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">
                 {status?.gatewayConnected ? `Live Channel: ${status.channelId || 'settlement'}` : 'Sample Channel: settlement'}
               </span>
-              <span className="bg-amber-100 text-amber-800 border border-amber-200 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">
-                Demo Fixtures
-              </span>
             </div>
             <p className="text-xs text-slate-600 mt-0.5">
-              Block rows remain demo fixtures. Chaincode queries and write readiness below reflect the live ledger when the Gateway is connected.
+              Follow a trade and see the participating peers’ committed activity.
             </p>
           </div>
         </div>
@@ -169,7 +166,7 @@ export const FabricBlockExplorer: React.FC<{ canWrite?: boolean; currentMsp?: st
             <Cloud className="w-4 h-4 text-cyan-800" />
             <div>
               <div className="text-[10px] text-slate-600">Fabric Network Mode:</div>
-              <div className="text-slate-900 font-bold text-[11px]">{status?.mode || 'DEMO_FIXTURES'}</div>
+              <div className="text-slate-900 font-bold text-[11px]">{status?.gatewayConnected ? status?.writeReady ? 'Live · ready' : 'Live · read-only' : 'Sample mode'}</div>
               <div className="text-[10px] text-slate-600">
                 {status?.gatewayConnected ? 'Gateway query verified' : status?.peerReachable ? 'peer reachable (Gateway not connected)' : status?.peerConfigured ? 'unreachable' : 'not configured'}
               </div>
@@ -179,6 +176,8 @@ export const FabricBlockExplorer: React.FC<{ canWrite?: boolean; currentMsp?: st
       </div>
 
       {ledgerSnapshot && (
+        <details className="rounded-xl border border-slate-200 bg-white px-4 py-3">
+          <summary className="cursor-pointer text-xs font-semibold text-slate-600">Read-only ledger diagnostics</summary>
         <section className="glass-panel rounded-2xl p-5 border border-emerald-200 space-y-3">
           <div className="flex items-center justify-between gap-3">
             <div>
@@ -199,6 +198,7 @@ export const FabricBlockExplorer: React.FC<{ canWrite?: boolean; currentMsp?: st
           ) : <p className="text-sm text-rose-700">{ledgerSnapshot.error || 'Unable to query live ledger.'}</p>}
           <p className="text-[11px] text-slate-500">{ledgerSnapshot.notice || 'Queries are not transactions and do not change ledger state.'}</p>
         </section>
+        </details>
       )}
 
       {canWrite && <FabricLedgerActions
@@ -209,6 +209,9 @@ export const FabricBlockExplorer: React.FC<{ canWrite?: boolean; currentMsp?: st
         onCapturePayPal={onCapturePayPal}
       />}
 
+      <details className="rounded-xl border border-slate-200 bg-white px-4 py-3">
+      <summary className="cursor-pointer text-xs font-semibold text-slate-600">Network details and sample block fixtures</summary>
+      <div className="mt-4 space-y-6">
       {/* Consortium Architecture & Consensus Meta */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <div className="glass-panel p-4 rounded-xl border border-slate-200/80">
@@ -348,6 +351,8 @@ export const FabricBlockExplorer: React.FC<{ canWrite?: boolean; currentMsp?: st
           </div>
         </div>
       )}
+      </div>
+      </details>
     </div>
   );
 };
