@@ -89,6 +89,7 @@ export interface Trade {
   fabricTransactionId?: string;
   fabricLegActions?: Record<string, string>;
   fabricActivity?: FabricActivity[];
+  fabricApprovalMode?: 'DEMO_COORDINATED' | string;
   riskAssessment?: { verdict: string; riskScore: number; riskTier: string; aiExplanation?: string };
   channel3Sku?: string;
   channel3Quote?: { quoteId?: string; quantity?: number; item?: { title?: string; supplierName?: string } };

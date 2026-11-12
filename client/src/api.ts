@@ -289,6 +289,12 @@ export class ApiClient {
     });
   }
 
+  async demoAcceptFabricTrade(sourceTradeId: string, writeToken: string) {
+    return this.request<any>(`/api/fabric/trades/demo-accept/${encodeURIComponent(sourceTradeId)}`, {
+      method: 'POST', headers: { 'X-Fabric-Write-Token': writeToken },
+    });
+  }
+
   async reconcileFabricRefusal(tradeId: string, writeToken: string) {
     return this.request<any>(`/api/fabric/trades/${encodeURIComponent(tradeId)}/reconcile-refusal`, {
       method: 'POST', headers: { 'X-Fabric-Write-Token': writeToken },

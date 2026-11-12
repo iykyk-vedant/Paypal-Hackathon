@@ -769,6 +769,55 @@ app.post('/api/fabric/trades/propose', authorizeFabricWrite, async (req, res) =>
   }
 });
 
+app.post('/api/fabric/trades/demo-accept/:sourceTradeId', authorizeFabricWrite, async (req, res) => {
+  try {
+    const writeStatus = await getFabricWriteStatus();
+    if (!writeStatus.writeReady) {
+      return res.status(503).json({ error: 'Fabric demo writes are not ready. Configure both bank identities and enable writes.' });
+    }
+    if (getPayPalMode() !== 'sandbox') return res.status(403).json({ error: 'One-click acceptance is limited to the PayPal Sandbox demo.' });
+    const sourceTrade = tradesStore.find((item) => item.trade.tradeId === req.params.sourceTradeId);
+    if (!sourceTrade) return res.status(404).json({ error: 'Demo trade not found.' });
+    const { proposerMsp, counterpartyMsp, ccyA, ccyB, amountA, amountB, reference } = sourceTrade.trade;
+    if (![proposerMsp, counterpartyMsp].includes(req.profile.msp)) return res.status(403).json({ error: 'Only a bank approver on this trade can run the demo acceptance.' });
+    if (req.profile.role !== 'approver') return res.status(403).json({ error: 'Bank approver access is required.' });
+    if (sourceTrade.trade.status !== 'ACCEPTED') return res.status(409).json({ error: 'Accept the demo workflow trade first.' });
+
+    let proposalOutcome = null;
+    if (!sourceTrade.trade.fabricTradeId) {
+      proposalOutcome = await proposeFabricTrade({
+        proposerMsp, ccyA, amountA: String(amountA), ccyB, amountB: String(amountB), reference,
+      });
+      sourceTrade.trade.fabricTradeId = proposalOutcome.tradeId;
+      sourceTrade.trade.fabricStatus = 'PROPOSED';
+      recordFabricActivity(sourceTrade, 'Proposal submitted', [proposerMsp], proposalOutcome);
+      await saveTrade(sourceTrade);
+    }
+
+    if (sourceTrade.trade.fabricStatus === 'PROPOSED') {
+      const acceptanceOutcome = await acceptFabricTrade(sourceTrade.trade.fabricTradeId);
+      sourceTrade.trade.fabricStatus = 'ACCEPTED';
+      sourceTrade.trade.fabricApprovalMode = 'DEMO_COORDINATED';
+      recordFabricActivity(sourceTrade, 'Proposal accepted (demo bank approval)', [counterpartyMsp], acceptanceOutcome);
+      await saveTrade(sourceTrade);
+      indexTradeEvent(sourceTrade.trade);
+      return res.json({
+        status: 'ACCEPTED', tradeId: sourceTrade.trade.fabricTradeId,
+        proposalTransactionId: proposalOutcome?.transactionId || sourceTrade.trade.fabricActivity?.find((entry) => entry.action === 'Proposal submitted')?.transactionId,
+        acceptanceTransactionId: acceptanceOutcome.transactionId,
+        validationCode: acceptanceOutcome.validationCode,
+      });
+    }
+
+    if (sourceTrade.trade.fabricStatus === 'ACCEPTED' || sourceTrade.trade.fabricStatus?.startsWith('SETTLED')) {
+      return res.json({ status: sourceTrade.trade.fabricStatus, tradeId: sourceTrade.trade.fabricTradeId, alreadyAccepted: true });
+    }
+    return res.status(409).json({ error: `The linked Fabric trade cannot be accepted from status ${sourceTrade.trade.fabricStatus || 'unknown'}.` });
+  } catch (err) {
+    res.status(400).json({ error: err.message, transactionId: err.transactionId, validationCode: err.validationCode, commitStatusUnknown: err.commitStatusUnknown });
+  }
+});
+
 app.post('/api/fabric/trades/:tradeId/reconcile-refusal', authorizeFabricWrite, async (req, res) => {
   try {
     const sourceTrade = tradesStore.find((item) => item.trade.fabricTradeId === req.params.tradeId);

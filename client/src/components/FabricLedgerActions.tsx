@@ -114,19 +114,10 @@ export const FabricLedgerActions: React.FC<FabricLedgerActionsProps> = ({ curren
     const trade = selectedSourceTrade.trade;
     const msp = currentMsp;
     if (!trade.fabricTradeId) {
-      if (trade.proposerMsp !== msp) throw new Error('Switch to the proposing bank approver to create the linked Fabric proposal.');
-      const amountAMinor = String(trade.amountA);
-      const amountBMinor = String(trade.amountB);
-      return api.proposeFabricTrade({
-        proposerMsp: msp as 'BankA1MSP' | 'BankB1MSP',
-        ccyA: trade.ccyA as 'INR' | 'SGD', amountA: amountAMinor,
-        ccyB: trade.ccyB as 'INR' | 'SGD', amountB: amountBMinor,
-        reference: trade.reference, sourceTradeId,
-      }, writeToken);
+      return api.demoAcceptFabricTrade(sourceTradeId, writeToken);
     }
     if (trade.fabricStatus === 'PROPOSED') {
-      if (trade.counterpartyMsp !== msp) throw new Error('Switch to the counterparty bank approver to accept this Fabric proposal.');
-      return api.acceptFabricTrade(trade.fabricTradeId, writeToken);
+      return api.demoAcceptFabricTrade(sourceTradeId, writeToken);
     }
     if (trade.fabricStatus === 'ACCEPTED') {
       if (trade.proposerMsp !== msp) throw new Error('The proposing bank approver must confirm settlement after PayPal Sandbox funding.');
@@ -161,12 +152,11 @@ export const FabricLedgerActions: React.FC<FabricLedgerActionsProps> = ({ curren
   const nextDemoStepLabel = !selectedSourceTrade
     ? 'Choose an accepted trade to begin'
     : selectedSourceTrade.trade.fabricStatus === 'SETTLED' ? 'Demo trade complete'
-      : selectedSourceTrade.trade.fabricStatus === 'PROPOSED' ? selectedSourceTrade.trade.counterpartyMsp === currentMsp ? 'Accept Fabric proposal'
-        : 'Next: counterparty approval'
+      : selectedSourceTrade.trade.fabricStatus === 'PROPOSED' ? 'Accept & continue Fabric demo'
       : selectedSourceTrade.trade.fabricStatus === 'ACCEPTED' ? selectedSourceTrade.trade.proposerMsp === currentMsp ? selectedSourceTrade.trade.paypalCaptureId ? 'Settle and record my bank’s ledger steps' : 'Capture PayPal Sandbox funding'
           : 'Next: proposing bank settlement'
           : selectedSourceTrade.trade.fabricStatus === 'SETTLED_PENDING_VALUE_LEGS' ? 'Record my bank’s remaining ledger steps'
-            : selectedSourceTrade.trade.fabricTradeId ? 'Continue Fabric demo' : selectedSourceTrade.trade.proposerMsp === currentMsp ? 'Create linked Fabric proposal' : 'Next: proposing bank approval';
+            : selectedSourceTrade.trade.fabricTradeId ? 'Continue Fabric demo' : 'Accept & link on Fabric';
 
   const fabricActivity: FabricActivity[] = selectedSourceTrade?.trade.fabricActivity?.length
     ? selectedSourceTrade.trade.fabricActivity
@@ -195,7 +185,7 @@ export const FabricLedgerActions: React.FC<FabricLedgerActionsProps> = ({ curren
         <div className="rounded-xl p-2 bg-amber-50 text-amber-800 border border-amber-200"><AlertTriangle className="w-5 h-5" /></div>
         <div>
           <h3 className="font-bold text-slate-900">Complete the demo settlement</h3>
-          <p className="text-xs text-slate-600 mt-1">Follow the guided steps below. PayPal approval and each bank’s Fabric identity stay explicit.</p>
+          <p className="text-xs text-slate-600 mt-1">One click records both bank identities for the Fabric demo. PayPal Sandbox payment still requires your approval.</p>
         </div>
       </div>
 
@@ -230,7 +220,7 @@ export const FabricLedgerActions: React.FC<FabricLedgerActionsProps> = ({ curren
           <div className="rounded-xl border border-sky-200 bg-sky-50 p-4 space-y-3">
             <div>
               <h4 className="text-sm font-bold text-slate-900">Guided demo run</h4>
-              <p className="mt-1 text-xs text-slate-700">Pick an accepted trade, then use one button for the next step. The page groups each bank’s Fabric writes, remembers the token for this browser tab, and tells you when to switch bank approvers or approve PayPal Sandbox.</p>
+              <p className="mt-1 text-xs text-slate-700">Accept & link uses the configured test-bank identities to record both bank approvals in one demo action. Then approve PayPal Sandbox and continue to settlement.</p>
             </div>
             <button onClick={() => {
               const needsPaypalCapture = selectedSourceTrade?.trade.fabricStatus === 'ACCEPTED' && !selectedSourceTrade.trade.paypalCaptureId && selectedSourceTrade.trade.proposerMsp === currentMsp;
