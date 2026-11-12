@@ -182,18 +182,20 @@ export const ActiveSettlementsAGGrid: React.FC<ActiveSettlementsAGGridProps> = (
         cellRenderer: (params: ICellRendererParams) => {
           const legA = params.data?.legA?.holdStatus;
           const legB = params.data?.legB?.holdStatus;
-          const bothHeld = (legA === 'HELD' || legA === 'DEBITED') && (legB === 'HELD' || legB === 'DEBITED');
+          const bothDebited = legA === 'DEBITED' && legB === 'DEBITED';
+          const bothHeld = legA === 'HELD' && legB === 'HELD';
+          const label = bothDebited ? 'Demo legs debited' : bothHeld ? 'Demo legs held' : legA === 'DEBITED' || legB === 'DEBITED' ? 'Partial debit' : 'Awaiting accept';
 
           return (
             <div className="flex items-center h-full">
               <span
                 className={`text-[11px] font-mono px-2 py-0.5 rounded border ${
-                  bothHeld
+                  bothHeld || bothDebited
                     ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
                     : 'bg-amber-50 text-amber-800 border-amber-200'
                 }`}
               >
-                {bothHeld ? 'Demo legs held' : 'Awaiting accept'}
+                {label}
               </span>
             </div>
           );
