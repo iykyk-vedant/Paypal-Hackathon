@@ -31,9 +31,9 @@ services:
       - key: PAYPAL_MODE
         value: sandbox
       - key: FABRIC_GATEWAY_ENABLED
-        value: "false"
+        value: "true"
       - key: FABRIC_GATEWAY_WRITE_ENABLED
-        value: "false"
+        value: "true"
       - key: FABRIC_HOST
         sync: false
       - key: FABRIC_TLS_SERVER_NAME
