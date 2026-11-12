@@ -1,4 +1,4 @@
-# PayBridge AI
+# CorridorFlow
 
 <p align="center">
   <strong>AI-assisted cross-border trade workflows with transparent, human-approved payment steps.</strong>
@@ -15,7 +15,7 @@
 ![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?logo=typescript&logoColor=white)
 ![License](https://img.shields.io/badge/License-MIT-64748B)
 
-PayBridge AI is a hackathon prototype for reviewing cross-border trade proposals. It combines illustrative FX benchmarks and deterministic demo checks with optional Gemini explanations and PayPal Sandbox checkout. A separate Hyperledger Fabric Gateway panel can query a test ledger and, when explicitly configured, submit test transactions.
+CorridorFlow is a hackathon prototype for reviewing cross-border trade proposals. It combines illustrative FX benchmarks and deterministic demo checks with optional Gemini explanations and PayPal Sandbox checkout. A separate Hyperledger Fabric Gateway panel can query a test ledger and, when explicitly configured, submit test transactions.
 
 > **Prototype notice:** This project is for demonstration and evaluation. It does not process real payments, provide live FX quotes, perform official sanctions screening, or make regulatory decisions. Do not use it with real funds or for production financial operations.
 
@@ -47,7 +47,7 @@ The web app and API are separate services. A Channel3 quote can prefill a trade;
 
 ## What is connected to Fabric?
 
-Fabric is one optional subsystem inside the wider PayBridge demo. The components below do **not** all participate in a Fabric payment:
+Fabric is one optional subsystem inside the wider CorridorFlow demo. The components below do **not** all participate in a Fabric payment:
 
 | Component | Connected to Fabric? | Role in this prototype |
 | --- | --- | --- |
@@ -130,9 +130,25 @@ Use `GET /api/integrations/status` to inspect which integrations are configured 
 
 Never put server credentials in `client/.env`, the frontend build, screenshots, or Git. Use `.env.example` as a template, not as a place to paste real values.
 
+## Local Hyperledger Fabric
+
+The default development setup uses the Fabric network on this computer; AWS deployment files remain under `aws/`. Install Docker Desktop with the Linux engine running, Node.js, and Bash (on Windows use Git Bash or WSL with Docker integration). Run commands from the repository root.
+
+For an existing initialized network, run `npm run fabric:start`, then restart the API. This starts the local peers and chaincode without removing their ledger volumes and generates `.env.fabric.local`, which makes the API connect to `127.0.0.1:9051`. Run `npm run fabric:stop` to stop the containers while retaining the ledger. `npm run fabric:configure` regenerates the local API configuration without starting containers.
+
+For a **new, empty** local network, run `bash network/scripts/deploy-network.sh up` once, then `npm run fabric:configure` and start the API. The `deploy-network.sh up` command removes existing Compose volumes and regenerates identities: do not run it against a network whose ledger you want to keep. This creates five peer organizations, the settlement channel, and local chaincode. The generated `.env.fabric.local` contains a private write token and paths to local signing identities; it is Git-ignored. Use the token from that file when the UI requests it. Local settings take precedence over Fabric settings in `.env`; remove `.env.fabric.local` and restart the API to use an explicitly configured remote peer instead.
+
+### Connect the Render API to local Fabric
+
+A Render service cannot use your computer's `127.0.0.1`. Run a TCP tunnel that forwards to local port 9051 without terminating or replacing the Fabric peer TLS connection. For example, with an authenticated ngrok account and its agent installed, run `ngrok tcp 9051`. Ngrok TCP endpoints on its free plan require a verified payment method; a randomly assigned address can change when the tunnel restarts. Leave the tunnel and local Fabric running for the demo.
+
+Copy the tunnel's `tcp://HOST:PORT` forwarding address and run `npm run fabric:render-config -- tcp://HOST:PORT`. This generates `.env.fabric.render` using the current local peer TLS CA and bank signing identities. It contains private keys and a write token, is Git-ignored, and must be treated as a secret. In the Render **API** service's Environment page, use **Add from .env** to import this file, then save and deploy. Keep `FABRIC_TLS_SERVER_NAME` as the peer name: it verifies the peer certificate through the tunnel. If the endpoint or generated identities change, regenerate the file and update Render. Do not expose the other Fabric ports to the internet.
+
+The API on Render holds demo signing keys when writes are enabled. Restrict access to Render's environment and use this setup only for a test network. This is separate from the local `.env.fabric.local` profile. The Render site cannot reach Fabric until the tunnel is online and the Render environment is updated.
+
 ## Hyperledger Fabric Gateway
 
-Fabric is a separate proof of concept under `chaincode/` and `network/`. The Gateway is disabled by default. Generated identities are intentionally excluded from Git; initialize the network using the scripts and instructions in `network/` before connecting an app.
+Fabric is a separate proof of concept under `chaincode/` and `network/`. Generated identities are excluded from Git. Use the local setup above to initialize the network and configure the Gateway.
 
 ### Live queries
 
@@ -210,4 +226,4 @@ SUBMISSION.md   Hackathon project summary
 
 ## Attribution
 
-PayBridge AI is an independent prototype. It is not affiliated with or endorsed by PayPal, any central bank, or any financial regulator. Product and service names are used only to describe integrations.
+CorridorFlow is an independent prototype. It is not affiliated with or endorsed by PayPal, any central bank, or any financial regulator. Product and service names are used only to describe integrations.
