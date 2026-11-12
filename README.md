@@ -7,6 +7,7 @@
 <p align="center">
   <a href="https://paypal-hackathon-061h.onrender.com/">Open the demo</a> ·
   <a href="https://paybridge-api-8ua8.onrender.com/health">API health</a> ·
+  <a href="https://corridorflow-api-docs.onrender.com/">API documentation</a> ·
   <a href="./openapi.yaml">API specification</a>
 </p>
 

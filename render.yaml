@@ -85,3 +85,12 @@ services:
           type: web
           name: paybridge-api
           property: host
+
+  - type: web
+    name: corridorflow-api-docs
+    runtime: static
+    buildCommand: npm ci --include=dev && npm run apimatic:generate
+    staticPublishPath: apimatic/portal
+    envVars:
+      - key: NODE_VERSION
+        value: 24.21.0

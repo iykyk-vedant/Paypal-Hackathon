@@ -12,7 +12,7 @@
     "start": "cd server && npm start",
     "apimatic:sync": "node scripts/sync-apimatic-spec.mjs",
     "apimatic:serve": "npm run apimatic:sync && apimatic portal serve --input=./apimatic --open",
-    "apimatic:generate": "npm run apimatic:sync && apimatic portal generate --input=./apimatic",
+    "apimatic:generate": "npm run apimatic:sync && apimatic portal generate --input=./apimatic --force",
     "apimatic:sdk:typescript": "npm run apimatic:sync && apimatic sdk generate --language=typescript --input=./apimatic --destination=./apimatic/generated-sdk/typescript",
     "fabric:configure": "node network/scripts/configure-local.mjs",
     "fabric:start": "node network/scripts/local-fabric.mjs start",

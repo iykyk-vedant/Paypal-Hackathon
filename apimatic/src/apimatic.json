@@ -4,6 +4,7 @@
   "portal": {
     "site": {
       "name": "CorridorFlow API",
+      "url": "https://corridorflow-api-docs.onrender.com",
       "description": "API reference for the CorridorFlow cross-border trade demonstration."
     },
     "brand": {
