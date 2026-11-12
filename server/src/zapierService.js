@@ -40,7 +40,7 @@ export async function triggerZapierWebhook(eventType, payload) {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          source: 'PayBridge AI Settlement Protocol',
+          source: 'CorridorFlow Settlement Protocol',
           eventType,
           eventId,
           timestamp,

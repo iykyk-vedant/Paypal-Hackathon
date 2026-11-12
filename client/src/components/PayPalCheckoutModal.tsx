@@ -51,7 +51,7 @@ export const PayPalCheckoutModal: React.FC<PayPalCheckoutModalProps> = ({
       // 1. Create order
       const order = await api.createPayPalOrder({
         tradeId: tradeData.tradeId,
-        description: `PayBridge Sandbox funding for trade ${tradeData.tradeId} (${payerCcy}/${payeeCcy})`,
+        description: `CorridorFlow Sandbox funding for trade ${tradeData.tradeId} (${payerCcy}/${payeeCcy})`,
       });
 
       // 2. Capture order
@@ -204,7 +204,7 @@ export const PayPalCheckoutModal: React.FC<PayPalCheckoutModalProps> = ({
                   createOrder={async () => {
                     const order = await api.createPayPalOrder({
                       tradeId: tradeData.tradeId,
-                      description: `PayBridge Sandbox funding ${tradeData.tradeId}`,
+                      description: `CorridorFlow Sandbox funding ${tradeData.tradeId}`,
                     });
                     return order.orderId;
                   }}

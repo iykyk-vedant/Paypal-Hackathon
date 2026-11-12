@@ -28,7 +28,7 @@ export const AICopilotDrawer: React.FC<AICopilotDrawerProps> = ({
     {
       id: 'welcome',
       sender: 'assistant',
-      text: 'Hello! I am your **PayBridge AI Copilot**.\n\nI can explain indicative demo pricing, prototype risk checks, and the trade workflow. PayPal Sandbox capture is a funding step; linked Fabric writes require explicit operator confirmation and separate test-ledger commits. The integrations are not atomic or production financial services.\n\nTry a quick prompt or ask a question.',
+      text: 'Hello! I am your **CorridorFlow Copilot**.\n\nI can explain indicative demo pricing, prototype risk checks, and the trade workflow. PayPal Sandbox capture is a funding step; linked Fabric writes require explicit operator confirmation and separate test-ledger commits. The integrations are not atomic or production financial services.\n\nTry a quick prompt or ask a question.',
     },
   ]);
 
@@ -89,7 +89,7 @@ export const AICopilotDrawer: React.FC<AICopilotDrawerProps> = ({
           </div>
           <div>
             <h3 className="text-sm font-bold text-slate-900 flex items-center gap-1.5">
-              PayBridge AI Copilot <span className="bg-sky-100 text-sky-800 text-[9px] px-1.5 py-0.2 rounded font-mono font-bold">ONLINE</span>
+              CorridorFlow Copilot <span className="bg-sky-100 text-sky-800 text-[9px] px-1.5 py-0.2 rounded font-mono font-bold">ONLINE</span>
             </h3>
             <p className="text-[11px] text-slate-600">Natural language trading & settlement assistant</p>
           </div>

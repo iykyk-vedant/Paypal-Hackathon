@@ -6,7 +6,7 @@ export const AIAgentSwarmView: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(false);
   const [agentType, setAgentType] = useState<'negotiate' | 'compliance' | 'treasury'>('negotiate');
   const [deliberationLogs, setDeliberationLogs] = useState<string[]>([
-    '[System] Multi-Agent Swarm initialized on PayBridge Protocol.',
+    '[System] Multi-Agent Swarm initialized on CorridorFlow Protocol.',
     '[Negotiator] Standing by for agentic bilateral commerce proposals.',
     '[Sentinel] Demo corridor rules and a small sample blocklist are ready; no official watchlists are connected.',
     '[Treasury] Monitoring INR, SGD, and USD reserve coverage.',

@@ -119,7 +119,7 @@ export function PublicEntry({ onSignedIn }: { onSignedIn: (profile: MeResponse) 
   return <div className="pb-landing">
     <a className="pb-skip" href="#pb-main">Skip to content</a>
     <header className="pb-header"><div className="pb-container pb-header-inner">
-      <a className="pb-brand" href="#top" aria-label="PayBridge AI home"><span className="pb-brand-mark"><Waypoints aria-hidden="true" size={22} strokeWidth={2.2} /></span><span>PayBridge <strong>AI</strong></span></a>
+      <a className="pb-brand" href="#top" aria-label="CorridorFlow home"><img className="pb-brand-logo" src="/corridorflow-logo.png" alt="CorridorFlow" /></a>
       <nav className="pb-nav" aria-label="Public navigation"><a href="#how-it-works">How it works</a><a href="#workspaces">Workspaces</a></nav>
       <button className="pb-header-login" type="button" onClick={openLogin}>Operator sign in <ArrowUpRight aria-hidden="true" size={16} /></button>
     </div></header>
@@ -129,7 +129,7 @@ export function PublicEntry({ onSignedIn }: { onSignedIn: (profile: MeResponse) 
         <div className="pb-hero-copy">
           <div className="pb-eyebrow"><span className="pb-eyebrow-dot" /> Cross-border treasury, made visible</div>
           <h1 id="pb-hero-title">Every payment has a path. <em>See the whole journey.</em></h1>
-          <p>From bank approval to Sandbox funding and Fabric test settlement, PayBridge AI brings the moving parts of cross-border trade into one clear workspace.</p>
+          <p>From bank approval to Sandbox funding and Fabric test settlement, CorridorFlow brings the moving parts of cross-border trade into one clear workspace.</p>
           <div className="pb-hero-actions"><button className="pb-button-primary" type="button" onClick={openLogin}>Open your workspace <ArrowRight aria-hidden="true" size={18} /></button><a className="pb-link-button" href="#how-it-works">Explore the flow <ChevronRight aria-hidden="true" size={18} /></a></div>
           <div className="pb-hero-note"><ShieldCheck aria-hidden="true" size={17} /> Human approval at every test-ledger write</div>
         </div>
@@ -146,7 +146,7 @@ export function PublicEntry({ onSignedIn }: { onSignedIn: (profile: MeResponse) 
       <section className="pb-section pb-journey" id="how-it-works" aria-labelledby="pb-flow-title"><div className="pb-container">
         <div className="pb-section-heading" data-pb-reveal><span className="pb-section-kicker">THE PAYMENT JOURNEY</span><h2 id="pb-flow-title">A sequence you can follow.</h2><p>Each transition is deliberate. The interface shows where a trade stands and what still needs a human decision.</p></div>
         <div className="pb-journey-layout" data-pb-reveal><div className="pb-step-list" aria-label="Payment journey steps">{journey.map((step, index) => <button key={step.number} type="button" className={`pb-step ${activeStep === index ? 'pb-step-active' : ''}`} onClick={() => setActiveStep(index)} aria-pressed={activeStep === index}><span className="pb-step-number">{step.number}</span><span className="pb-step-copy"><small>{step.kicker}</small><strong>{step.title}</strong></span><ArrowUpRight aria-hidden="true" size={18} /></button>)}</div>
-          <div className="pb-step-detail" key={activeStep} aria-live="polite"><div className="pb-step-detail-top"><span>PAYBRIDGE / FLOW {active.number}</span><span className="pb-step-detail-icon"><ActiveIcon aria-hidden="true" size={24} /></span></div><div className="pb-step-art" aria-hidden="true"><span className="pb-art-node pb-art-node-left" /><span className="pb-art-path" /><span className="pb-art-node pb-art-node-right" /></div><div><span className="pb-detail-kicker">{active.kicker}</span><h3>{active.title}</h3><p>{active.body}</p><div className="pb-detail-fact"><CircleCheck aria-hidden="true" size={17} />{active.fact}</div></div></div>
+          <div className="pb-step-detail" key={activeStep} aria-live="polite"><div className="pb-step-detail-top"><span>CORRIDORFLOW / FLOW {active.number}</span><span className="pb-step-detail-icon"><ActiveIcon aria-hidden="true" size={24} /></span></div><div className="pb-step-art" aria-hidden="true"><span className="pb-art-node pb-art-node-left" /><span className="pb-art-path" /><span className="pb-art-node pb-art-node-right" /></div><div><span className="pb-detail-kicker">{active.kicker}</span><h3>{active.title}</h3><p>{active.body}</p><div className="pb-detail-fact"><CircleCheck aria-hidden="true" size={17} />{active.fact}</div></div></div>
         </div>
       </div></section>
 
@@ -155,7 +155,7 @@ export function PublicEntry({ onSignedIn }: { onSignedIn: (profile: MeResponse) 
       <section className="pb-final" aria-labelledby="pb-final-title"><div className="pb-container pb-final-inner" data-pb-reveal><div><span className="pb-section-kicker">YOUR WORKSPACE IS READY</span><h2 id="pb-final-title">Move with clarity.</h2><p>Sign in to see your trades, controls, and next actions.</p></div><button className="pb-button-primary" type="button" onClick={openLogin}>Operator sign in <ArrowRight aria-hidden="true" size={18} /></button></div></section>
     </main>
 
-    <footer className="pb-footer"><div className="pb-container pb-footer-inner"><span className="pb-brand pb-brand-footer"><span className="pb-brand-mark"><Waypoints aria-hidden="true" size={18} /></span>PayBridge <strong>AI</strong></span><p>Hackathon prototype · PayPal Sandbox and Fabric test funds only. Sample data is labelled in the workspace.</p></div></footer>
+    <footer className="pb-footer"><div className="pb-container pb-footer-inner"><span className="pb-brand pb-brand-footer"><img className="pb-brand-logo" src="/corridorflow-logo.png" alt="CorridorFlow" /></span><p>Hackathon prototype · PayPal Sandbox and Fabric test funds only. Sample data is labelled in the workspace.</p></div></footer>
 
     {showLogin && <div className="pb-dialog-backdrop" onMouseDown={(event) => { if (event.target === event.currentTarget) closeLogin(); }}><div ref={dialogRef} role="dialog" aria-modal="true" aria-labelledby="pb-login-title" aria-describedby="pb-login-description" className="pb-dialog" onKeyDown={handleDialogKeys}>
       <div className="pb-dialog-head"><div className="pb-dialog-mark"><LockKeyhole aria-hidden="true" size={20} /></div><button className="pb-dialog-close" type="button" onClick={closeLogin} aria-label="Close sign in">×</button></div><span className="pb-section-kicker">OPERATOR ACCESS</span><h2 id="pb-login-title">Welcome back.</h2><p id="pb-login-description">Choose your assigned role and enter its demo password.</p>

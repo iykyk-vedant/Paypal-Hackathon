@@ -31,7 +31,7 @@ export const FabricLedgerActions: React.FC<FabricLedgerActionsProps> = ({ curren
   const [sourceTradeId, setSourceTradeId] = useState('');
   const [selectedSourceTrade, setSelectedSourceTrade] = useState<TradeComposite | null>(null);
   const [acceptedDemoTrades, setAcceptedDemoTrades] = useState<TradeComposite[]>([]);
-  const [reference, setReference] = useState('PayBridge Fabric demo trade');
+  const [reference, setReference] = useState('CorridorFlow Fabric demo trade');
   const [writeToken, setWriteToken] = useState('');
   const [confirmSettlement, setConfirmSettlement] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -123,7 +123,7 @@ export const FabricLedgerActions: React.FC<FabricLedgerActionsProps> = ({ curren
                   if (!selected) return;
                   setAmountA(fromMinorUnits(selected.trade.amountA));
                   setAmountB(fromMinorUnits(selected.trade.amountB));
-                  setReference(selected.trade.reference || `PayBridge linked trade ${selected.trade.tradeId}`);
+                  setReference(selected.trade.reference || `CorridorFlow linked trade ${selected.trade.tradeId}`);
                 }} className="mt-1 w-full rounded-lg border border-slate-300 p-2 text-slate-900">
                   <option value="">Standalone Fabric test trade</option>
                   {acceptedDemoTrades.map((item) => <option key={item.trade.tradeId} value={item.trade.tradeId}>{item.trade.tradeId}{item.trade.fabricTradeId ? ` ↔ ${item.trade.fabricTradeId}` : ''} · ${item.trade.ccyA} → {item.trade.ccyB} · {item.trade.fabricStatus || 'not linked'}</option>)}

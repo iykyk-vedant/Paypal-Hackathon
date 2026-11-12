@@ -105,7 +105,7 @@ export async function createPayPalOrder({ tradeId, amountMinor, currency = 'USD'
           purchase_units: [
             {
               reference_id: tradeId,
-              description: description || `PayBridge Cross-Border Settlement for ${tradeId}`,
+              description: description || `CorridorFlow Cross-Border Settlement for ${tradeId}`,
               custom_id: tradeId,
               amount: {
                 currency_code: currency,
@@ -114,7 +114,7 @@ export async function createPayPalOrder({ tradeId, amountMinor, currency = 'USD'
             },
           ],
           application_context: {
-            brand_name: 'PayBridge AI Treasury',
+            brand_name: 'CorridorFlow Treasury',
             landing_page: 'NO_PREFERENCE',
             user_action: 'PAY_NOW',
             return_url: 'http://localhost:5173/checkout/success',
@@ -157,7 +157,7 @@ export async function createPayPalOrder({ tradeId, amountMinor, currency = 'USD'
     amount: amountMinor,
     currency,
     fundingQuote,
-    description: description || `PayBridge Settlement for ${tradeId}`,
+    description: description || `CorridorFlow Settlement for ${tradeId}`,
     counterparty,
     links: [
       {
@@ -263,7 +263,7 @@ export async function executePayPalPayout({ tradeId, recipientEmail, amount, cur
         body: JSON.stringify({
           sender_batch_header: {
             sender_batch_id: batchId,
-            email_subject: 'PayBridge AI Demo Treasury Payout',
+            email_subject: 'CorridorFlow Demo Treasury Payout',
             email_message: note || `Sandbox payout for demo trade ${tradeId}`,
           },
           items: [

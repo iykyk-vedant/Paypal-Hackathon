@@ -204,3 +204,6 @@
   [data-pb-reveal] { opacity: 1 !important; transform: none !important; }
   .pb-route-progress, .pb-art-path { transform: scaleX(1) !important; }
 }
+
+.pb-brand-logo { display: block; width: 210px; height: 40px; object-fit: cover; }
+.pb-brand-footer .pb-brand-logo { width: 180px; height: 34px; }

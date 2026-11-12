@@ -1,6 +1,6 @@
 import React from 'react';
 import { ScreenId, MeResponse } from '../types';
-import { Bot, PlusCircle, RefreshCw, ShieldCheck, Zap, LogOut } from 'lucide-react';
+import { Bot, PlusCircle, RefreshCw, ShieldCheck, LogOut } from 'lucide-react';
 import { ROLE_SCREENS } from '../roles';
 
 interface HeaderProps {
@@ -39,21 +39,7 @@ export const Header: React.FC<HeaderProps> = ({
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         {/* Left: Branding & Tagline */}
         <div className="flex items-center gap-3.5">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-sky-200 bg-gradient-to-tr from-sky-50 via-sky-100 to-emerald-50 p-0.5">
-              <div className="flex h-full w-full items-center justify-center rounded-[10px] bg-white text-sky-800">
-                <Zap className="h-5 w-5" aria-hidden="true" />
-            </div>
-          </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <h1 className="text-xl font-extrabold tracking-tight text-slate-900 flex items-center gap-1.5 font-sans">
-                Pay<span className="text-sky-800">Bridge</span> <span className="bg-gradient-to-r from-sky-800 to-emerald-800 bg-clip-text text-transparent">AI</span>
-              </h1>
-            </div>
-            <p className="hidden text-xs font-medium text-slate-600 sm:block">
-              Treasury operations for cross-border trade
-            </p>
-          </div>
+          <img src="/corridorflow-logo.png" alt="CorridorFlow" className="h-10 w-56 object-cover" />
         </div>
 
         <label className="w-full md:hidden">

@@ -1,9 +1,9 @@
-// PayBridge Multi-Agent AI Swarm & Conversational Copilot
+// CorridorFlow Multi-Agent AI Swarm & Conversational Copilot
 // Agents:
 // 1. Trade Negotiation Agent (Agentic Commerce)
 // 2. Compliance & AML Sentinel Agent (Risk Screening)
 // 3. Autonomous Treasury Orchestrator Agent (Liquidity & Payouts)
-// 4. PayBridge Conversational Copilot (Natural Language Interface)
+// 4. CorridorFlow Conversational Copilot (Natural Language Interface)
 
 import { ulid } from 'ulid';
 import { CORRIDORS, FX_RATES, getCalculatedFx } from './corridorRules.js';
@@ -261,7 +261,7 @@ export async function agentOrchestrateTreasury({ accounts, trades }) {
 }
 
 /**
- * 4. PayBridge Conversational Copilot
+ * 4. CorridorFlow Conversational Copilot
  * Natural language intent parser for trading, settlement, risk inquiries, and PayPal execution
  */
 export async function agentChatCopilot(userPrompt, context = {}) {
@@ -329,7 +329,7 @@ export async function agentChatCopilot(userPrompt, context = {}) {
 
   // Live Gemini 2.5 Flash AI reasoning
   if (process.env.GEMINI_API_KEY || GEMINI_KEY) {
-    const systemPrompt = `You are PayBridge AI, an assistant for a hackathon prototype. The app uses an in-memory workflow ledger and may have a live Fabric Gateway for explicitly confirmed test-ledger operations. A PayPal Sandbox capture does not itself settle Fabric; Fabric settlement and four value-leg writes are separate commits, never atomic with PayPal. PayPal may be Sandbox or simulated. Do not claim central-bank approval, official sanctions screening, live FX quotes, or completed transfers unless the supplied context explicitly proves it. Answer concisely, under 4 sentences.`;
+    const systemPrompt = `You are CorridorFlow, an assistant for a hackathon prototype. The app uses an in-memory workflow ledger and may have a live Fabric Gateway for explicitly confirmed test-ledger operations. A PayPal Sandbox capture does not itself settle Fabric; Fabric settlement and four value-leg writes are separate commits, never atomic with PayPal. PayPal may be Sandbox or simulated. Do not claim central-bank approval, official sanctions screening, live FX quotes, or completed transfers unless the supplied context explicitly proves it. Answer concisely, under 4 sentences.`;
     const geminiReply = await callGeminiFlash(userPrompt, systemPrompt);
     if (geminiReply) {
       return {
@@ -342,7 +342,7 @@ export async function agentChatCopilot(userPrompt, context = {}) {
 
   // General assistant response fallback
   return {
-    reply: `Hello! I am your **PayBridge AI Copilot** for an in-memory hackathon prototype.\n\n` +
+    reply: `Hello! I am your **CorridorFlow Copilot** for an in-memory hackathon prototype.\n\n` +
       `Here is what you can ask me to do:\n` +
       `• *"Negotiate a 50,000 SGD trade with Bank B1 with hedge discount"*\n` +
       `• *"Run sample risk checks for trade T-1048"*\n` +
