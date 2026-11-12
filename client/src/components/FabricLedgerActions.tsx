@@ -52,6 +52,7 @@ export const FabricLedgerActions: React.FC<FabricLedgerActionsProps> = ({ curren
     try {
       const result = await action();
       if (result.tradeId) setTradeId(result.tradeId);
+      if (result.status === 'REFUSAL_RECONCILED') setTradeId('');
       if (sourceTradeId) {
         const refreshed = await api.getTrade(sourceTradeId);
         setSelectedSourceTrade(refreshed);
@@ -139,6 +140,7 @@ export const FabricLedgerActions: React.FC<FabricLedgerActionsProps> = ({ curren
               </div>
               <label className="block text-xs text-slate-700">Reference<input value={reference} onChange={(event) => setReference(event.target.value)} maxLength={160} className="mt-1 w-full rounded-lg border border-slate-300 p-2 text-slate-900" /></label>
               <button onClick={handlePropose} disabled={busy || writeToken.length < 32 || Boolean(selectedSourceTrade && selectedSourceTrade.trade.proposerMsp !== currentMsp)} className="w-full rounded-lg bg-blue-700 hover:bg-blue-800 text-white font-semibold text-xs p-2.5 disabled:opacity-50">{busy ? 'Submitting…' : 'Submit proposal to Fabric'}</button>
+              {selectedSourceTrade?.trade.fabricTradeId && selectedSourceTrade.trade.fabricStatus === 'PROPOSED' && selectedSourceTrade.trade.proposerMsp === currentMsp && <button onClick={() => run(() => api.reconcileFabricRefusal(selectedSourceTrade.trade.fabricTradeId!, writeToken))} disabled={busy || writeToken.length < 32} className="w-full rounded-lg border border-amber-300 p-2 text-xs text-amber-900 disabled:opacity-50">Check and clear a refused proposal link</button>}
               {selectedSourceTrade?.trade.proposerMsp !== currentMsp && selectedSourceTrade && <p className="text-xs text-amber-800">This proposal belongs to the other bank. You may review or accept it as counterparty.</p>}
             </div>
 

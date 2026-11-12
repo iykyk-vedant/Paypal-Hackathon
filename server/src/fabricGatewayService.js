@@ -6,6 +6,7 @@ import { ulid } from 'ulid';
 import * as grpc from '@grpc/grpc-js';
 import { connect, hash, signers } from '@hyperledger/fabric-gateway';
 import { saveRecord, getRecord, deleteRecord } from './storage.js';
+import { requireSuccessfulChaincodeResult } from './fabricResult.js';
 
 const utf8Decoder = new TextDecoder();
 const projectRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
@@ -194,6 +195,9 @@ async function submitAndConfirm(contract, transactionName, options = {}) {
     error.validationCode = validationCode;
     throw error;
   }
+  // VALID means Fabric committed the transaction; chaincode can still record
+  // a business refusal instead of performing the requested operation.
+  requireSuccessfulChaincodeResult(result, transactionName, transactionId, validationCodeNames[status.code] || String(status.code));
   return { transactionId, result, validationCode: validationCodeNames[status.code] || String(status.code), blockNumber: String(status.blockNumber) };
 }
 
@@ -267,6 +271,22 @@ export async function acceptFabricTrade(tradeId) {
   pendingTradeDetails.delete(tradeId);
   await deleteRecord('fabric_pending', tradeId);
   return { ...outcome, tradeId, status: 'ACCEPTED', acceptedAs: counterpartyMsp };
+}
+
+export async function verifyRefusedFabricProposal(tradeId) {
+  if (!validTradeId(tradeId)) throw new Error('Invalid Fabric trade ID');
+  return withContract(async (contract) => {
+    try {
+      await evaluate(contract, 'GetTrade', tradeId);
+      throw new Error('A Fabric trade exists; its link cannot be cleared.');
+    } catch (error) {
+      if (!String(error.message).includes(`GetTrade: trade not found: ${tradeId}`)) throw error;
+    }
+    const refusals = await evaluate(contract, 'ListRefusals');
+    const refusal = Array.isArray(refusals) && refusals.find((item) => item.tradeId === tradeId);
+    if (!refusal) throw new Error('No matching ledger refusal was found; its link cannot be cleared.');
+    return refusal;
+  });
 }
 
 export async function getFabricTradeParties(tradeId) {

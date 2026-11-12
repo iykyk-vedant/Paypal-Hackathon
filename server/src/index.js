@@ -76,6 +76,7 @@ const {
   performFabricLegAction,
   getFabricWriteStatus,
   getFabricTradeParties,
+  verifyRefusedFabricProposal,
 } = await import('./fabricGatewayService.js');
 
 const app = express();
@@ -750,6 +751,23 @@ app.post('/api/fabric/trades/propose', authorizeFabricWrite, async (req, res) =>
     res.status(201).json({ ...outcome, sourceTradeId: sourceTrade?.trade.tradeId || null });
   } catch (err) {
     res.status(400).json({ error: err.message, transactionId: err.transactionId, validationCode: err.validationCode, commitStatusUnknown: err.commitStatusUnknown });
+  }
+});
+
+app.post('/api/fabric/trades/:tradeId/reconcile-refusal', authorizeFabricWrite, async (req, res) => {
+  try {
+    const sourceTrade = tradesStore.find((item) => item.trade.fabricTradeId === req.params.tradeId);
+    if (!sourceTrade) return res.status(404).json({ error: 'Linked demo trade not found.' });
+    if (sourceTrade.trade.proposerMsp !== req.profile.msp || req.profile.role !== 'approver') return res.status(403).json({ error: 'Only the proposing bank approver may reconcile this link.' });
+    if (sourceTrade.trade.fabricStatus !== 'PROPOSED') return res.status(409).json({ error: 'Only a proposed link can be reconciled.' });
+    const refusal = await verifyRefusedFabricProposal(req.params.tradeId);
+    if (refusal.invokerMsp !== sourceTrade.trade.proposerMsp) return res.status(409).json({ error: 'The refusal does not match the proposing bank.' });
+    sourceTrade.trade.fabricTradeId = null;
+    sourceTrade.trade.fabricStatus = 'NOT_LINKED';
+    await saveTrade(sourceTrade);
+    res.json({ status: 'REFUSAL_RECONCILED', reasonCode: refusal.reasonCode });
+  } catch (err) {
+    res.status(409).json({ error: err.message });
   }
 });
 
