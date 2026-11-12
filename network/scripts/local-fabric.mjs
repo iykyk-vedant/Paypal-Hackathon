@@ -11,7 +11,7 @@ if (!existsSync(path.join(root, 'network/organizations')) || !existsSync(path.jo
   process.exit(1);
 }
 function run(command, args) {
-  const result = spawnSync(command, args, { cwd: root, stdio: 'inherit', shell: process.platform === 'win32' });
+  const result = spawnSync(command, args, { cwd: root, stdio: 'inherit' });
   if (result.error) throw result.error;
   if (result.status !== 0) process.exit(result.status || 1);
 }
