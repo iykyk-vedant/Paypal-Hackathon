@@ -89,8 +89,5 @@ services:
   - type: web
     name: corridorflow-api-docs
     runtime: static
-    buildCommand: npm ci --include=dev && npm run apimatic:generate
+    buildCommand: true
     staticPublishPath: apimatic/portal
-    envVars:
-      - key: NODE_VERSION
-        value: 24.21.0

@@ -119,7 +119,7 @@ npm install
 npm run apimatic:serve
 ```
 
-Generate the static portal with `npm run apimatic:generate`. Generate a TypeScript SDK with `npm run apimatic:sdk:typescript`. The portal and SDK commands require an authenticated APIMatic CLI session; do not commit APIMatic credentials or generated SDKs containing local configuration.
+Generate the static portal with `npm run apimatic:generate`. The generated `apimatic/portal` files are checked in and served by the Render static site, so Render does not need APIMatic credentials. Regenerate and commit those files whenever the API spec or portal content changes. Generate a TypeScript SDK with `npm run apimatic:sdk:typescript`; do not commit generated SDKs containing local configuration.
 
 ### Configure integrations
 

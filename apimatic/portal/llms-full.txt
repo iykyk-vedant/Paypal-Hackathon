@@ -1,0 +1,238 @@
+# CorridorFlow API (/)
+
+# CorridorFlow API [#corridorflow-api]
+
+This portal documents the API used by the CorridorFlow demonstration. The reference and interactive playground are generated from the repository's root `openapi.yaml` file.
+
+## Get started [#get-started]
+
+1. Call `POST /auth/login` with a configured demo operator and password.
+2. Send the returned bearer token in the `Authorization` header for protected endpoints.
+3. Use the API reference to inspect trade, PayPal Sandbox, and optional Hyperledger Fabric operations.
+
+## Demo safety [#demo-safety]
+
+This is a hackathon prototype. PayPal operations use Sandbox or simulation mode. Fabric write endpoints can submit permanent transactions to the configured test ledger and additionally require the server's Fabric write token. Never place passwords, PayPal credentials, or Fabric write tokens in public client code or API examples.
+
+
+# SDKs (/sdks)
+
+- [TypeScript](/sdks/typescript): [Download SDK](/__downloads/sdk/typescript.zip)
+- [Python](/sdks/python): [Download SDK](/__downloads/sdk/python.zip)
+
+# Python SDK (/sdks/python)
+
+[Download SDK](/__downloads/sdk/python.zip)
+
+## Intro [#intro]
+
+The CorridorFlow - Cross-Border Trade Prototype API SDK provides access to the CorridorFlow - Cross-Border Trade Prototype API REST APIs.
+
+Hackathon prototype API for the CorridorFlow web demo, combining a PostgreSQL-backed demo trade workflow, deterministic corridor rules, optional Gemini explanations, and PayPal Developer Platform (Orders v2, Payouts v1) Sandbox or simulation. Password-protected demo roles use expiring bearer sessions stored in PostgreSQL when configured. This prototype access layer is not a production identity system.
+
+## Installation [#installation]
+
+Add the SDK to your project from its folder, with whichever package manager your project uses. Give each tool a path containing a slash, such as `../corridor-flow-cross-border-trade-prototype-api` — a bare folder name is looked up on PyPI instead, and resolves to whatever project holds that name there:
+
+```bash
+pip install <path-to-sdk>
+```
+
+```bash
+uv add <path-to-sdk>
+```
+
+```bash
+poetry add <path-to-sdk>
+```
+
+## Quick Start [#quick-start]
+
+### Synchronous client [#synchronous-client]
+
+Construct `CorridorFlowCrossBorderTradePrototypeApiClient` with keyword arguments, and call `close()` when you are done. Every argument is optional.
+
+```python
+from corridor_flow_cross_border_trade_prototype_api import CorridorFlowCrossBorderTradePrototypeApiClient
+
+client = CorridorFlowCrossBorderTradePrototypeApiClient(bearer_auth="YOUR_BEARER_TOKEN", environment="production")
+
+client.close()
+```
+
+Alternatively, scope it — `with CorridorFlowCrossBorderTradePrototypeApiClient(...) as client:` closes the pool on exit.
+
+### Asynchronous client [#asynchronous-client]
+
+`AsyncCorridorFlowCrossBorderTradePrototypeApiClient` mirrors `CorridorFlowCrossBorderTradePrototypeApiClient` with **identical method names**, and every endpoint method is a coroutine. It takes the same arguments, with some differences — for example, the transport argument is `custom_async_http_client`.
+
+```python
+from asyncio import run
+
+from corridor_flow_cross_border_trade_prototype_api import AsyncCorridorFlowCrossBorderTradePrototypeApiClient
+
+async def main() -> None:
+    client = AsyncCorridorFlowCrossBorderTradePrototypeApiClient(
+        bearer_auth="YOUR_BEARER_TOKEN", environment="production"
+    )
+    await client.aclose()
+
+run(main())
+```
+
+Alternatively, scope it — `async with AsyncCorridorFlowCrossBorderTradePrototypeApiClient(...) as client:` closes the pool on exit.
+
+# TypeScript SDK (/sdks/typescript)
+
+[Download SDK](/__downloads/sdk/typescript.zip)
+
+## Intro [#intro]
+
+The CorridorFlow - Cross-Border Trade Prototype API SDK provides access to the CorridorFlow - Cross-Border Trade Prototype API REST APIs.
+
+Hackathon prototype API for the CorridorFlow web demo, combining a PostgreSQL-backed demo trade workflow, deterministic corridor rules, optional Gemini explanations, and PayPal Developer Platform (Orders v2, Payouts v1) Sandbox or simulation. Password-protected demo roles use expiring bearer sessions stored in PostgreSQL when configured. This prototype access layer is not a production identity system.
+
+## Installation [#installation]
+
+The SDK compiles to `dist/` before it can be referenced — run its `build` script once in the SDK folder, then add it to your project by path:
+
+```bash
+npm install <path-to-sdk>
+```
+
+## Quick Start [#quick-start]
+
+Create one client and reuse it. Configure its behaviour through `ClientOptions`.
+
+```ts
+import {
+  CorridorFlowCrossBorderTradePrototypeApiClient,
+  ServerEnvironment,
+} from "corridor-flow-cross-border-trade-prototype-api";
+
+const client = new CorridorFlowCrossBorderTradePrototypeApiClient({
+  serverEnvironment: ServerEnvironment.Production,
+  bearerAuth: "YOUR_BEARER_TOKEN",
+});
+```
+
+Nothing in `ClientOptions` is required — `new CorridorFlowCrossBorderTradePrototypeApiClient()` compiles — and each option left out falls back to its default. `serverEnvironment` is spelled out above so the environment a call reaches is visible where the client is built rather than inherited silently.
+
+### From CommonJS [#from-commonjs]
+
+The package ships both dialects from a single entry, so `require` works with full types. In a TypeScript CommonJS file use the `import ... = require(...)` form — a plain destructuring `require` runs fine but gives you `any`.
+
+```ts
+import sdk = require("corridor-flow-cross-border-trade-prototype-api");
+
+const client = new sdk.CorridorFlowCrossBorderTradePrototypeApiClient({
+  serverEnvironment: sdk.ServerEnvironment.Production,
+  bearerAuth: "YOUR_BEARER_TOKEN",
+});
+```
+
+# Health and System Status (/api/openapi/unknown/health/get)
+
+`GET /health`
+
+# Sign in to a configured demo role (/api/openapi/unknown/auth/login/post)
+
+`POST /auth/login`
+
+# End the current demo session (/api/openapi/unknown/auth/logout/post)
+
+`POST /auth/logout`
+
+# Check Fabric Gateway query connectivity (/api/openapi/unknown/api/fabric/status/get)
+
+`GET /api/fabric/status`
+
+Reports a live read-only chaincode query probe when Gateway mode is enabled; TCP reachability alone is not treated as a Fabric connection.
+
+# Read a live Fabric chaincode snapshot (/api/openapi/unknown/api/fabric/ledger/get)
+
+`GET /api/fabric/ledger`
+
+Requires a configured Fabric Gateway identity. Evaluates chaincode queries only and never submits a transaction. Private account queries may be denied by chaincode access rules.
+
+# Submit a new INR/SGD trade proposal to Fabric (/api/openapi/unknown/api/fabric/trades/propose/post)
+
+`POST /api/fabric/trades/propose`
+
+Requires the Fabric write feature flag and a rotated signing identity. Private trade details and salt are sent as transient proposal data; this writes to the permanent test ledger.
+
+# Accept a Fabric trade proposal as the counterparty bank (/api/openapi/unknown/api/fabric/trades/tradeid/accept/post)
+
+`POST /api/fabric/trades/{tradeId}/accept`
+
+# Settle an accepted Fabric trade (/api/openapi/unknown/api/fabric/trades/tradeid/settle/post)
+
+`POST /api/fabric/trades/{tradeId}/settle`
+
+Requires explicit confirmation in the request and RegAMSP plus RegBMSP peer endorsements. It does not verify PayPal capture.
+
+# Commit one Fabric settlement-leg debit or payee credit (/api/openapi/unknown/api/fabric/trades/tradeid/legs/leg/operation/post)
+
+`POST /api/fabric/trades/{tradeId}/legs/{leg}/{operation}`
+
+Requires explicit settlement confirmation, a settled trade, and the signing identity for the payer or payee bank. Each call commits a separate ledger transaction.
+
+# Get the signed-in operator identity and role (/api/openapi/unknown/me/get)
+
+`GET /me`
+
+# List all active and settled bilateral trades (/api/openapi/unknown/trades/get)
+
+`GET /trades`
+
+# Propose a new sample trade in the demo workflow (/api/openapi/unknown/trades/post)
+
+`POST /trades`
+
+# Marks the sample counterparty leg held in the demo workflow (/api/openapi/unknown/trades/id/accept/post)
+
+`POST /trades/{id}/accept`
+
+# Deprecated direct settle endpoint (returns 409; capture via /api/paypal/orders/{id}/capture) (/api/openapi/unknown/trades/id/settle/post)
+
+`POST /trades/{id}/settle`
+
+# Create PayPal Orders v2 Order (Sandbox or simulation) using server-calculated USD quote (/api/openapi/unknown/api/paypal/orders/create/post)
+
+`POST /api/paypal/orders/create`
+
+# Get the illustrative USD funding quote for an accepted demo trade (/api/openapi/unknown/api/paypal/orders/quote/tradeid/get)
+
+`GET /api/paypal/orders/quote/{tradeId}`
+
+# Capture PayPal Order, verify USD amount against quote, and update demo ledger (/api/openapi/unknown/api/paypal/orders/id/capture/post)
+
+`POST /api/paypal/orders/{id}/capture`
+
+# Get a local SHA-256 receipt digest for a demo settlement (/api/openapi/unknown/api/receipts/tradeid/get)
+
+`GET /api/receipts/{tradeId}`
+
+# Retry a failed PayPal Batch Payout v1 for a settled demo trade (/api/openapi/unknown/api/paypal/payouts/batch/post)
+
+`POST /api/paypal/payouts/batch`
+
+# Calculate indicative demo quote with optional Gemini explanation (/api/openapi/unknown/api/ai/negotiate/post)
+
+`POST /api/ai/negotiate`
+
+# Run deterministic sample corridor & blocklist checks with optional Gemini explanation (/api/openapi/unknown/api/ai/risk-screen/post)
+
+`POST /api/ai/risk-screen`
+
+# Search Channel3 B2B Product Catalog (/api/openapi/unknown/api/channel3/catalog/get)
+
+`GET /api/channel3/catalog`
+
+# Elastic Observability & Financial Crime Search (/api/openapi/unknown/api/elastic/search/get)
+
+`GET /api/elastic/search`
+
+# Dispatch Zapier Outbound Automation Webhook (/api/openapi/unknown/api/zapier/trigger/post)
+
+`POST /api/zapier/trigger`

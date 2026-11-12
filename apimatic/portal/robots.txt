@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://corridorflow-api-docs.onrender.com/sitemap.xml

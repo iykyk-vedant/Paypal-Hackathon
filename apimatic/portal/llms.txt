@@ -1,0 +1,34 @@
+# Docs
+
+- Home
+  - [CorridorFlow API](/)
+- SDKs
+  - [SDKs](/sdks): Client libraries for this API.
+  - [TypeScript SDK](/sdks/typescript): Install and start using the TypeScript SDK.
+  - [Python SDK](/sdks/python): Install and start using the Python SDK.
+- API Reference
+  - Unknown
+    - [Health and System Status](/api/openapi/unknown/health/get)
+    - [Sign in to a configured demo role](/api/openapi/unknown/auth/login/post)
+    - [End the current demo session](/api/openapi/unknown/auth/logout/post)
+    - [Check Fabric Gateway query connectivity](/api/openapi/unknown/api/fabric/status/get): Reports a live read-only chaincode query probe when Gateway mode is enabled; TCP reachability alone is not treated as a Fabric connection.
+    - [Read a live Fabric chaincode snapshot](/api/openapi/unknown/api/fabric/ledger/get): Requires a configured Fabric Gateway identity. Evaluates chaincode queries only and never submits a transaction. Private account queries may be denied by chaincode access rules.
+    - [Submit a new INR/SGD trade proposal to Fabric](/api/openapi/unknown/api/fabric/trades/propose/post): Requires the Fabric write feature flag and a rotated signing identity. Private trade details and salt are sent as transient proposal data; this writes to the permanent test ledger.
+    - [Accept a Fabric trade proposal as the counterparty bank](/api/openapi/unknown/api/fabric/trades/tradeid/accept/post)
+    - [Settle an accepted Fabric trade](/api/openapi/unknown/api/fabric/trades/tradeid/settle/post): Requires explicit confirmation in the request and RegAMSP plus RegBMSP peer endorsements. It does not verify PayPal capture.
+    - [Commit one Fabric settlement-leg debit or payee credit](/api/openapi/unknown/api/fabric/trades/tradeid/legs/leg/operation/post): Requires explicit settlement confirmation, a settled trade, and the signing identity for the payer or payee bank. Each call commits a separate ledger transaction.
+    - [Get the signed-in operator identity and role](/api/openapi/unknown/me/get)
+    - [List all active and settled bilateral trades](/api/openapi/unknown/trades/get)
+    - [Propose a new sample trade in the demo workflow](/api/openapi/unknown/trades/post)
+    - [Marks the sample counterparty leg held in the demo workflow](/api/openapi/unknown/trades/id/accept/post)
+    - [Deprecated direct settle endpoint (returns 409; capture via /api/paypal/orders/{id}/capture)](/api/openapi/unknown/trades/id/settle/post)
+    - [Create PayPal Orders v2 Order (Sandbox or simulation) using server-calculated USD quote](/api/openapi/unknown/api/paypal/orders/create/post)
+    - [Get the illustrative USD funding quote for an accepted demo trade](/api/openapi/unknown/api/paypal/orders/quote/tradeid/get)
+    - [Capture PayPal Order, verify USD amount against quote, and update demo ledger](/api/openapi/unknown/api/paypal/orders/id/capture/post)
+    - [Get a local SHA-256 receipt digest for a demo settlement](/api/openapi/unknown/api/receipts/tradeid/get)
+    - [Retry a failed PayPal Batch Payout v1 for a settled demo trade](/api/openapi/unknown/api/paypal/payouts/batch/post)
+    - [Calculate indicative demo quote with optional Gemini explanation](/api/openapi/unknown/api/ai/negotiate/post)
+    - [Run deterministic sample corridor & blocklist checks with optional Gemini explanation](/api/openapi/unknown/api/ai/risk-screen/post)
+    - [Search Channel3 B2B Product Catalog](/api/openapi/unknown/api/channel3/catalog/get)
+    - [Elastic Observability & Financial Crime Search](/api/openapi/unknown/api/elastic/search/get)
+    - [Dispatch Zapier Outbound Automation Webhook](/api/openapi/unknown/api/zapier/trigger/post)

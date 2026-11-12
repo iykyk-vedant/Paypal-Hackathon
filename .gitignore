@@ -7,7 +7,6 @@ node_modules/
 dist/
 build/
 coverage/
-apimatic/portal/
 apimatic/generated-sdk/
 
 # Environment variables
